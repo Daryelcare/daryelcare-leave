@@ -1,6 +1,7 @@
+
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -10,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
-import { fetchWithAuth } from "@/lib/api-utils"
+import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
 import type { LeaveType } from "@/lib/types"
 
 const formSchema = z.object({
@@ -51,9 +52,27 @@ export function EditLeaveTypeModal({ leaveType, isOpen, onClose, onSuccess }: Ed
     },
   })
 
+  // Reset form when leave type changes
+  useEffect(() => {
+    if (isOpen) {
+      form.reset({
+        name: leaveType?.name || "",
+        description: leaveType?.description || "",
+        color: leaveType?.color || "#6366f1",
+        defaultDays: leaveType?.defaultDays || 0,
+        isPaid: leaveType?.isPaid || false,
+        requiresApproval: leaveType?.requiresApproval || true,
+        allowNegativeBalance: leaveType?.allowNegativeBalance || false,
+        isActive: leaveType?.isActive || true,
+      })
+    }
+  }, [form, isOpen, leaveType])
+
   const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true)
     try {
+      console.log("Submitting leave type data:", data) // For debugging
+      
       await fetchWithAuth(`/api/leave-types${leaveType ? `/${leaveType.id}` : ""}`, {
         method: leaveType ? "PUT" : "POST",
         body: JSON.stringify(data),
@@ -67,9 +86,10 @@ export function EditLeaveTypeModal({ leaveType, isOpen, onClose, onSuccess }: Ed
       onSuccess()
       onClose()
     } catch (error) {
+      console.error("Error submitting leave type:", error)
       toast({
         title: "Error",
-        description: `Failed to ${leaveType ? "update" : "create"} leave type`,
+        description: `Failed to ${leaveType ? "update" : "create"} leave type: ${handleApiError(error)}`,
         variant: "destructive",
       })
     } finally {

@@ -13,6 +13,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
 import { cn } from "@/lib/utils"
 import { useBranches } from "@/hooks/use-branches"
+import { useLeaveTypes } from "@/hooks/use-leave-types"
 import { DeleteConfirmationDialog } from "./delete-confirmation-dialog"
 import { LeaveDetailsModal } from "./leave-details-modal"
 import { AddLeaveModal } from "./add-leave-modal"
@@ -26,11 +27,9 @@ export function LeaveManagementTable() {
   const [debouncedBranch, setDebouncedBranch] = useState<string>("all")
   const [debouncedType, setDebouncedType] = useState<string>("all")
 
-  // Add sorting state
   const [sortColumn, setSortColumn] = useState<string | null>("submittedDate")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
 
-  // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -48,10 +47,16 @@ export function LeaveManagementTable() {
     error: branchesError,
   } = useBranches()
 
+  const {
+    data: leaveTypes = [],
+    isLoading: isLoadingLeaveTypes,
+    isError: isLeaveTypesError,
+    error: leaveTypesError,
+  } = useLeaveTypes()
+
   const { user } = useApp()
   const isAdmin = user?.role === "admin"
 
-  // Initialize selectedBranch based on user's assigned branches
   const [selectedBranch, setSelectedBranch] = useState<string>(
     !isAdmin && user?.branches && user.branches.length === 1 ? user.branches[0] : "all",
   )
@@ -71,19 +76,15 @@ export function LeaveManagementTable() {
     setDebouncedType(selectedType)
   }, [selectedType])
 
-  // Handle column sorting
   const handleSort = (column: string) => {
     if (sortColumn === column) {
-      // Toggle direction if same column
       setSortDirection(sortDirection === "asc" ? "desc" : "asc")
     } else {
-      // Set new column and default to ascending
       setSortColumn(column)
       setSortDirection("asc")
     }
   }
 
-  // Fetch leave requests data with sorting
   const {
     data: leaveRequests = [],
     isLoading,
@@ -95,17 +96,13 @@ export function LeaveManagementTable() {
     queryFn: async () => {
       const params = new URLSearchParams()
 
-      // If a specific branch is selected, use that
       if (debouncedBranch !== "all") {
         params.append("branch", debouncedBranch)
       }
-      // If no specific branch is selected but user is not admin and has assigned branches
       else if (!isAdmin && user?.branches && user.branches.length > 0) {
-        // For API compatibility, if user has only one branch, send it as a single parameter
         if (user.branches.length === 1) {
           params.append("branch", user.branches[0])
         }
-        // Otherwise, send a comma-separated list of branches
         else {
           params.append("branches", user.branches.join(","))
         }
@@ -117,7 +114,6 @@ export function LeaveManagementTable() {
       if (debouncedEmployeeSearch) {
         params.append("employee", debouncedEmployeeSearch)
       }
-      // Add sorting parameters
       if (sortColumn) {
         params.append("sortColumn", sortColumn)
         params.append("sortDirection", sortDirection)
@@ -126,7 +122,6 @@ export function LeaveManagementTable() {
     },
   })
 
-  // Delete leave request function
   const deleteLeaveRequest = async (id: string) => {
     try {
       await fetchWithAuth(`/api/leave-requests/${id}`, {
@@ -138,7 +133,6 @@ export function LeaveManagementTable() {
         description: "Leave request deleted successfully",
       })
 
-      // Refresh the leave requests list
       queryClient.invalidateQueries({ queryKey: ["leaveRequests"] })
     } catch (error) {
       toast({
@@ -149,19 +143,16 @@ export function LeaveManagementTable() {
     }
   }
 
-  // Handle view details
   const handleViewDetails = (leaveId: string) => {
     setSelectedLeaveId(leaveId)
     setIsDetailsModalOpen(true)
   }
 
-  // Handle delete leave request
   const handleDeleteLeaveRequest = (leave: LeaveRequest) => {
     setLeaveToDelete(leave)
     setIsDeleteDialogOpen(true)
   }
 
-  // Confirm delete leave request
   const confirmDeleteLeaveRequest = () => {
     if (leaveToDelete) {
       deleteLeaveRequest(leaveToDelete.id)
@@ -170,27 +161,23 @@ export function LeaveManagementTable() {
     }
   }
 
-  // Handle export
   const handleExport = async (format: string) => {
     setIsExporting(true)
     setExportFormat(format)
 
     try {
-      // Create form data with current filters - but don't include pagination
       const formData = new FormData()
       formData.append("format", format)
       formData.append("branch", selectedBranch)
       formData.append("type", selectedType)
       formData.append("employee", employeeSearch)
-      formData.append("exportAll", "true") // Add flag to export all records
+      formData.append("exportAll", "true")
 
-      // Include sorting parameters for export
       if (sortColumn) {
         formData.append("sortColumn", sortColumn)
         formData.append("sortDirection", sortDirection)
       }
 
-      // Use direct fetch to get the file as a blob
       const response = await fetch("/api/export/leave-requests", {
         method: "POST",
         body: formData,
@@ -200,7 +187,6 @@ export function LeaveManagementTable() {
         throw new Error(`Export failed with status ${response.status}`)
       }
 
-      // Get the filename from the Content-Disposition header if available
       let filename = `leave-requests.${format === "csv" ? "csv" : "xlsx"}`
       const contentDisposition = response.headers.get("Content-Disposition")
       if (contentDisposition) {
@@ -210,10 +196,8 @@ export function LeaveManagementTable() {
         }
       }
 
-      // Create a blob from the response
       const blob = await response.blob()
 
-      // Create a download link and trigger the download
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.style.display = "none"
@@ -222,7 +206,6 @@ export function LeaveManagementTable() {
       document.body.appendChild(a)
       a.click()
 
-      // Clean up
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
 
@@ -247,12 +230,10 @@ export function LeaveManagementTable() {
     setEmployeeSearch("")
     setSelectedBranch("all")
     setSelectedType("all")
-    // Reset sorting to default (newest first)
     setSortColumn("submittedDate")
     setSortDirection("desc")
   }
 
-  // Helper function to render sort indicator
   const renderSortIndicator = (column: string) => {
     if (sortColumn !== column) {
       return <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -290,7 +271,25 @@ export function LeaveManagementTable() {
     )
   }
 
-  // Add a warning banner when using mock data
+  if (isLeaveTypesError) {
+    return (
+      <div className="rounded-md bg-destructive/15 p-4 text-destructive">
+        <p>Error loading leave types: {handleApiError(leaveTypesError)}</p>
+        <div className="mt-2 text-sm">
+          <p>Please ensure that:</p>
+          <ul className="list-disc pl-5 mt-1">
+            <li>The Supabase integration is properly set up</li>
+            <li>The leave_types table exists in your database</li>
+            <li>The API route is correctly configured</li>
+          </ul>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="mt-2">
+          Try Again
+        </Button>
+      </div>
+    )
+  }
+
   const isMockData = branches.length > 0 && branches[0].id === "1" && branches[0].name === "London"
 
   return (
@@ -380,15 +379,17 @@ export function LeaveManagementTable() {
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Leave Type</label>
-          <Select value={selectedType} onValueChange={setSelectedType}>
+          <Select value={selectedType} onValueChange={setSelectedType} disabled={isLoadingLeaveTypes}>
             <SelectTrigger>
               <SelectValue placeholder="All Types" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="Annual">Annual</SelectItem>
-              <SelectItem value="Sick">Sick</SelectItem>
-              <SelectItem value="Personal">Personal</SelectItem>
+              {leaveTypes.map((type) => (
+                <SelectItem key={type.id} value={type.name}>
+                  {type.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -538,10 +539,8 @@ export function LeaveManagementTable() {
         </Table>
       </div>
 
-      {/* Add Leave Modal */}
       <AddLeaveModal open={isAddModalOpen} onOpenChange={setIsAddModalOpen} />
 
-      {/* View Leave Details Modal */}
       {selectedLeaveId && (
         <LeaveDetailsModal
           leaveId={selectedLeaveId}
@@ -550,7 +549,6 @@ export function LeaveManagementTable() {
         />
       )}
 
-      {/* Delete Confirmation Dialog */}
       <DeleteConfirmationDialog
         isOpen={isDeleteDialogOpen}
         onClose={() => setIsDeleteDialogOpen(false)}

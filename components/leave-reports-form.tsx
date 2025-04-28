@@ -15,6 +15,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useBranches } from "@/hooks/use-branches"
+import { useLeaveTypes } from "@/hooks/use-leave-types"
 
 export function LeaveReportsForm() {
   const [startDate, setStartDate] = useState<Date | undefined>()
@@ -26,8 +27,8 @@ export function LeaveReportsForm() {
   const { toast } = useToast()
 
   const { data: branches = [] } = useBranches()
+  const { data: leaveTypes = [], isLoading: isLoadingLeaveTypes } = useLeaveTypes()
 
-  // Handle export
   const handleExport = async (exportFormat: string) => {
     if (!startDate || !endDate) {
       toast({
@@ -41,7 +42,6 @@ export function LeaveReportsForm() {
     setIsExporting(true)
 
     try {
-      // Create form data with current filters
       const formData = new FormData()
       formData.append("format", exportFormat)
       formData.append("branch", selectedBranch)
@@ -50,7 +50,6 @@ export function LeaveReportsForm() {
       formData.append("endDate", format(endDate, "yyyy-MM-dd"))
       formData.append("dateFilterMode", dateFilterMode)
 
-      // Use fetch directly to download the file
       const response = await fetch("/api/export/leave-requests", {
         method: "POST",
         body: formData,
@@ -60,7 +59,6 @@ export function LeaveReportsForm() {
         throw new Error("Export failed")
       }
 
-      // Get the filename from the Content-Disposition header if available
       let filename = `leave-report-${format(startDate, "yyyy-MM-dd")}-to-${format(endDate, "yyyy-MM-dd")}.${exportFormat === "csv" ? "csv" : "xls"}`
       const contentDisposition = response.headers.get("Content-Disposition")
       if (contentDisposition) {
@@ -70,10 +68,8 @@ export function LeaveReportsForm() {
         }
       }
 
-      // Create a blob from the response
       const blob = await response.blob()
 
-      // Create a download link and trigger the download
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.style.display = "none"
@@ -82,7 +78,6 @@ export function LeaveReportsForm() {
       document.body.appendChild(a)
       a.click()
 
-      // Clean up
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
 
@@ -214,15 +209,17 @@ export function LeaveReportsForm() {
 
         <div className="space-y-2">
           <label className="text-sm font-medium">Leave Type</label>
-          <Select value={selectedLeaveType} onValueChange={setSelectedLeaveType}>
+          <Select value={selectedLeaveType} onValueChange={setSelectedLeaveType} disabled={isLoadingLeaveTypes}>
             <SelectTrigger>
               <SelectValue placeholder="All Leave Types" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Leave Types</SelectItem>
-              <SelectItem value="annual">Annual Leave</SelectItem>
-              <SelectItem value="sick">Sick Leave</SelectItem>
-              <SelectItem value="personal">Personal Leave</SelectItem>
+              {leaveTypes.map((leaveType) => (
+                <SelectItem key={leaveType.id} value={leaveType.name}>
+                  {leaveType.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/components/ui/use-toast"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
 import { useBranches } from "@/hooks/use-branches"
+import { useLeaveTypes } from "@/hooks/use-leave-types"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
@@ -419,6 +420,9 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
     return "Submit Request"
   }
 
+  // Add the leave types query
+  const { data: leaveTypes = [], isLoading: isLoadingLeaveTypes } = useLeaveTypes()
+
   return (
     <Dialog
       open={open}
@@ -472,17 +476,18 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Leave Type</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingLeaveTypes}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select leave type" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="Annual">Annual Leave</SelectItem>
-                      <SelectItem value="Sick">Sick Leave</SelectItem>
-                      <SelectItem value="Personal">Personal Leave</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
+                      {leaveTypes.map((leaveType) => (
+                        <SelectItem key={leaveType.id} value={leaveType.name}>
+                          {leaveType.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
