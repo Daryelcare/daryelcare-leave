@@ -1,5 +1,7 @@
+
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
+import { shouldDeductFromBalance } from "@/lib/utils"
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -155,8 +157,8 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
       throw fetchError
     }
 
-    // If the leave was approved, restore the employee's leave balance for ALL leave types
-    if (leaveRequest && leaveRequest.status === "Approved") {
+    // If the leave was approved AND it's a leave type that deducts from balance, restore the employee's leave balance
+    if (leaveRequest && leaveRequest.status === "Approved" && shouldDeductFromBalance(leaveRequest.type)) {
       // Get the employee's current leave balance
       const { data: employee, error: empError } = await supabase
         .from("employees")
@@ -181,7 +183,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
         throw updateError
       }
 
-      console.log(`Restored ${leaveRequest.duration} days to employee ${leaveRequest.employee_id}'s balance`)
+      console.log(`Restored ${leaveRequest.duration} days to employee ${leaveRequest.employee_id}'s balance for ${leaveRequest.type} leave type`)
     }
 
     // Now delete the leave request

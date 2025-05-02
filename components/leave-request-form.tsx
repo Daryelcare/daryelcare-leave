@@ -1,3 +1,4 @@
+
 "use client"
 
 import type React from "react"
@@ -5,7 +6,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon, InfoIcon } from "lucide-react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -19,6 +20,18 @@ import { fetchWithAuth } from "@/lib/api-utils"
 import { submitLeaveRequest } from "@/app/actions/leave-actions"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+
+// Helper function to check if a leave type should affect the days balance
+function shouldDeductFromBalance(leaveType: string): boolean {
+  // Only "Annual Leave" and "Working Holiday" should deduct from the 28 days balance
+  return leaveType === "Annual Leave" || leaveType === "Working Holiday"
+}
 
 export function LeaveRequestForm() {
   const router = useRouter()
@@ -50,8 +63,13 @@ export function LeaveRequestForm() {
       // Fetch ALL pending requests regardless of type
       const response = await fetchWithAuth(`/api/leave-requests?employeeId=${employeeId}&status=Pending`)
       if (response && Array.isArray(response)) {
-        // Calculate total pending days
-        const pendingDays = response.reduce((total, request) => total + request.duration, 0)
+        // Calculate total pending days for leave types that affect the balance
+        const pendingDays = response.reduce((total, request) => {
+          if (shouldDeductFromBalance(request.type)) {
+            return total + request.duration
+          }
+          return total
+        }, 0)
         return pendingDays
       }
       return 0
@@ -93,8 +111,9 @@ export function LeaveRequestForm() {
     }
   }, [user])
 
-  // Check if exceeding allocation
-  const isExceedingBalance = employeeData && duration > employeeData.availableDays
+  // Check if exceeding allocation (only if the leave type deducts from balance)
+  const willDeductFromBalance = leaveType ? shouldDeductFromBalance(leaveType) : false
+  const isExceedingBalance = employeeData && willDeductFromBalance && duration > employeeData.availableDays
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -182,18 +201,48 @@ export function LeaveRequestForm() {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Leave Type</label>
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">Leave Type</label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center text-xs text-muted-foreground">
+                      <InfoIcon className="h-3 w-3 mr-1" />
+                      <span>Only "Annual Leave" and "Working Holiday" deduct from balance</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="max-w-xs">
+                      Only "Annual Leave" and "Working Holiday" will deduct days from your 28-day annual leave balance.
+                      Other leave types won't affect your leave balance.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <Select value={leaveType} onValueChange={setLeaveType}>
               <SelectTrigger>
                 <SelectValue placeholder="Select leave type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Annual">Annual Leave</SelectItem>
-                <SelectItem value="Sick">Sick Leave</SelectItem>
-                <SelectItem value="Personal">Personal Leave</SelectItem>
+                <SelectItem value="Annual Leave">Annual Leave {shouldDeductFromBalance("Annual Leave") && "🔹"}</SelectItem>
+                <SelectItem value="Sick Leave">Sick Leave</SelectItem>
+                <SelectItem value="Personal Leave">Personal Leave</SelectItem>
+                <SelectItem value="Working Holiday">Working Holiday {shouldDeductFromBalance("Working Holiday") && "🔹"}</SelectItem>
+                <SelectItem value="Maternity Leave">Maternity Leave</SelectItem>
+                <SelectItem value="Working Unpaid">Working Unpaid</SelectItem>
                 <SelectItem value="Other">Other</SelectItem>
               </SelectContent>
             </Select>
+            {leaveType && (
+              <div className="text-xs mt-1">
+                {shouldDeductFromBalance(leaveType) ? (
+                  <span className="text-blue-600">This leave type will deduct from your 28-day balance.</span>
+                ) : (
+                  <span className="text-green-600">This leave type will NOT deduct from your 28-day balance.</span>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -256,7 +305,7 @@ export function LeaveRequestForm() {
                   Pending requests: {employeeData.pendingDays} days ({employeeData.availableDays} days available)
                 </p>
               )}
-              {startDate && endDate && duration > 0 ? (
+              {startDate && endDate && duration > 0 && leaveType && shouldDeductFromBalance(leaveType) ? (
                 <p className="text-sm font-medium mt-1">
                   After this request: {employeeData.availableDays - duration} days remaining
                   {employeeData.availableDays - duration < 0 && (
@@ -265,6 +314,11 @@ export function LeaveRequestForm() {
                 </p>
               ) : (
                 <p className="text-sm font-medium mt-1">Currently available: {employeeData.availableDays} days</p>
+              )}
+              {leaveType && !shouldDeductFromBalance(leaveType) && (
+                <p className="text-sm font-medium mt-1 text-green-600">
+                  This leave type will NOT deduct from your balance.
+                </p>
               )}
             </div>
           )}

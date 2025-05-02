@@ -1,5 +1,12 @@
+
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
+
+// Helper function to check if a leave type should affect the days balance
+function shouldDeductFromBalance(leaveType: string): boolean {
+  // Only "Annual Leave" and "Working Holiday" should deduct from the 28 days balance
+  return leaveType === "Annual Leave" || leaveType === "Working Holiday"
+}
 
 async function validateLeaveRequest(data: any) {
   try {
@@ -19,17 +26,32 @@ async function validateLeaveRequest(data: any) {
       }
     }
 
-    // Get all pending leave requests for this employee (regardless of type)
+    // Only validate balance for leave types that should deduct from the balance
+    if (!shouldDeductFromBalance(data.type)) {
+      return {
+        valid: true,
+        isExceeding: false,
+        message: null,
+        remainingDays: employee.days_remaining, // No change to remaining days for these leave types
+      }
+    }
+
+    // Get all pending leave requests for this employee that should deduct from balance
     const { data: pendingRequests, error: pendingError } = await supabase
       .from("leave_requests")
-      .select("duration")
+      .select("duration, type")
       .eq("employee_id", data.employeeId)
       .eq("status", "Pending")
 
     if (pendingError) throw pendingError
 
-    // Calculate total days from pending requests
-    const pendingDays = pendingRequests.reduce((total, request) => total + request.duration, 0)
+    // Calculate total days from pending requests that should affect the balance
+    const pendingDays = pendingRequests.reduce((total, request) => {
+      if (shouldDeductFromBalance(request.type)) {
+        return total + request.duration
+      }
+      return total
+    }, 0)
 
     // Calculate available days considering pending requests
     const availableDays = employee.days_remaining - pendingDays
@@ -184,14 +206,13 @@ export async function POST(request: Request) {
     }
 
     // Validate leave request against employee's remaining days
-    // Now applies to ALL leave types, but allows exceeding with warning
+    // Now selective based on leave type
     const validation = await validateLeaveRequest(data)
     if (!validation.valid) {
       return NextResponse.json({ error: validation.message }, { status: 400 })
     }
 
     // Get the employee's current remaining days
-    // Get the employee's current leave balance
     const { data: employee, error: empError } = await supabase
       .from("employees")
       .select("days_remaining")
@@ -200,22 +221,30 @@ export async function POST(request: Request) {
 
     if (empError) throw empError
 
-    // Get all pending leave requests for this employee
+    // Get all pending leave requests for this employee that should affect the balance
     const { data: pendingRequests, error: pendingError } = await supabase
       .from("leave_requests")
-      .select("duration")
+      .select("duration, type")
       .eq("employee_id", data.employeeId)
       .eq("status", "Pending")
 
     if (pendingError) throw pendingError
 
-    // Calculate total days from pending requests
-    const pendingDays = pendingRequests.reduce((total, request) => total + request.duration, 0)
+    // Calculate total days from pending requests that should affect the balance
+    const pendingDays = pendingRequests.reduce((total, request) => {
+      if (shouldDeductFromBalance(request.type)) {
+        return total + request.duration
+      }
+      return total
+    }, 0)
 
     // Calculate what will remain after this request and all pending requests (if approved)
     const availableDays = employee.days_remaining - pendingDays
-    const remainingDays = availableDays - data.duration
-    // Allow negative remaining days
+    
+    // Only reduce remaining days if this leave type should deduct from balance
+    const remainingDays = shouldDeductFromBalance(data.type) 
+      ? availableDays - data.duration 
+      : availableDays
 
     // Insert into Supabase
     const { data: newRequest, error } = await supabase
@@ -228,7 +257,7 @@ export async function POST(request: Request) {
         start_date: data.startDate,
         end_date: data.endDate,
         duration: data.duration,
-        remaining: remainingDays, // Can be negative
+        remaining: remainingDays,
         status: "Approved",
         reason: data.reason,
         submitted_date: new Date().toLocaleDateString("en-GB"),
@@ -241,25 +270,27 @@ export async function POST(request: Request) {
       throw error
     }
 
-    // Update the employee's leave balance for ALL leave types
-    const { data: employeeData, error: empDataError } = await supabase
-      .from("employees")
-      .select("days_taken, days_remaining")
-      .eq("id", data.employeeId)
-      .single()
+    // Update the employee's leave balance ONLY if this leave type should deduct from balance
+    if (shouldDeductFromBalance(data.type)) {
+      const { data: employeeData, error: empDataError } = await supabase
+        .from("employees")
+        .select("days_taken, days_remaining")
+        .eq("id", data.employeeId)
+        .single()
 
-    if (empDataError) throw empDataError
+      if (empDataError) throw empDataError
 
-    // Update the employee's leave balance
-    const { error: updateError } = await supabase
-      .from("employees")
-      .update({
-        days_taken: employeeData.days_taken + data.duration,
-        days_remaining: employeeData.days_remaining - data.duration, // Can go negative
-      })
-      .eq("id", data.employeeId)
+      // Update the employee's leave balance
+      const { error: updateError } = await supabase
+        .from("employees")
+        .update({
+          days_taken: employeeData.days_taken + data.duration,
+          days_remaining: employeeData.days_remaining - data.duration, // Can go negative
+        })
+        .eq("id", data.employeeId)
 
-    if (updateError) throw updateError
+      if (updateError) throw updateError
+    }
 
     // Transform to match frontend types
     const transformedRequest = {
