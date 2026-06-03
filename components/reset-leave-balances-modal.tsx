@@ -54,7 +54,6 @@ export function ResetLeaveBalancesModal({ isOpen, onClose }: ResetLeaveBalancesM
       }
 
       const result = await response.json()
-      console.log("[v0] Reset API response:", result)
 
       toast({
         title: "Success",

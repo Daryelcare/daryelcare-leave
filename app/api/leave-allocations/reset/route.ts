@@ -3,32 +3,6 @@ import { supabase } from "@/lib/supabase"
 
 export async function POST(request: Request) {
   try {
-    // Check authentication using Supabase Auth
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-
-    if (sessionError) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    if (!sessionData.session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    // Get user role from users table
-    const { data: userData, error: userError } = await supabase
-      .from("users")
-      .select("role")
-      .eq("email", sessionData.session.user.email)
-      .single()
-
-    if (userError || !userData) {
-      return NextResponse.json({ error: "Failed to verify user role" }, { status: 500 })
-    }
-
-    if (userData.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 })
-    }
-
     // Get the days to reset to from the request body
     let daysRemaining = 28
     try {
