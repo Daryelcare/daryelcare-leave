@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle, AlertTriangle, Loader2 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
+import { useQueryClient } from "@tanstack/react-query"
 
 interface ResetLeaveBalancesModalProps {
   isOpen: boolean
@@ -27,6 +28,7 @@ export function ResetLeaveBalancesModal({ isOpen, onClose }: ResetLeaveBalancesM
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
+  const queryClient = useQueryClient()
 
   const handleReset = async () => {
     if (confirmText !== "RESET") {
@@ -51,10 +53,18 @@ export function ResetLeaveBalancesModal({ isOpen, onClose }: ResetLeaveBalancesM
         throw new Error(errorData.error || errorData.details || "Failed to reset leave balances")
       }
 
+      const result = await response.json()
+      console.log("[v0] Reset API response:", result)
+
       toast({
         title: "Success",
-        description: `All employee leave balances have been reset to ${days} days remaining and 0 days taken.`,
+        description: `All employee leave balances have been reset to ${days} days remaining and 0 days taken. (${result.count || 0} employees updated)`,
       })
+
+      // Invalidate all employee-related queries to refresh the UI
+      queryClient.invalidateQueries({ queryKey: ["employees"] })
+      queryClient.invalidateQueries({ queryKey: ["leaveRequests"] })
+      queryClient.invalidateQueries({ queryKey: ["leavePeriods"] })
 
       // Reset form and close modal
       setDays(28)
