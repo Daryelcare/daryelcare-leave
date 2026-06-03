@@ -1,17 +1,31 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
 
 export async function POST(request: Request) {
   try {
-    // Check authentication and admin role
-    const session = await getServerSession(authOptions)
-    if (!session) {
+    // Check authentication using Supabase Auth
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+
+    if (sessionError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    if (session.user.role !== "admin") {
+    if (!sessionData.session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Get user role from users table
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("role")
+      .eq("email", sessionData.session.user.email)
+      .single()
+
+    if (userError || !userData) {
+      return NextResponse.json({ error: "Failed to verify user role" }, { status: 500 })
+    }
+
+    if (userData.role !== "admin") {
       return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 })
     }
 
@@ -20,11 +34,9 @@ export async function POST(request: Request) {
     try {
       const body = await request.json()
       daysRemaining = body.days || 28
-    } catch (e) {
-      console.log("Error parsing request body, using default value:", e)
+    } catch {
+      // Use default value if body parsing fails
     }
-
-    console.log(`[v0] Resetting all employee leave balances to ${daysRemaining} days remaining and 0 days taken`)
 
     // First, check how many active employees we have (case-insensitive)
     const { data: activeEmployees, error: countError } = await supabase
@@ -32,11 +44,8 @@ export async function POST(request: Request) {
       .select("id, name, status, days_remaining, days_taken")
       .ilike("status", "active")
 
-    console.log(`[v0] Found ${activeEmployees?.length || 0} active employees to reset`)
-    console.log(`[v0] Active employees:`, activeEmployees)
-
     if (countError) {
-      console.error("[v0] Error fetching employees:", countError)
+      console.error("Error fetching employees:", countError)
       return NextResponse.json(
         {
           error: "Failed to fetch employees",
@@ -47,7 +56,6 @@ export async function POST(request: Request) {
     }
 
     if (!activeEmployees || activeEmployees.length === 0) {
-      console.log("[v0] No active employees found to reset")
       return NextResponse.json(
         {
           error: "No active employees found",
@@ -70,11 +78,8 @@ export async function POST(request: Request) {
       .in("id", activeEmployeeIds)
       .select()
 
-    console.log(`[v0] Update result - data:`, updatedData)
-    console.log(`[v0] Update result - error:`, error)
-
     if (error) {
-      console.error("[v0] Error resetting leave balances:", error)
+      console.error("Error resetting leave balances:", error)
       return NextResponse.json(
         {
           error: "Failed to reset leave balances",
