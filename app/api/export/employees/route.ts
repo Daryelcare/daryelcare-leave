@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     const response = new NextResponse(result.fileContent, {
       status: 200,
       headers: {
-        "Content-Type": result.contentType,
+        "Content-Type": result.contentType || "application/octet-stream",
         "Content-Disposition": `attachment; filename="${result.fileName}"`,
         // Add cache control headers to prevent caching
         "Cache-Control": "no-cache, no-store, must-revalidate",

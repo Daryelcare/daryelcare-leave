@@ -26,7 +26,7 @@ import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
 import { cn } from "@/lib/utils"
 import { useQuery } from "@tanstack/react-query"
 import { Switch } from "@/components/ui/switch"
-import type { EmployeeDocument } from "@/lib/types"
+import type { EmployeeDocument, Employee } from "@/lib/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 // List of all countries
@@ -250,7 +250,9 @@ const formSchema = z.object({
   is20Hours: z.boolean().default(false),
 })
 
-type FormValues = z.infer<typeof formSchema>
+// What the form fields hold, and what validation turns them into
+type FormInput = z.input<typeof formSchema>
+type FormValues = z.output<typeof formSchema>
 
 interface AddDocumentModalProps {
   open: boolean
@@ -265,7 +267,7 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
   // Initialize form
-  const form = useForm<FormValues>({
+  const form = useForm<FormInput, unknown, FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       employeeId: "",
@@ -294,7 +296,7 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
   }, [status, form])
 
   // Fetch ALL employees without pagination
-  const { data: employeesResponse = { data: [], total: 0 }, isLoading: isLoadingEmployees } = useQuery({
+  const { data: employeesResponse = { data: [], total: 0 }, isLoading: isLoadingEmployees } = useQuery<{ data: Employee[]; total: number }>({
     queryKey: ["employees", "all"],
     queryFn: async () => {
       try {

@@ -25,22 +25,15 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 
 // Form schema
-const formSchema = z.object({
-  startDate: z.date({ required_error: "Start date is required" }),
-  endDate: z
-    .date({ required_error: "End date is required" })
-    .refine((date) => date instanceof Date && !isNaN(date.getTime()), {
-      message: "End date is required",
-    })
-    .refine(
-      (date, ctx) => {
-        return date > ctx.startDate
-      },
-      {
-        message: "End date must be after start date",
-      },
-    ),
-})
+const formSchema = z
+  .object({
+    startDate: z.date({ error: "Start date is required" }),
+    endDate: z.date({ error: "End date is required" }),
+  })
+  .refine((data) => data.endDate > data.startDate, {
+    message: "End date must be after start date",
+    path: ["endDate"],
+  })
 
 type FormValues = z.infer<typeof formSchema>
 
@@ -56,7 +49,7 @@ export function LeavePeriodManager() {
     isLoading,
     isError,
     error,
-  } = useQuery({
+  } = useQuery<{ id: string; startDate: string; endDate: string; isActive: boolean; createdAt: string }[]>({
     queryKey: ["leavePeriods"],
     queryFn: async () => {
       return fetchWithAuth("/api/leave-periods")

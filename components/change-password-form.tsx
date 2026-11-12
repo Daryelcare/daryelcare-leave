@@ -9,8 +9,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/components/ui/use-toast"
-import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
+import { handleApiError } from "@/lib/api-utils"
 import { useApp } from "./app-provider"
+import { changeOwnPassword } from "@/lib/auth"
 
 // Form schema
 const formSchema = z
@@ -54,13 +55,7 @@ export function ChangePasswordForm() {
 
     setIsSubmitting(true)
     try {
-      await fetchWithAuth(`/api/users/change-password`, {
-        method: "POST",
-        body: JSON.stringify({
-          currentPassword: data.currentPassword,
-          newPassword: data.newPassword,
-        }),
-      })
+      await changeOwnPassword(data.currentPassword, data.newPassword)
 
       toast({
         title: "Success",

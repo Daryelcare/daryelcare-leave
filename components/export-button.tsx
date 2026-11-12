@@ -15,6 +15,7 @@ interface ExportButtonProps {
   sortOrder?: string
   className?: string
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
+  size?: "default" | "sm" | "lg" | "icon"
   onExportStart?: () => void
   onExportEnd?: () => void
 }
@@ -27,6 +28,7 @@ export function ExportButton({
   sortOrder,
   className,
   variant = "outline",
+  size,
   onExportStart,
   onExportEnd,
 }: ExportButtonProps) {
@@ -114,7 +116,7 @@ export function ExportButton({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant={variant} size="sm" className={`gap-1 ${className}`} disabled={disabled || isExporting}>
+        <Button variant={variant} size={size ?? "sm"} className={`gap-1 ${className ?? ""}`} disabled={disabled || isExporting}>
           {isExporting ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />

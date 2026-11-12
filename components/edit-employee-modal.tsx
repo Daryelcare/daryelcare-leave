@@ -30,15 +30,18 @@ const formSchema = z.object({
   employeeCode: z.string().min(2, { message: "Employee code is required." }),
   jobTitle: z.string().min(2, { message: "Job title is required." }),
   branch: z.string().min(1, { message: "Branch is required." }),
-  daysRemaining: z.coerce.number().min(0, { message: "Remaining leave days must be a positive number." }),
-  daysTaken: z.coerce.number().min(0, { message: "Taken leave days must be a positive number." }),
-  hours: z.coerce.number().optional(),
+  // Can be negative: leave can be booked beyond the allowance
+  daysRemaining: z.coerce.number<number>(),
+  daysTaken: z.coerce.number<number>().min(0, { message: "Taken leave days must be a positive number." }),
+  hours: z.coerce.number<number>().optional(),
   email: z.string().email({ message: "Invalid email address" }).optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
   status: z.enum(["active", "inactive"]),
 })
 
-type FormValues = z.infer<typeof formSchema>
+// What the form fields hold, and what validation turns them into
+type FormInput = z.input<typeof formSchema>
+type FormValues = z.output<typeof formSchema>
 
 interface EditEmployeeModalProps {
   employeeId: string
@@ -73,7 +76,7 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
   })
 
   // Initialize form
-  const form = useForm<FormValues>({
+  const form = useForm<FormInput, unknown, FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
@@ -95,7 +98,7 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
           branch: employee.branch,
           daysRemaining: employee.daysRemaining,
           daysTaken: employee.daysTaken,
-          hours: employee.hours,
+          hours: employee.hours ?? undefined,
           email: employee.email || "",
           phone: employee.phone || "",
           status: employee.status as "active" | "inactive",
@@ -177,7 +180,7 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Edit Employee</DialogTitle>
-          <DialogDescription>Update the employee details. Click save when you're done.</DialogDescription>
+          <DialogDescription>Update the employee details. Click save when you&apos;re done.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

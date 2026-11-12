@@ -39,7 +39,9 @@ const formSchema = z.object({
   is20Hours: z.boolean().default(false),
 })
 
-type FormValues = z.infer<typeof formSchema>
+// What the form fields hold, and what validation turns them into
+type FormInput = z.input<typeof formSchema>
+type FormValues = z.output<typeof formSchema>
 
 interface EditDocumentModalProps {
   document: EmployeeDocument
@@ -62,11 +64,11 @@ export function EditDocumentModal({ document, open, onOpenChange }: EditDocument
   }
 
   // Initialize form
-  const form = useForm<FormValues>({
+  const form = useForm<FormInput, unknown, FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       status: document.status,
-      country: document.country,
+      country: document.country ?? "",
       documentType: "passport",
       customDocumentType: document.otherDocumentType || "",
       expiryDate: null,

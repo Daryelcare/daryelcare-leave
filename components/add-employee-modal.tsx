@@ -27,13 +27,15 @@ const formSchema = z.object({
   employeeCode: z.string().min(2, { message: "Employee code is required." }),
   jobTitle: z.string().min(2, { message: "Job title is required." }),
   branch: z.string().min(1, { message: "Branch is required." }),
-  totalLeaveDays: z.coerce.number().min(0, { message: "Total leave days must be a positive number." }),
-  hours: z.coerce.number().optional(),
+  totalLeaveDays: z.coerce.number<number>().min(0, { message: "Total leave days must be a positive number." }),
+  hours: z.coerce.number<number>().optional(),
   email: z.string().email({ message: "Invalid email address" }).optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
 })
 
-type FormValues = z.infer<typeof formSchema>
+// What the form fields hold, and what validation turns them into
+type FormInput = z.input<typeof formSchema>
+type FormValues = z.output<typeof formSchema>
 
 interface AddEmployeeModalProps {
   open: boolean
@@ -52,7 +54,7 @@ export function AddEmployeeModal({ open, onOpenChange }: AddEmployeeModalProps) 
   } = useBranches()
 
   // Initialize form
-  const form = useForm<FormValues>({
+  const form = useForm<FormInput, unknown, FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
@@ -104,7 +106,7 @@ export function AddEmployeeModal({ open, onOpenChange }: AddEmployeeModalProps) 
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Add New Employee</DialogTitle>
-          <DialogDescription>Enter the details of the new employee. Click save when you're done.</DialogDescription>
+          <DialogDescription>Enter the details of the new employee. Click save when you&apos;re done.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

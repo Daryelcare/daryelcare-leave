@@ -1,7 +1,7 @@
 "use client"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { BarChart3, FileText, LayoutDashboard, LogOut, Settings, Users, Calendar, FolderArchive } from "lucide-react"
+import { BarChart3, FileText, LayoutDashboard, LogOut, Settings, Users, Calendar, CalendarRange, FolderArchive } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -13,6 +13,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { useApp } from "./app-provider"
+import { useLogout } from "@/hooks/use-logout"
 import { Badge } from "./ui/badge"
 
 export function DashboardSidebar() {
@@ -20,6 +21,7 @@ export function DashboardSidebar() {
   const router = useRouter()
   const { setOpen } = useSidebar()
   const { user } = useApp()
+  const handleLogout = useLogout()
 
   const isAdmin = user?.role === "admin"
 
@@ -41,6 +43,12 @@ export function DashboardSidebar() {
       title: "Leave Management",
       href: "/dashboard/leave-management",
       icon: Calendar,
+      showFor: "all", // Show for all users
+    },
+    {
+      title: "Team Calendar",
+      href: "/dashboard/calendar",
+      icon: CalendarRange,
       showFor: "all", // Show for all users
     },
     {
@@ -123,7 +131,7 @@ export function DashboardSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={() => handleNavigation("/login")}>
+            <SidebarMenuButton onClick={handleLogout}>
               <LogOut className="h-5 w-5" />
               <span>Logout</span>
             </SidebarMenuButton>

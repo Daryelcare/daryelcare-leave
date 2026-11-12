@@ -9,8 +9,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
-import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
+import { handleApiError } from "@/lib/api-utils"
 import { useApp } from "./app-provider"
+import { changeOwnPassword } from "@/lib/auth"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BranchManagementTable } from "./branch-management-table"
 import { LeaveTypeManagementTable } from "./leave-type-management-table"
@@ -60,14 +61,7 @@ export function SettingsForm() {
 
     setIsSubmitting(true)
     try {
-      await fetchWithAuth("/api/users/change-password", {
-        method: "POST",
-        body: JSON.stringify({
-          userId: user.id,
-          currentPassword: data.currentPassword,
-          newPassword: data.newPassword,
-        }),
-      })
+      await changeOwnPassword(data.currentPassword, data.newPassword)
 
       toast({
         title: "Success",

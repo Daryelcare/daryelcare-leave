@@ -182,7 +182,7 @@ export function BranchManagementTable() {
               branches.map((branch: Branch) => (
                 <TableRow key={branch.id}>
                   <TableCell>{branch.name}</TableCell>
-                  <TableCell>{new Date(branch.createdAt || "").toLocaleDateString()}</TableCell>
+                  <TableCell>{branch.created_at ? new Date(branch.created_at).toLocaleDateString("en-GB") : "–"}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={() => handleEditClick(branch)}>

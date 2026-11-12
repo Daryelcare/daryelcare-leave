@@ -29,14 +29,15 @@ import { cn } from "@/lib/utils"
 import { useQuery } from "@tanstack/react-query"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useApp } from "./app-provider"
+import type { Employee } from "@/lib/types"
 
 // Form schema
 const formSchema = z.object({
   employeeId: z.string().min(1, { message: "Employee is required" }),
   type: z.string().min(1, { message: "Leave type is required" }),
-  startDate: z.date({ required_error: "Start date is required" }),
+  startDate: z.date({ error: "Start date is required" }),
   endDate: z
-    .date({ required_error: "End date is required" })
+    .date({ error: "End date is required" })
     .refine((date) => date instanceof Date && !isNaN(date.getTime()), { message: "End date is required" }),
   reason: z.string().optional(),
 })
@@ -104,7 +105,7 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
   const { data: branches = [], isLoading: isLoadingBranches } = useBranches()
 
   // Fetch ALL employees without pagination, filtered by user's branches for normal users
-  const { data: employeesResponse = { data: [], total: 0 }, isLoading: isLoadingEmployees } = useQuery({
+  const { data: employeesResponse = { data: [], total: 0 }, isLoading: isLoadingEmployees } = useQuery<{ data: Employee[]; total: number }>({
     queryKey: ["employees", "all", user?.role, user?.branches],
     queryFn: async () => {
       try {
@@ -237,7 +238,6 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
   // Add useEffect to check for overlap when dates or employee changes
   useEffect(() => {
     let isMounted = true
-    let timeoutId: NodeJS.Timeout
 
     const checkOverlap = async () => {
       if (!employeeId || !startDate || !endDate) {
@@ -261,7 +261,7 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
     }
 
     // Debounce the checkOverlap function
-    timeoutId = setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       checkOverlap()
     }, 300)
 
@@ -360,6 +360,9 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
 
       // Refresh leave requests list
       queryClient.invalidateQueries({ queryKey: ["leaveRequests"] })
+      queryClient.invalidateQueries({ queryKey: ["employees"] })
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] })
+      queryClient.invalidateQueries({ queryKey: ["leave-calendar"] })
     } catch (error) {
       toast({
         title: "Error",

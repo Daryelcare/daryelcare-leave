@@ -30,11 +30,19 @@ export function EmployeeDocumentsModal({ employeeId, employeeName, isOpen, onClo
   })
 
   // Function to determine status color
-  const getStatusColor = (daysLeft: number) => {
+  const getStatusColor = (daysLeft: number | null) => {
+    if (daysLeft === null) return "text-muted-foreground"
     if (daysLeft <= 0) return "text-red-500"
     if (daysLeft <= 30) return "text-orange-500"
     if (daysLeft <= 90) return "text-yellow-500"
     return "text-green-500"
+  }
+
+  const daysLeftText = (daysLeft: number | null) => {
+    if (daysLeft === null) return ""
+    if (daysLeft < 0) return `Expired ${Math.abs(daysLeft)} days ago`
+    if (daysLeft === 0) return "Expires today"
+    return `${daysLeft} days left`
   }
 
   return (
@@ -64,29 +72,32 @@ export function EmployeeDocumentsModal({ employeeId, employeeName, isOpen, onClo
             <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b">
-                  <th className="py-2 px-4 text-left">Document Type</th>
                   <th className="py-2 px-4 text-left">Country</th>
                   <th className="py-2 px-4 text-left">Passport Expiry</th>
                   <th className="py-2 px-4 text-left">Right to Work Expiry</th>
+                  <th className="py-2 px-4 text-left">BRP Expiry</th>
                   <th className="py-2 px-4 text-left">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {documents.map((doc) => (
                   <tr key={doc.id} className="border-b hover:bg-muted/50">
-                    <td className="py-2 px-4 capitalize">{doc.documentType}</td>
                     <td className="py-2 px-4">{doc.country}</td>
                     <td className="py-2 px-4">
                       <div>{doc.passportExpiry}</div>
                       <div className={`text-sm ${getStatusColor(doc.passportDaysLeft)}`}>
-                        {doc.passportDaysLeft} days left
+                        {daysLeftText(doc.passportDaysLeft)}
                       </div>
                     </td>
                     <td className="py-2 px-4">
                       <div>{doc.rightToWorkExpiry}</div>
                       <div className={`text-sm ${getStatusColor(doc.rightToWorkDaysLeft)}`}>
-                        {doc.rightToWorkDaysLeft} days left
+                        {daysLeftText(doc.rightToWorkDaysLeft)}
                       </div>
+                    </td>
+                    <td className="py-2 px-4">
+                      <div>{doc.brpExpiry}</div>
+                      <div className={`text-sm ${getStatusColor(doc.brpDaysLeft)}`}>{daysLeftText(doc.brpDaysLeft)}</div>
                     </td>
                     <td className="py-2 px-4 capitalize">{doc.status}</td>
                   </tr>

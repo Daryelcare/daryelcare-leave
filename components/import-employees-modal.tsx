@@ -484,8 +484,8 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
               <ul className="list-disc list-inside space-y-1">
                 <li>Full Name (required)</li>
                 <li>Employee Code (optional, will be auto-generated if empty)</li>
-                <li>Job Title (optional, defaults to "Unspecified")</li>
-                <li>Branch (optional, defaults to "Unassigned")</li>
+                <li>Job Title (optional, defaults to &quot;Unspecified&quot;)</li>
+                <li>Branch (optional, defaults to &quot;Unassigned&quot;)</li>
                 <li>Days Taken (optional, defaults to 0)</li>
                 <li>Days Remaining (optional, defaults to 25)</li>
               </ul>

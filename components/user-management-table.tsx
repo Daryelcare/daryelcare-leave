@@ -54,7 +54,7 @@ export function UserManagementTable() {
     isError,
     error,
     refetch,
-  } = useQuery({
+  } = useQuery<User[]>({
     queryKey: ["users"],
     queryFn: async () => {
       return fetchWithAuth("/api/users")

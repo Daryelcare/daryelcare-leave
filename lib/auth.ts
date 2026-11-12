@@ -222,7 +222,7 @@ export async function getCurrentUser(): Promise<User | null> {
     const { data: userData, error: userError } = await supabase
       .from("users")
       .select("*")
-      .eq("email", authUser.email)
+      .eq("email", authUser.email ?? "")
       .maybeSingle()
 
     if (userError || !userData) {
@@ -243,55 +243,22 @@ export async function getCurrentUser(): Promise<User | null> {
   }
 }
 
-// Function to update user password
-export async function updatePassword(newPassword: string): Promise<boolean> {
-  try {
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword,
-    })
-
-    if (error) {
-      throw new Error(error.message)
-    }
-
-    return true
-  } catch (error) {
-    console.error("Error updating password:", error)
-    throw error
+// Change the logged-in user's own password. Runs in the browser, where the
+// user's Supabase session lives. Checks the current password first.
+export async function changeOwnPassword(currentPassword: string, newPassword: string): Promise<void> {
+  const { data, error: sessionError } = await supabase.auth.getUser()
+  const email = data?.user?.email
+  if (sessionError || !email) {
+    throw new Error("Your session has expired. Please log out and log in again.")
   }
-}
 
-// Function to reset user password (admin function)
-export async function resetUserPassword(userId: string, newPassword: string): Promise<boolean> {
-  try {
-    // Instead of using admin.updateUserById, we'll use a different approach
-    // First, we'll get the user's email from our users table
-    const { data: userData, error: userError } = await supabase.from("users").select("email").eq("id", userId).single()
+  const { error: verifyError } = await supabase.auth.signInWithPassword({ email, password: currentPassword })
+  if (verifyError) {
+    throw new Error("Your current password is incorrect.")
+  }
 
-    if (userError || !userData) {
-      console.error("Error finding user:", userError?.message || "User not found")
-      throw new Error("User not found")
-    }
-
-    // For demo/development purposes, we'll just update the password directly
-    // In a production environment, you would implement a secure password reset flow
-    // This is a simplified approach that doesn't require admin privileges
-
-    // We'll use the auth.updateUser function which works for the current user
-    // Note: In a real app, you'd need to implement a proper admin password reset flow
-    // This is just a workaround for the demo
-    const { error } = await supabase.auth.updateUser({
-      email: userData.email,
-      password: newPassword,
-    })
-
-    if (error) {
-      throw new Error(error.message)
-    }
-
-    return true
-  } catch (error) {
-    console.error("Error resetting user password:", error)
-    throw error
+  const { error } = await supabase.auth.updateUser({ password: newPassword })
+  if (error) {
+    throw new Error(error.message)
   }
 }

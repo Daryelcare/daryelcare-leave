@@ -13,29 +13,12 @@ import {
 import { useApp } from "./app-provider"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { useRouter } from "next/navigation"
-import { signOut } from "@/lib/auth"
-import { toast } from "@/components/ui/use-toast"
+import { useLogout } from "@/hooks/use-logout"
 
 export function DashboardHeader() {
-  const { user, setUser } = useApp()
+  const { user } = useApp()
   const router = useRouter()
-
-  const handleLogout = async () => {
-    try {
-      await signOut()
-      // Clear user from context (this will also clear localStorage via AppProvider)
-      setUser(null)
-      // Redirect to login page
-      router.push("/login")
-    } catch (error) {
-      console.error("Logout error:", error)
-      toast({
-        variant: "destructive",
-        title: "Logout failed",
-        description: "There was an error signing out. Please try again.",
-      })
-    }
-  }
+  const handleLogout = useLogout()
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">

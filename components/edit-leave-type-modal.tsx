@@ -18,14 +18,16 @@ const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
   description: z.string().min(2, { message: "Description must be at least 2 characters" }),
   color: z.string().regex(/^#[0-9A-F]{6}$/i, { message: "Invalid color format" }),
-  defaultDays: z.coerce.number().min(0),
+  defaultDays: z.coerce.number<number>().min(0),
   isPaid: z.boolean(),
   requiresApproval: z.boolean(),
   allowNegativeBalance: z.boolean(),
   isActive: z.boolean(),
 })
 
-type FormValues = z.infer<typeof formSchema>
+// What the form fields hold, and what validation turns them into
+type FormInput = z.input<typeof formSchema>
+type FormValues = z.output<typeof formSchema>
 
 interface EditLeaveTypeModalProps {
   leaveType: LeaveType | null
@@ -38,7 +40,7 @@ export function EditLeaveTypeModal({ leaveType, isOpen, onClose, onSuccess }: Ed
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
 
-  const form = useForm<FormValues>({
+  const form = useForm<FormInput, unknown, FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: leaveType?.name || "",

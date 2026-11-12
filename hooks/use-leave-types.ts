@@ -21,9 +21,9 @@ export function useLeaveTypes() {
           color: item.color || "#6366f1",
           defaultDays: item.default_days || 0,
           isPaid: item.is_paid || false, 
-          requiresApproval: item.requires_approval || true,
+          requiresApproval: item.requires_approval ?? true,
           allowNegativeBalance: item.allow_negative_balance || false,
-          isActive: item.is_active || true,
+          isActive: item.is_active ?? true,
         })) || []
       } catch (error) {
         console.error("Error fetching leave types:", error)

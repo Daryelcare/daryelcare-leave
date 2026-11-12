@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -101,7 +101,7 @@ export function EmployeeTable() {
     isError,
     error,
     refetch,
-  } = useQuery({
+  } = useQuery<{ data: Employee[]; total: number }>({
     queryKey: [
       "employees",
       selectedBranch,
@@ -156,7 +156,7 @@ export function EmployeeTable() {
         throw error
       }
     },
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   })
 
   const employees = employeesResponse?.data || []
@@ -420,7 +420,7 @@ export function EmployeeTable() {
           {
             id: "actions",
             header: "Actions",
-            cell: ({ row }) => {
+            cell: ({ row }: { row: { original: Employee } }) => {
               const employee = row.original
 
               return (

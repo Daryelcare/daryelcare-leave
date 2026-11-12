@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { X, Eye, Trash2, Plus, FileSpreadsheet, FileText, Loader2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
+import { X, Eye, Pencil, Trash2, Plus, FileSpreadsheet, FileText, Loader2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/components/ui/use-toast"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
@@ -17,6 +17,7 @@ import { useLeaveTypes } from "@/hooks/use-leave-types"
 import { DeleteConfirmationDialog } from "./delete-confirmation-dialog"
 import { LeaveDetailsModal } from "./leave-details-modal"
 import { AddLeaveModal } from "./add-leave-modal"
+import { EditLeaveModal } from "./edit-leave-modal"
 import type { LeaveRequest } from "@/lib/types"
 import { useApp } from "./app-provider"
 
@@ -35,6 +36,7 @@ export function LeaveManagementTable() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedLeaveId, setSelectedLeaveId] = useState<string | null>(null)
   const [leaveToDelete, setLeaveToDelete] = useState<LeaveRequest | null>(null)
+  const [leaveToEdit, setLeaveToEdit] = useState<LeaveRequest | null>(null)
   const [isExporting, setIsExporting] = useState(false)
   const [exportFormat, setExportFormat] = useState<string | null>(null)
 
@@ -134,6 +136,9 @@ export function LeaveManagementTable() {
       })
 
       queryClient.invalidateQueries({ queryKey: ["leaveRequests"] })
+      queryClient.invalidateQueries({ queryKey: ["employees"] })
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] })
+      queryClient.invalidateQueries({ queryKey: ["leave-calendar"] })
     } catch (error) {
       toast({
         title: "Error",
@@ -515,6 +520,10 @@ export function LeaveManagementTable() {
                         <Eye className="h-4 w-4 mr-1" />
                         View
                       </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setLeaveToEdit(row)}>
+                        <Pencil className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -540,6 +549,12 @@ export function LeaveManagementTable() {
       </div>
 
       <AddLeaveModal open={isAddModalOpen} onOpenChange={setIsAddModalOpen} />
+
+      <EditLeaveModal
+        leave={leaveToEdit}
+        open={!!leaveToEdit}
+        onOpenChange={(open) => !open && setLeaveToEdit(null)}
+      />
 
       {selectedLeaveId && (
         <LeaveDetailsModal

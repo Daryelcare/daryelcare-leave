@@ -33,7 +33,7 @@ export function AdminSettings() {
             <div>
               <h3 className="text-lg font-medium mb-2">Reset All Leave Balances</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Reset the leave balances for all employees in the system. This will set all employees' remaining days to
+                Reset the leave balances for all employees in the system. This will set all employees&apos; remaining days to
                 the specified value and reset their taken days to zero.
               </p>
               <Button variant="destructive" onClick={() => setIsResetModalOpen(true)}>
