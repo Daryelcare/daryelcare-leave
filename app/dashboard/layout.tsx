@@ -2,10 +2,8 @@
 
 import Image from "next/image"
 import type React from "react"
-import { DashboardSidebar } from "@/components/dashboard-sidebar"
-import { DashboardHeader } from "@/components/dashboard-header"
+import { TopNav } from "@/components/top-nav"
 import { MobileTabBar } from "@/components/mobile-tab-bar"
-import { SidebarProvider } from "@/components/ui/sidebar"
 import { Toaster } from "@/components/ui/toaster"
 import { useApp } from "@/components/app-provider"
 import { usePathname, useRouter } from "next/navigation"
@@ -13,21 +11,14 @@ import { Suspense, useEffect, useState } from "react"
 import { getCurrentUser } from "@/lib/auth"
 import { supabase } from "@/lib/supabase"
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   return (
-    <SidebarProvider>
+    <>
       <AuthCheck>
-        <DashboardSidebar />
         {/* min-w-0 lets wide tables scroll inside their card instead of stretching the page */}
-        <div className="flex min-h-svh min-w-0 flex-1 flex-col bg-background">
-          <Suspense fallback={<div className="h-14 border-b border-border/70" />}>
-            <DashboardHeader />
-          </Suspense>
+        <div className="flex min-h-svh min-w-0 flex-col bg-background">
+          <TopNav />
           <main className="flex-1">
             <div
               key={pathname}
@@ -42,7 +33,7 @@ export default function DashboardLayout({
         </Suspense>
       </AuthCheck>
       <Toaster />
-    </SidebarProvider>
+    </>
   )
 }
 
@@ -106,7 +97,14 @@ function AuthCheck({ children }: { children: React.ReactNode }) {
   if (!user) {
     return (
       <div className="flex min-h-svh w-full flex-col items-center justify-center gap-5 bg-background">
-        <Image src="/images/daryelcare-mark.png" alt="DaryelCare" width={48} height={48} priority className="animate-pulse" />
+        <Image
+          src="/images/daryelcare-mark.png"
+          alt="DaryelCare"
+          width={48}
+          height={48}
+          priority
+          className="animate-pulse"
+        />
         <div className="h-1 w-24 overflow-hidden rounded-full bg-secondary">
           <div className="h-full w-1/2 animate-shimmer rounded-full bg-[linear-gradient(90deg,transparent,hsl(var(--primary)),transparent)] bg-[length:200%_100%]" />
         </div>
