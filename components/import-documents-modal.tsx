@@ -389,8 +389,8 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                           <TableHead>Issue</TableHead>
                           <TableHead>Document Status</TableHead>
                           <TableHead>Country</TableHead>
-                          <TableHead>Passport Expiry</TableHead>
                           <TableHead>Right to work</TableHead>
+                          <TableHead>Passport expiry</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -411,11 +411,11 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                               </TableCell>
                               <TableCell>{doc.country}</TableCell>
                               <TableCell>
-                                {doc.passportExpiry ? (
-                                  <div className={getStatusColor(doc.passportDaysLeft)}>
-                                    {doc.passportExpiry}
-                                    {doc.passportDaysLeft !== null && (
-                                      <div className="text-xs">{doc.passportDaysLeft} days left</div>
+                                {doc.rightToWorkExpiry ? (
+                                  <div className={getStatusColor(doc.rightToWorkDaysLeft)}>
+                                    {doc.rightToWorkExpiry}
+                                    {doc.rightToWorkDaysLeft !== null && (
+                                      <div className="text-xs">{doc.rightToWorkDaysLeft} days left</div>
                                     )}
                                   </div>
                                 ) : (
@@ -423,11 +423,11 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                                 )}
                               </TableCell>
                               <TableCell>
-                                {doc.rightToWorkExpiry ? (
-                                  <div className={getStatusColor(doc.rightToWorkDaysLeft)}>
-                                    {doc.rightToWorkExpiry}
-                                    {doc.rightToWorkDaysLeft !== null && (
-                                      <div className="text-xs">{doc.rightToWorkDaysLeft} days left</div>
+                                {doc.passportExpiry ? (
+                                  <div className={getStatusColor(doc.passportDaysLeft)}>
+                                    {doc.passportExpiry}
+                                    {doc.passportDaysLeft !== null && (
+                                      <div className="text-xs">{doc.passportDaysLeft} days left</div>
                                     )}
                                   </div>
                                 ) : (
@@ -462,9 +462,9 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                         <TableHead>Branch</TableHead>
                         <TableHead>Document Status</TableHead>
                         <TableHead>Country</TableHead>
-                        <TableHead>Passport Expiry</TableHead>
-                        <TableHead>BRP Expiry</TableHead>
                         <TableHead>Right to work</TableHead>
+                        <TableHead>Passport expiry</TableHead>
+                        <TableHead>BRP expiry</TableHead>
                         <TableHead>Sponsored</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -485,6 +485,18 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                                 <Badge variant="secondary">{doc.status}</Badge>
                               </TableCell>
                               <TableCell>{doc.country}</TableCell>
+                              <TableCell>
+                                {doc.rightToWorkExpiry ? (
+                                  <div className={getStatusColor(doc.rightToWorkDaysLeft)}>
+                                    {doc.rightToWorkExpiry}
+                                    {doc.rightToWorkDaysLeft !== null && (
+                                      <div className="text-xs">{doc.rightToWorkDaysLeft} days left</div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="text-muted-foreground/50">—</span>
+                                )}
+                              </TableCell>
                               <TableCell>
                                 {doc.passportExpiry ? (
                                   <div className={getStatusColor(doc.passportDaysLeft)}>
@@ -510,22 +522,12 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                                 )}
                               </TableCell>
                               <TableCell>
-                                {doc.rightToWorkExpiry ? (
-                                  <div className={getStatusColor(doc.rightToWorkDaysLeft)}>
-                                    {doc.rightToWorkExpiry}
-                                    {doc.rightToWorkDaysLeft !== null && (
-                                      <div className="text-xs">{doc.rightToWorkDaysLeft} days left</div>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <span className="text-muted-foreground/50">—</span>
-                                )}
-                              </TableCell>
-                              <TableCell>
                                 <div className="flex flex-col gap-1">
                                   <Badge
                                     className={
-                                      doc.isSponsored ? "bg-primary-soft text-primary" : "bg-secondary text-muted-foreground"
+                                      doc.isSponsored
+                                        ? "bg-primary-soft text-primary"
+                                        : "bg-secondary text-muted-foreground"
                                     }
                                   >
                                     {doc.isSponsored ? "Sponsored" : "Not sponsored"}
@@ -533,7 +535,9 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                                   {doc.isSponsored && (
                                     <Badge
                                       className={
-                                        doc.is20Hrs ? "bg-primary-soft text-primary" : "bg-secondary text-muted-foreground"
+                                        doc.is20Hrs
+                                          ? "bg-primary-soft text-primary"
+                                          : "bg-secondary text-muted-foreground"
                                       }
                                     >
                                       {doc.is20Hrs ? "20hrs" : "No Restriction"}
@@ -627,7 +631,9 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
             {/* File upload area */}
             <div
               className={`rounded-xl border-2 border-dashed p-8 text-center transition-colors duration-200 ${
-                dragActive ? "border-primary bg-primary-soft/60" : "border-border bg-muted/30 hover:border-foreground/20"
+                dragActive
+                  ? "border-primary bg-primary-soft/60"
+                  : "border-border bg-muted/30 hover:border-foreground/20"
               }`}
               onDragEnter={handleDrag}
               onDragOver={handleDrag}
@@ -644,7 +650,9 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
 
               {selectedFile ? (
                 <div className="flex flex-col items-center gap-2">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-success-soft text-success"><FileSpreadsheet className="h-6 w-6" /></span>
+                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-success-soft text-success">
+                    <FileSpreadsheet className="h-6 w-6" />
+                  </span>
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{selectedFile.name}</span>
                     <Button
@@ -661,7 +669,9 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-2">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-card text-muted-foreground shadow-card"><Upload className="h-5 w-5" /></span>
+                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-card text-muted-foreground shadow-card">
+                    <Upload className="h-5 w-5" />
+                  </span>
                   <p className="text-sm font-medium">
                     Drag and drop your file here, or{" "}
                     <button
@@ -696,10 +706,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
             Cancel
           </Button>
           {showPreview ? (
-            <Button
-              onClick={handleUpload}
-              disabled={isUploading || previewData.length === 0}
-            >
+            <Button onClick={handleUpload} disabled={isUploading || previewData.length === 0}>
               {isUploading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -710,10 +717,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
               )}
             </Button>
           ) : (
-            <Button
-              onClick={handlePreview}
-              disabled={!selectedFile || previewLoading}
-            >
+            <Button onClick={handlePreview} disabled={!selectedFile || previewLoading}>
               {previewLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

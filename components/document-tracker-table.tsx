@@ -150,7 +150,11 @@ export function DocumentTrackerTable() {
   const router = useRouter()
   const params = useSearchParams()
   const expiry: ExpiryFilter = isFilter(params.get("expiry")) ? (params.get("expiry") as ExpiryFilter) : "all"
-  const kind: DocKind | "all" = isKind(params.get("type")) ? (params.get("type") as DocKind) : "all"
+  // Right to work is the default view; "all" shows every document type
+  const kind: DocKind | "all" =
+    params.get("type") === "all" ? "all" : isKind(params.get("type")) ? (params.get("type") as DocKind) : "rightToWork"
+  const focusKind: DocKind = kind === "all" ? "rightToWork" : kind
+  const focusLabel = DOC_KINDS.find((k) => k.id === focusKind)!.label
   const group: Group =
     params.get("group") === "sponsored" || params.get("group") === "regular" ? (params.get("group") as Group) : "all"
   const sort: Sort =
@@ -158,7 +162,10 @@ export function DocumentTrackerTable() {
   const setParam = (updates: Record<string, string | null>) => {
     const next = new URLSearchParams(params.toString())
     for (const [key, value] of Object.entries(updates)) {
-      if (value === null || value === "all" || (key === "sort" && value === "urgent")) next.delete(key)
+      if (key === "type") {
+        if (value === "rightToWork" || value === null) next.delete(key)
+        else next.set(key, value)
+      } else if (value === null || value === "all" || (key === "sort" && value === "urgent")) next.delete(key)
       else next.set(key, value)
     }
     const qs = next.toString()
@@ -178,6 +185,7 @@ export function DocumentTrackerTable() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
   const [selectedDocument, setSelectedDocument] = useState<EmployeeDocument | null>(null)
+  const [editTab, setEditTab] = useState<DocKind>("rightToWork")
   const [selected, setSelected] = useState<string[]>([])
   const [isExporting, setIsExporting] = useState(false)
 
@@ -229,14 +237,16 @@ export function DocumentTrackerTable() {
     })
   }, [visible])
 
-  // Overview: most urgent state per employee, compliance, and what's coming up
+  // Overview: compliance for the focused document (right to work unless another
+  // type is chosen), and what's coming up
+  const [comingUpAll, setComingUpAll] = useState(false)
   const overview = useMemo(() => {
     const bands: Record<Urgency, number> = { expired: 0, d7: 0, d30: 0, d90: 0, valid: 0, none: 0 }
-    for (const d of scoped) bands[recordUrgency(d, kind)]++
+    for (const d of scoped) bands[recordUrgency(d, focusKind)]++
     const dated = scoped.length - bands.none
     const compliant = dated - bands.expired
     const upcoming = scoped
-      .flatMap((d) => entriesFor(d, kind).map((e) => ({ ...e, record: d })))
+      .flatMap((d) => entriesFor(d, comingUpAll ? "all" : focusKind).map((e) => ({ ...e, record: d })))
       .filter((e) => e.days !== null && e.days <= 90)
       .sort((a, b) => (a.days as number) - (b.days as number))
     const byKind = DOC_KINDS.map((k) => {
@@ -256,20 +266,23 @@ export function DocumentTrackerTable() {
       upcoming,
       percent: dated > 0 ? Math.round((compliant / dated) * 100) : 100,
     }
-  }, [scoped, kind])
+  }, [scoped, focusKind, comingUpAll])
 
-  const columns = DOC_KINDS.filter((k) =>
-    kind === "all" ? documents.some((d) => entriesFor(d, k.id).length > 0) : k.id === kind,
-  )
-  const filtersActive = expiry !== "all" || kind !== "all" || group !== "all" || branch !== "all" || searchQuery !== ""
+  // Every document type with dates gets a column, right to work first. Types
+  // other than the one in focus are shown, but quieter.
+  const columns = DOC_KINDS.filter((k) => k.id === focusKind || documents.some((d) => entriesFor(d, k.id).length > 0))
+  const isQuiet = (k: DocKind) => kind !== "all" && k !== kind
+  const filtersActive =
+    expiry !== "all" || kind !== "rightToWork" || group !== "all" || branch !== "all" || searchQuery !== ""
   const clearFilters = () => {
     setSearchQuery("")
     setBranch("all")
     router.replace("?", { scroll: false })
   }
 
-  const openEdit = (doc: EmployeeDocument) => {
+  const openEdit = (doc: EmployeeDocument, tab: DocKind = "rightToWork") => {
     setSelectedDocument(doc)
+    setEditTab(tab)
     setIsEditModalOpen(true)
   }
   const openDelete = (doc: EmployeeDocument) => {
@@ -359,31 +372,35 @@ export function DocumentTrackerTable() {
 
   const expiryCell = (doc: EmployeeDocument, k: DocKind) => {
     const entry = entriesFor(doc, k)[0]
-    if (!entry) return <span className="text-muted-foreground/50">—</span>
+    const quiet = isQuiet(k)
+    if (!entry)
+      return k === focusKind ? (
+        <span className="text-xs text-muted-foreground">No expiry recorded</span>
+      ) : (
+        <span className="text-muted-foreground/50">—</span>
+      )
     const u = urgencyOf(entry.days)
-    // Dim documents outside the chosen expiry window, so the matching ones stand out
-    const dim = expiry !== "all" && expiry !== "none" && !entryMatches(expiry, entry.days)
+    // Fade documents outside the chosen expiry window, and types not in focus
+    const outside = expiry !== "all" && expiry !== "none" && !entryMatches(expiry, entry.days)
     return (
-      <div className={cn("flex flex-col items-start gap-1 transition-opacity", dim && "opacity-40")}>
+      <div
+        className={cn(
+          "flex flex-col items-start gap-1 transition-opacity",
+          outside ? "opacity-35" : quiet && "opacity-60",
+        )}
+      >
         {k === "other" && <span className="text-[11px] font-semibold text-muted-foreground">{entry.label}</span>}
-        <span className="whitespace-nowrap text-sm font-medium tabular">{formatDisplayDate(entry.date)}</span>
+        <span
+          className={cn(
+            "whitespace-nowrap tabular",
+            k === focusKind && !quiet ? "text-[15px] font-semibold" : "text-sm font-medium text-foreground/80",
+          )}
+        >
+          {formatDisplayDate(entry.date)}
+        </span>
         <Badge variant={badgeVariant(u)} dot={u !== "valid"} className="px-2 text-[11px] leading-[18px] tabular">
           {daysLabel(entry.days)}
         </Badge>
-      </div>
-    )
-  }
-
-  const nextCell = (doc: EmployeeDocument) => {
-    const next = nextExpiry(doc, kind)
-    if (!next) return <span className="text-sm text-muted-foreground">No dates</span>
-    const u = urgencyOf(next.days)
-    return (
-      <div className="min-w-0">
-        <p className={cn("text-sm font-semibold tabular", u === "valid" ? "text-foreground" : TONE[u].text)}>
-          {daysLabel(next.days)}
-        </p>
-        <p className="truncate text-xs text-muted-foreground">{next.label}</p>
       </div>
     )
   }
@@ -463,7 +480,10 @@ export function DocumentTrackerTable() {
   }
 
   const stripe = (doc: EmployeeDocument) =>
-    cn("relative before:absolute before:inset-y-0 before:left-0 before:w-[3px]", TONE[recordUrgency(doc, kind)].stripe)
+    cn(
+      "relative before:absolute before:inset-y-0 before:left-0 before:w-[3px]",
+      TONE[recordUrgency(doc, focusKind)].stripe,
+    )
 
   const activeFilter = EXPIRY_FILTERS.find((f) => f.id === expiry)!
   const emptyCopy =
@@ -534,7 +554,10 @@ export function DocumentTrackerTable() {
         <div className="surface flex flex-col gap-5 p-5 sm:p-6">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
-              <p className="eyebrow">Compliance</p>
+              <p className="eyebrow flex items-center gap-1.5">
+                {focusKind === "rightToWork" && <ShieldCheck className="h-3.5 w-3.5 text-primary" />}
+                {focusLabel} compliance
+              </p>
               {isLoading ? (
                 <Skeleton className="h-10 w-28" />
               ) : (
@@ -558,10 +581,10 @@ export function DocumentTrackerTable() {
                 {isLoading
                   ? " "
                   : overview.bands.expired > 0
-                    ? `${plural(overview.bands.expired, "employee")} with an expired document, out of ${overview.dated} with dates recorded.`
+                    ? `${plural(overview.bands.expired, "employee")} with an expired ${focusLabel.toLowerCase()}, out of ${overview.dated} with a date recorded.`
                     : overview.dated > 0
-                      ? `No expired documents across ${plural(overview.dated, "employee")}.`
-                      : "No expiry dates recorded yet."}
+                      ? `No expired ${focusLabel.toLowerCase()} across ${plural(overview.dated, "employee")} with a date recorded.`
+                      : `No ${focusLabel.toLowerCase()} expiry dates recorded yet.`}
               </p>
             </div>
             <span
@@ -574,12 +597,12 @@ export function DocumentTrackerTable() {
             </span>
           </div>
 
-          {/* Each employee counted once, by their most urgent document */}
+          {/* Each employee counted once, by the focused document's status */}
           <div className="space-y-3">
             <div
               className="flex h-3 w-full overflow-hidden rounded-full bg-muted"
               role="img"
-              aria-label="Employees by most urgent document"
+              aria-label={`Employees by ${focusLabel.toLowerCase()} status`}
             >
               {!isLoading &&
                 (Object.keys(overview.bands) as Urgency[]).map((u) =>
@@ -608,7 +631,9 @@ export function DocumentTrackerTable() {
                 ))}
             </ul>
             <p className="text-xs text-muted-foreground">
-              Each employee is counted once, by their most urgent document.
+              {focusLabel} only.{" "}
+              {overview.bands.none > 0 && `${plural(overview.bands.none, "employee")} with no expiry recorded. `}Other
+              documents are listed below.
             </p>
           </div>
 
@@ -633,7 +658,15 @@ export function DocumentTrackerTable() {
                         kind === k.id ? "bg-primary-soft font-semibold text-primary" : "hover:bg-muted/60",
                       )}
                     >
-                      <span className="truncate font-medium">{k.label}</span>
+                      <span
+                        className={cn(
+                          "flex min-w-0 items-center gap-1.5 truncate",
+                          k.id === "rightToWork" ? "font-semibold" : "font-medium text-foreground/75",
+                        )}
+                      >
+                        {k.id === "rightToWork" && <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-primary" />}
+                        {k.label}
+                      </span>
                       <span
                         className={cn(
                           "text-right tabular",
@@ -667,13 +700,42 @@ export function DocumentTrackerTable() {
                 {isLoading
                   ? " "
                   : overview.upcoming.length > 0
-                    ? `${plural(overview.upcoming.length, "document")} expired or due within 90 days`
+                    ? `${plural(overview.upcoming.length, comingUpAll ? "document" : `${focusLabel.toLowerCase()} date`)} expired or due within 90 days`
                     : "Nothing due in the next 90 days"}
               </p>
             </div>
+            <div
+              className="ml-auto flex shrink-0 rounded-full bg-secondary p-0.5 text-xs font-semibold"
+              role="group"
+              aria-label="Coming up shows"
+            >
+              {[
+                { all: false, label: focusLabel },
+                { all: true, label: "All" },
+              ].map((o) => (
+                <button
+                  key={String(o.all)}
+                  onClick={() => setComingUpAll(o.all)}
+                  aria-pressed={comingUpAll === o.all}
+                  className={cn(
+                    "h-9 whitespace-nowrap rounded-full px-3 transition-colors sm:h-7 sm:px-2.5",
+                    comingUpAll === o.all
+                      ? "bg-card text-foreground shadow-raised"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
             {overview.upcoming.length > 0 && (
-              <Button variant="ghost" size="sm" onClick={() => setParam({ expiry: "within90" })} className="shrink-0">
-                See all
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="See all due within 90 days"
+                onClick={() => setParam({ expiry: "within90", type: comingUpAll ? "all" : focusKind })}
+                className="h-8 w-8 shrink-0"
+              >
                 <ChevronRight />
               </Button>
             )}
@@ -685,7 +747,9 @@ export function DocumentTrackerTable() {
               <span className="flex h-11 w-11 items-center justify-center rounded-full bg-success-soft text-success">
                 <CalendarClock className="h-5 w-5" />
               </span>
-              <p className="text-sm text-muted-foreground">All documents are valid for at least 90 days.</p>
+              <p className="text-sm text-muted-foreground">
+                {comingUpAll ? "All documents are" : `Every ${focusLabel.toLowerCase()} is`} valid for at least 90 days.
+              </p>
             </div>
           ) : (
             <ul className="flex-1 divide-y divide-border/70 border-t border-border/70">
@@ -695,7 +759,7 @@ export function DocumentTrackerTable() {
                 return (
                   <li key={`${e.record.id}-${e.kind}`} className={cn(i >= 3 && "hidden sm:block")}>
                     <button
-                      onClick={() => openEdit(e.record)}
+                      onClick={() => openEdit(e.record, e.kind)}
                       className="flex w-full items-center gap-3.5 px-5 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none sm:px-6"
                     >
                       <span
@@ -806,12 +870,12 @@ export function DocumentTrackerTable() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All types</SelectItem>
               {DOC_KINDS.map((k) => (
                 <SelectItem key={k.id} value={k.id}>
                   {k.label}
                 </SelectItem>
               ))}
+              <SelectItem value="all">All types</SelectItem>
             </SelectContent>
           </Select>
           <Select value={branch} onValueChange={setBranch} disabled={isLoadingBranches}>
@@ -926,25 +990,31 @@ export function DocumentTrackerTable() {
                   />
                 </TableHead>
                 {sortHeader("Employee")}
-                <TableHead>
-                  <button
-                    onClick={() => setParam({ sort: "urgent" })}
-                    className={cn(
-                      "inline-flex items-center gap-1 transition-colors hover:text-foreground",
-                      sort === "urgent" && "text-foreground",
-                    )}
-                  >
-                    Next expiry
-                    {sort === "urgent" ? (
-                      <ArrowUp className="h-3.5 w-3.5" />
-                    ) : (
-                      <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />
-                    )}
-                  </button>
-                </TableHead>
-                {columns.map((c) => (
-                  <TableHead key={c.id}>{c.label}</TableHead>
-                ))}
+                {/* The focused document's column sorts by urgency; the others are quieter */}
+                {columns.map((c) =>
+                  c.id === focusKind ? (
+                    <TableHead key={c.id} className="min-w-[150px]">
+                      <button
+                        onClick={() => setParam({ sort: "urgent" })}
+                        className={cn(
+                          "inline-flex items-center gap-1.5 font-semibold text-foreground transition-colors",
+                        )}
+                      >
+                        {c.id === "rightToWork" && <ShieldCheck className="h-3.5 w-3.5 text-primary" />}
+                        {c.label}
+                        {sort === "urgent" ? (
+                          <ArrowUp className="h-3.5 w-3.5" />
+                        ) : (
+                          <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />
+                        )}
+                      </button>
+                    </TableHead>
+                  ) : (
+                    <TableHead key={c.id} className={cn(isQuiet(c.id) && "font-normal text-muted-foreground/80")}>
+                      {c.label}
+                    </TableHead>
+                  ),
+                )}
                 <TableHead className="w-12">
                   <span className="sr-only">Actions</span>
                 </TableHead>
@@ -954,7 +1024,7 @@ export function DocumentTrackerTable() {
               {isLoading ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <TableRow key={i} className="hover:bg-transparent">
-                    <TableCell colSpan={columns.length + 4} className="py-3.5">
+                    <TableCell colSpan={columns.length + 3} className="py-3.5">
                       <div className="flex items-center gap-3">
                         <Skeleton className="h-9 w-9 rounded-full" />
                         <Skeleton className="h-4 w-1/5" />
@@ -966,7 +1036,7 @@ export function DocumentTrackerTable() {
               ) : visible.length > 0 ? (
                 visible.map((doc) => (
                   <TableRow key={doc.id} data-state={selected.includes(doc.id) ? "selected" : undefined}>
-                    <TableCell className={cn("pl-5", CELL_STRIPE[recordUrgency(doc, kind)])}>
+                    <TableCell className={cn("pl-5", CELL_STRIPE[recordUrgency(doc, focusKind)])}>
                       <Checkbox
                         checked={selected.includes(doc.id)}
                         onCheckedChange={() => toggleOne(doc.id)}
@@ -974,7 +1044,6 @@ export function DocumentTrackerTable() {
                       />
                     </TableCell>
                     <TableCell className="min-w-[240px]">{employeeCell(doc)}</TableCell>
-                    <TableCell className="min-w-[130px]">{nextCell(doc)}</TableCell>
                     {columns.map((c) => (
                       <TableCell key={c.id}>{expiryCell(doc, c.id)}</TableCell>
                     ))}
@@ -983,7 +1052,7 @@ export function DocumentTrackerTable() {
                 ))
               ) : (
                 <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={columns.length + 4}>
+                  <TableCell colSpan={columns.length + 3}>
                     <EmptyState icon={FileText} title={emptyCopy.title} description={emptyCopy.description} />
                   </TableCell>
                 </TableRow>
@@ -999,7 +1068,9 @@ export function DocumentTrackerTable() {
           ) : visible.length > 0 ? (
             <ul className="divide-y divide-border/70">
               {visible.map((doc) => {
-                const items = entriesFor(doc, kind)
+                // Every document, right to work first; the focused type stands out
+                const items = entriesFor(doc)
+                const focusMissing = !items.some((i) => i.kind === focusKind)
                 return (
                   <li
                     key={doc.id}
@@ -1019,20 +1090,31 @@ export function DocumentTrackerTable() {
                       <div className="min-w-0 flex-1">{employeeCell(doc)}</div>
                       {rowActions(doc)}
                     </div>
+                    {focusMissing && <p className="text-xs text-muted-foreground">{focusLabel}: no expiry recorded</p>}
                     {items.length > 0 ? (
                       <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                         {items.map((item) => {
                           const u = urgencyOf(item.days)
-                          const dim = expiry !== "all" && expiry !== "none" && !entryMatches(expiry, item.days)
+                          const outside = expiry !== "all" && expiry !== "none" && !entryMatches(expiry, item.days)
+                          const focus = item.kind === focusKind && !isQuiet(item.kind)
                           return (
                             <div
                               key={item.kind}
                               className={cn(
-                                "space-y-1 rounded-lg bg-muted/50 px-3 py-2.5 transition-opacity",
-                                dim && "opacity-45",
+                                "space-y-1 rounded-lg px-3 py-2.5 transition-opacity",
+                                focus
+                                  ? "col-span-2 bg-primary-soft/60 ring-1 ring-inset ring-primary/20 sm:col-span-2"
+                                  : "bg-muted/50",
+                                outside ? "opacity-40" : isQuiet(item.kind) && "opacity-60",
                               )}
                             >
-                              <dt className="truncate text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                              <dt
+                                className={cn(
+                                  "flex items-center gap-1.5 truncate text-[11px] font-semibold uppercase tracking-wide",
+                                  focus ? "text-primary" : "text-muted-foreground",
+                                )}
+                              >
+                                {focus && item.kind === "rightToWork" && <ShieldCheck className="h-3.5 w-3.5" />}
                                 {item.label}
                               </dt>
                               <dd className="space-y-1">
@@ -1066,7 +1148,13 @@ export function DocumentTrackerTable() {
 
       <AddDocumentModal open={isAddModalOpen} onOpenChange={setIsAddModalOpen} />
       {selectedDocument && (
-        <EditDocumentModal document={selectedDocument} open={isEditModalOpen} onOpenChange={setIsEditModalOpen} />
+        <EditDocumentModal
+          key={`${selectedDocument.id}-${editTab}`}
+          document={selectedDocument}
+          initialTab={editTab}
+          open={isEditModalOpen}
+          onOpenChange={setIsEditModalOpen}
+        />
       )}
       <DeleteConfirmationDialog
         isOpen={isDeleteDialogOpen}

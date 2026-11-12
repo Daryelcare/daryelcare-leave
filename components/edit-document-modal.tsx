@@ -1,5 +1,7 @@
 "use client"
 
+import { ShieldCheck } from "lucide-react"
+
 import { useState, useEffect } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
@@ -44,12 +46,19 @@ interface EditDocumentModalProps {
   document: EmployeeDocument
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** Which document to open on. Right to work unless another is asked for. */
+  initialTab?: "rightToWork" | "passport" | "brp" | "other"
 }
 
-export function EditDocumentModal({ document, open, onOpenChange }: EditDocumentModalProps) {
+export function EditDocumentModal({
+  document,
+  open,
+  onOpenChange,
+  initialTab = "rightToWork",
+}: EditDocumentModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showCustomDocType, setShowCustomDocType] = useState(false)
-  const [activeTab, setActiveTab] = useState("passport")
+  const [activeTab, setActiveTab] = useState<string>(initialTab)
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
@@ -66,7 +75,7 @@ export function EditDocumentModal({ document, open, onOpenChange }: EditDocument
     defaultValues: {
       status: document.status,
       country: document.country ?? "",
-      documentType: "passport",
+      documentType: initialTab,
       customDocumentType: document.otherDocumentType || "",
       expiryDate: null,
       isSponsored: document.isSponsored || false,
@@ -183,9 +192,12 @@ export function EditDocumentModal({ document, open, onOpenChange }: EditDocument
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <Tabs value={activeTab} onValueChange={handleDocumentTypeSelect} className="w-full">
-              <TabsList className="grid grid-cols-4 mb-4">
+              <TabsList className="mb-4 grid grid-cols-[1.5fr_1fr_1fr_1fr]">
+                <TabsTrigger value="rightToWork" className="gap-1.5 font-semibold">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  Right to work
+                </TabsTrigger>
                 <TabsTrigger value="passport">Passport</TabsTrigger>
-                <TabsTrigger value="rightToWork">Right to work</TabsTrigger>
                 <TabsTrigger value="brp">BRP</TabsTrigger>
                 <TabsTrigger value="other">Other</TabsTrigger>
               </TabsList>

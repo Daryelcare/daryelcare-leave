@@ -5,9 +5,10 @@ import { parseDateToUtc } from "./dates"
 export type DocKind = "passport" | "rightToWork" | "brp" | "other"
 export type DocEntry = { kind: DocKind; label: string; date: string; days: number | null }
 
+// Right to work is the check that matters most, so it always comes first
 export const DOC_KINDS: { id: DocKind; label: string }[] = [
-  { id: "passport", label: "Passport" },
   { id: "rightToWork", label: "Right to work" },
+  { id: "passport", label: "Passport" },
   { id: "brp", label: "BRP" },
   { id: "other", label: "Other" },
 ]
@@ -15,8 +16,8 @@ export const DOC_KINDS: { id: DocKind; label: string }[] = [
 /** The documents with an expiry date on one employee's record */
 export function entriesFor(doc: EmployeeDocument, kind: DocKind | "all" = "all"): DocEntry[] {
   const all: DocEntry[] = [
-    { kind: "passport", label: "Passport", date: doc.passportExpiry || "", days: doc.passportDaysLeft },
     { kind: "rightToWork", label: "Right to work", date: doc.rightToWorkExpiry || "", days: doc.rightToWorkDaysLeft },
+    { kind: "passport", label: "Passport", date: doc.passportExpiry || "", days: doc.passportDaysLeft },
     { kind: "brp", label: "BRP", date: doc.brpExpiry || "", days: doc.brpDaysLeft },
     {
       kind: "other",
@@ -133,10 +134,10 @@ export function documentsCsv(docs: EmployeeDocument[]): string {
     "Country",
     "Sponsored",
     "20 hours",
-    "Passport expiry",
-    "Passport days left",
     "Right to work expiry",
     "Right to work days left",
+    "Passport expiry",
+    "Passport days left",
     "BRP expiry",
     "BRP days left",
     "Other document",
@@ -155,10 +156,10 @@ export function documentsCsv(docs: EmployeeDocument[]): string {
       d.country,
       d.isSponsored ? "Yes" : "No",
       d.is20Hours ? "Yes" : "No",
-      d.passportExpiry,
-      d.passportDaysLeft,
       d.rightToWorkExpiry,
       d.rightToWorkDaysLeft,
+      d.passportExpiry,
+      d.passportDaysLeft,
       d.brpExpiry,
       d.brpDaysLeft,
       d.otherDocumentType,
