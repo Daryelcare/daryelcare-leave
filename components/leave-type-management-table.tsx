@@ -1,10 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { Edit, Plus, Trash2 } from "lucide-react"
+import { useQueryClient } from "@tanstack/react-query"
+import { useLeaveTypes } from "@/hooks/use-leave-types"
+import { Pencil, Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { EmptyState, ErrorState, ListSkeleton, SectionHeader } from "./page-kit"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
 import { useToast } from "@/hooks/use-toast"
 import type { LeaveType } from "@/lib/types"
@@ -19,23 +20,9 @@ export function LeaveTypeManagementTable() {
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
-  const { data: leaveTypes = [], isLoading: isLoadingLeaveTypes } = useQuery({
-    queryKey: ["leaveTypes"],
-    queryFn: async () => {
-      try {
-        const response = await fetchWithAuth("/api/leave-types")
-        return response || []
-      } catch (error) {
-        console.error("Error fetching leave types:", error)
-        toast({
-          title: "Error",
-          description: `Failed to load leave types: ${handleApiError(error)}`,
-          variant: "destructive",
-        })
-        return []
-      }
-    },
-  })
+  // Shared loader: converts the database's snake_case fields (is_paid, ...) to the
+  // camelCase fields this list and the edit dialog use, and shares one cache entry
+  const { data: leaveTypes = [], isLoading: isLoadingLeaveTypes, isError, error } = useLeaveTypes()
 
   const handleAddLeaveType = () => {
     setSelectedLeaveType(null)
@@ -78,86 +65,94 @@ export function LeaveTypeManagementTable() {
     }
   }
 
-  if (isLoadingLeaveTypes) {
-    return <div>Loading...</div>
-  }
-
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button
-          onClick={handleAddLeaveType}
-          className="bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Add Leave Type
-        </Button>
-      </div>
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead className="text-center">Default Days</TableHead>
-              <TableHead className="text-center">Settings</TableHead>
-              <TableHead className="text-center">Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+      <SectionHeader
+        title="Leave types"
+        description="The kinds of leave that can be recorded, and their colour on the calendar."
+        actions={
+          <Button onClick={handleAddLeaveType}>
+            <Plus />
+            Add leave type
+          </Button>
+        }
+      />
+      <div className="surface overflow-hidden">
+        {" "}
+        {isError ? (
+          <ErrorState title="Couldn't load leave types" message={handleApiError(error)} className="m-4 sm:m-5" />
+        ) : isLoadingLeaveTypes ? (
+          <ListSkeleton rows={4} />
+        ) : leaveTypes.length === 0 ? (
+          <EmptyState title="No leave types yet" />
+        ) : (
+          <ul className="divide-y divide-border/70">
             {leaveTypes.map((leaveType: LeaveType) => (
-              <TableRow key={leaveType.id}>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <div className="h-4 w-4 rounded-full" style={{ backgroundColor: leaveType.color }} />
-                    {leaveType.name}
+              <li key={leaveType.id} className="flex items-start gap-3 px-5 py-3.5 sm:items-center sm:px-6">
+                <span
+                  className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg sm:mt-0"
+                  style={{ backgroundColor: `${leaveType.color}1f` }}
+                  aria-hidden
+                >
+                  <span className="h-3 w-3 rounded-full" style={{ backgroundColor: leaveType.color }} />
+                </span>
+                <div className="min-w-0 flex-1 space-y-1.5 sm:flex sm:items-center sm:gap-4 sm:space-y-0">
+                  <div className="min-w-0 sm:flex-1">
+                    <p className="flex items-center gap-2 text-sm font-semibold">
+                      {leaveType.name}
+                      {!leaveType.isActive && <Badge variant="secondary">Inactive</Badge>}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {leaveType.description || "No description"}
+                    </p>
                   </div>
-                </TableCell>
-                <TableCell>{leaveType.description}</TableCell>
-                <TableCell className="text-center">{leaveType.defaultDays}</TableCell>
-                <TableCell className="text-center">
-                  <div className="flex flex-wrap gap-1 justify-center">
-                    {leaveType.isPaid && <Badge>Paid</Badge>}
-                    {leaveType.requiresApproval && <Badge variant="outline">Approval Required</Badge>}
-                    {leaveType.allowNegativeBalance && <Badge variant="secondary">Negative Balance</Badge>}
+                  <div className="flex flex-wrap gap-1.5 sm:justify-end">
+                    {(leaveType.defaultDays ?? 0) > 0 && <Badge variant="outline">{leaveType.defaultDays} days</Badge>}
+                    <Badge variant={leaveType.isPaid ? "success" : "secondary"}>
+                      {leaveType.isPaid ? "Paid" : "Unpaid"}
+                    </Badge>
+                    {leaveType.requiresApproval && <Badge variant="outline">Needs approval</Badge>}
+                    {leaveType.allowNegativeBalance && <Badge variant="outline">Can go negative</Badge>}
                   </div>
-                </TableCell>
-                <TableCell className="text-center">
-                  <Badge variant={leaveType.isActive ? "success" : "destructive"}>
-                    {leaveType.isActive ? "Active" : "Inactive"}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" size="icon" onClick={() => handleEditLeaveType(leaveType)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon" onClick={() => handleDeleteLeaveType(leaveType)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
+                </div>
+                <div className="flex shrink-0 gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9"
+                    onClick={() => handleEditLeaveType(leaveType)}
+                    aria-label={`Edit ${leaveType.name}`}
+                  >
+                    <Pencil />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 text-muted-foreground hover:bg-destructive-soft hover:text-destructive"
+                    onClick={() => handleDeleteLeaveType(leaveType)}
+                    aria-label={`Delete ${leaveType.name}`}
+                  >
+                    <Trash2 />
+                  </Button>
+                </div>
+              </li>
             ))}
-          </TableBody>
-        </Table>
+          </ul>
+        )}
+        <EditLeaveTypeModal
+          leaveType={selectedLeaveType}
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          onSuccess={() => queryClient.invalidateQueries({ queryKey: ["leaveTypes"] })}
+        />
+        <DeleteConfirmationDialog
+          isOpen={isDeleteDialogOpen}
+          onClose={() => setIsDeleteDialogOpen(false)}
+          onConfirm={confirmDelete}
+          title="Delete leave type"
+          description={`Are you sure you want to delete ${selectedLeaveType?.name}? Existing leave entries keep their type name. This can't be undone.`}
+        />
       </div>
-
-      <EditLeaveTypeModal
-        leaveType={selectedLeaveType}
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["leaveTypes"] })}
-      />
-
-      <DeleteConfirmationDialog
-        isOpen={isDeleteDialogOpen}
-        onClose={() => setIsDeleteDialogOpen(false)}
-        onConfirm={confirmDelete}
-        title="Delete Leave Type"
-        description={`Are you sure you want to delete ${selectedLeaveType?.name}? This action cannot be undone.`}
-      />
     </div>
   )
 }

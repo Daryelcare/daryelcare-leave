@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = params.id
+    const { id } = await params
 
     // Get the current user's session
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
@@ -17,7 +17,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
       const { data: currentUser, error: currentUserError } = await supabase
         .from("users")
         .select("id")
-        .eq("email", sessionData.session.user.email)
+        .eq("email", sessionData.session.user.email ?? "")
         .single()
 
       if (!currentUserError && currentUser && currentUser.id === id) {

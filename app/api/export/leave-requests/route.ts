@@ -8,7 +8,6 @@ export async function POST(request: Request) {
     // Add date range filtering if provided
     const startDate = formData.get("startDate") as string
     const endDate = formData.get("endDate") as string
-    const dateFilterMode = (formData.get("dateFilterMode") as string) || "overlap"
     const exportAll = formData.get("exportAll") === "true"
 
     if (startDate && endDate) {
@@ -42,7 +41,7 @@ export async function POST(request: Request) {
     const response = new NextResponse(result.fileContent, {
       status: 200,
       headers: {
-        "Content-Type": result.contentType,
+        "Content-Type": result.contentType || "application/octet-stream",
         "Content-Disposition": `attachment; filename="${result.fileName}"`,
         // Add cache control headers to prevent caching
         "Cache-Control": "no-cache, no-store, must-revalidate",

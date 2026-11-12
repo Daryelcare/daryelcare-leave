@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button"
 import { useQuery } from "@tanstack/react-query"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Badge } from "@/components/ui/badge"
+import type { Employee } from "@/lib/types"
+import { Avatar, ErrorState, Field } from "./page-kit"
 
 interface EmployeeDetailsModalProps {
   employeeId: string
@@ -18,7 +21,7 @@ export function EmployeeDetailsModal({ employeeId, isOpen, onClose }: EmployeeDe
     isLoading,
     isError,
     error,
-  } = useQuery({
+  } = useQuery<Employee>({
     queryKey: ["employee", employeeId],
     queryFn: async () => {
       return fetchWithAuth(`/api/employees/${employeeId}`)
@@ -26,73 +29,66 @@ export function EmployeeDetailsModal({ employeeId, isOpen, onClose }: EmployeeDe
     enabled: isOpen && !!employeeId,
   })
 
+  const days = employee?.daysRemaining ?? 0
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>Employee Details</DialogTitle>
+      <DialogContent className="sm:max-w-[560px]">
+        <DialogHeader className="sr-only">
+          <DialogTitle>Employee details</DialogTitle>
         </DialogHeader>
 
         {isLoading ? (
-          <div className="space-y-4">
-            <Skeleton className="h-8 w-3/4" />
-            <Skeleton className="h-6 w-1/2" />
-            <Skeleton className="h-6 w-2/3" />
-            <Skeleton className="h-6 w-1/2" />
-            <Skeleton className="h-6 w-3/4" />
+          <div className="space-y-5">
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-14 w-14 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-5 w-1/2" />
+                <Skeleton className="h-4 w-1/3" />
+              </div>
+            </div>
+            <Skeleton className="h-20 w-full rounded-xl" />
+            <Skeleton className="h-24 w-full" />
           </div>
         ) : isError ? (
-          <div className="text-destructive">Error loading employee details: {handleApiError(error)}</div>
+          <ErrorState title="Couldn't load this employee" message={handleApiError(error)} />
         ) : employee ? (
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Name</p>
-              <p className="font-medium">{employee.name}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Employee Code</p>
-              <p>{employee.employeeCode}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Job Title</p>
-              <p>{employee.jobTitle}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Branch</p>
-              <p>{employee.branch}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Days Taken</p>
-              <p>{employee.daysTaken}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Days Remaining</p>
-              <p>{employee.daysRemaining}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Hours</p>
-              <p>{employee.hours !== undefined ? employee.hours : "N/A"}</p>
-            </div>
-            {employee.email && (
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Email</p>
-                <p>{employee.email}</p>
+          <div className="space-y-5">
+            <div className="flex items-center gap-4 pr-8">
+              <Avatar name={employee.name} className="h-14 w-14 text-lg" />
+              <div className="min-w-0">
+                <p className="truncate font-display text-xl font-semibold tracking-[-0.02em]">{employee.name}</p>
+                <p className="truncate text-sm text-muted-foreground">
+                  {employee.jobTitle} · {employee.branch}
+                </p>
               </div>
-            )}
-            {employee.phone && (
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Phone</p>
-                <p>{employee.phone}</p>
-              </div>
-            )}
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Status</p>
-              <p className="capitalize">{employee.status}</p>
             </div>
+
+            <div className="grid grid-cols-3 divide-x divide-border/70 rounded-xl border border-border/80 bg-muted/40">
+              {[
+                { label: "Remaining", value: days, tone: days < 0 ? "text-destructive" : days <= 5 ? "text-warning" : "text-foreground" },
+                { label: "Taken", value: employee.daysTaken, tone: "text-foreground" },
+                { label: "Hours / wk", value: employee.hours ?? "—", tone: "text-foreground" },
+              ].map((stat) => (
+                <div key={stat.label} className="px-3 py-3.5 text-center">
+                  <p className={`font-display text-2xl font-semibold tracking-[-0.03em] tabular ${stat.tone}`}>{stat.value}</p>
+                  <p className="text-xs font-medium text-muted-foreground">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-4">
+              <Field label="Employee code">{employee.employeeCode}</Field>
+              <Field label="Status">
+                <Badge variant={employee.status === "active" ? "success" : "secondary"} dot>
+                  {employee.status === "active" ? "Active" : "Inactive"}
+                </Badge>
+              </Field>
+              <Field label="Email">{employee.email || "—"}</Field>
+              <Field label="Phone">{employee.phone || "—"}</Field>
+            </dl>
           </div>
-        ) : (
-          <div className="text-muted-foreground">No employee data found</div>
-        )}
+        ) : null}
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>

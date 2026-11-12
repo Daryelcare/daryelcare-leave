@@ -7,11 +7,12 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
+  MoreHorizontal,
   Pencil,
   Trash2,
   Plus,
   Search,
-  Users,
+  X,
   Download,
   FileSpreadsheet,
   FileText,
@@ -33,13 +34,21 @@ import { Checkbox } from "@/components/ui/checkbox"
 import type { EmployeeDocument } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { formatDisplayDate } from "@/lib/dates"
+import { Avatar, EmptyState, ErrorState, ListSkeleton, PageHeader, Toolbar, plural } from "./page-kit"
 import { ImportDocumentsModal } from "./import-documents-modal"
 
 export function DocumentTrackerTable() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedBranch, setSelectedBranch] = useState<string>("all")
-  const [selectedStatus, setSelectedStatus] = useState<string>("all")
+  const selectedStatus = "all" // status is filtered with the tiles, on the page
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
@@ -50,8 +59,8 @@ export function DocumentTrackerTable() {
   const [activeSection, setActiveSection] = useState<string>("all")
   const [isExporting, setIsExporting] = useState(false)
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
-  const [serverSortColumn, setServerSortColumn] = useState<string>("employeeName")
-  const [serverSortOrder, setServerSortOrder] = useState<"asc" | "desc">("asc")
+  const serverSortColumn = "employeeName"
+  const serverSortOrder = "asc"
   const [sortColumn, setSortColumn] = useState<string | null>("employeeName")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
 
@@ -109,7 +118,7 @@ export function DocumentTrackerTable() {
       })
 
       queryClient.invalidateQueries({ queryKey: ["documents"] })
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to delete document. Please try again.",
@@ -206,8 +215,6 @@ export function DocumentTrackerTable() {
     }
   }
 
-  const regularStats = calculateStats(regularDocuments)
-  const sponsoredStats = calculateStats(sponsoredDocuments)
 
   const getFilteredDocuments = () => {
     const docsToFilter =
@@ -308,12 +315,12 @@ export function DocumentTrackerTable() {
       document.body.removeChild(a)
 
       toast({
-        title: "Export Successful",
+        title: "Export ready",
         description: `Your ${format.toUpperCase()} file has been downloaded.`,
       })
     } catch (error) {
       toast({
-        title: "Export Failed",
+        title: "Export failed",
         description: "There was an error exporting the data. Please try again.",
         variant: "destructive",
       })
@@ -325,47 +332,41 @@ export function DocumentTrackerTable() {
 
   const filteredDocuments = getFilteredDocuments()
 
-  const formatExpiryDate = (expiryDate: string | null, daysLeft: number | null) => {
-    if (!expiryDate) return <span className="text-gray-400">N/A</span>
-
+  const expiryBadge = (daysLeft: number | null) => {
     const status = getDocumentStatus(daysLeft)
-
+    const label =
+      daysLeft === null
+        ? "—"
+        : daysLeft < 0
+          ? `${Math.abs(daysLeft)}d overdue`
+          : daysLeft === 0
+            ? "Expires today"
+            : daysLeft > 365
+              ? `${Math.floor(daysLeft / 365)}y ${Math.round((daysLeft % 365) / 30)}m`
+              : `${daysLeft}d left`
+    const variant =
+      status === "expired" || status === "expiring7"
+        ? "destructive"
+        : status === "expiring30"
+          ? "warning"
+          : status === "expiring90"
+            ? "default"
+            : "success"
     return (
-      <div>
-        <div
-          className={cn(
-            status === "expired"
-              ? "text-red-500"
-              : status === "expiring7"
-                ? "text-red-500"
-                : status === "expiring30"
-                  ? "text-orange-500"
-                  : status === "expiring90"
-                    ? "text-yellow-500"
-                    : "text-green-500",
-          )}
-        >
-          {expiryDate}
-        </div>
-        <div className="flex items-center text-sm">
-          <div className="size-1.5 rounded-full mr-1.5 bg-current" />
-          {daysLeft && daysLeft <= 0 ? (
-            <span className="text-red-500">{Math.abs(daysLeft)} days expired</span>
-          ) : (
-            <span>{daysLeft} days left</span>
-          )}
-        </div>
-      </div>
+      <Badge variant={variant} dot={status !== "valid"} className="px-2 text-[11px] leading-[18px] tabular">
+        {label}
+      </Badge>
     )
   }
 
-  const handleServerSort = (column: string) => {
-    if (column === serverSortColumn) {
-      setServerSortOrder(serverSortOrder === "asc" ? "desc" : "asc")
-    } else {
-      setServerSortColumn(column)
-      setServerSortOrder("asc")
-    }
+  const formatExpiryDate = (expiryDate: string | null, daysLeft: number | null) => {
+    if (!expiryDate) return <span className="text-muted-foreground/50">—</span>
+    return (
+      <div className="flex flex-col items-start gap-1">
+        <span className="whitespace-nowrap text-sm font-medium tabular">{formatDisplayDate(expiryDate)}</span>
+        {expiryBadge(daysLeft)}
+      </div>
+    )
   }
 
   const handleSort = (column: string) => {
@@ -375,13 +376,6 @@ export function DocumentTrackerTable() {
       setSortColumn(column)
       setSortDirection("asc")
     }
-  }
-
-  const renderSortIndicator = (column: string) => {
-    if (sortColumn !== column) {
-      return <ArrowUpDown className="ml-2 h-4 w-4" />
-    }
-    return sortDirection === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
   }
 
   const hasAnyDates = (documents: EmployeeDocument[], field: "passport" | "rightToWork" | "brp" | "otherDocument") => {
@@ -399,36 +393,198 @@ export function DocumentTrackerTable() {
     })
   }
 
-  if (isError) {
-    return (
-      <div className="rounded-md bg-destructive/15 p-4 text-destructive">
-        <p>Error loading documents: {handleApiError(error)}</p>
-        <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-2">
-          Try Again
-        </Button>
-      </div>
-    )
+  const sectionDocs = activeSection === "sponsored" ? sponsoredDocuments : activeSection === "regular" ? regularDocuments : documents
+  const sectionStats = calculateStats(sectionDocs)
+  const statusTiles = [
+    { key: "expired", label: "Expired", short: "Expired", count: sectionStats.expired.length, tone: "danger" },
+    { key: "expiring7", label: "Within 7 days", short: "7 days", count: sectionStats.expiringIn7.length, tone: "danger" },
+    { key: "expiring30", label: "Within 30 days", short: "30 days", count: sectionStats.expiringIn30.length, tone: "warning" },
+    { key: "expiring90", label: "Within 90 days", short: "90 days", count: sectionStats.expiringIn90.length, tone: "info" },
+    { key: "valid", label: "Valid", short: "Valid", count: sectionStats.valid.length, tone: "success" },
+  ] as const
+  const toneStyles = {
+    danger: { dot: "bg-destructive", text: "text-destructive", ring: "ring-destructive/40 bg-destructive-soft" },
+    warning: { dot: "bg-warning", text: "text-warning", ring: "ring-warning/40 bg-warning-soft" },
+    info: { dot: "bg-primary", text: "text-primary", ring: "ring-primary/40 bg-primary-soft" },
+    success: { dot: "bg-success", text: "text-success", ring: "ring-success/40 bg-success-soft" },
+  }
+  const columnsShown = {
+    passport: hasAnyDates(documents, "passport"),
+    rightToWork: hasAnyDates(documents, "rightToWork"),
+    brp: hasAnyDates(documents, "brp"),
+    other: hasAnyDates(documents, "otherDocument"),
   }
 
+  const sortHeader = (label: string, column: string) => (
+    <TableHead>
+      <button
+        onClick={() => handleSort(column)}
+        className={cn("inline-flex items-center gap-1 transition-colors hover:text-foreground", sortColumn === column && "text-foreground")}
+      >
+        {label}
+        {sortColumn !== column ? (
+          <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />
+        ) : sortDirection === "asc" ? (
+          <ArrowUp className="h-3.5 w-3.5" />
+        ) : (
+          <ArrowDown className="h-3.5 w-3.5" />
+        )}
+      </button>
+    </TableHead>
+  )
+
+  const rowActions = (doc: EmployeeDocument) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8">
+          <span className="sr-only">Actions for {doc.employeeName}</span>
+          <MoreHorizontal />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => handleEditDocument(doc)}>
+          <Pencil />
+          Edit documents
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="text-destructive focus:text-destructive [&_svg]:!text-destructive"
+          onClick={() => handleDeleteDocument(doc)}
+        >
+          <Trash2 />
+          Delete record
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+
+  const employeeCell = (doc: EmployeeDocument) => (
+    <div className="flex items-center gap-3">
+      <Avatar name={doc.employeeName} />
+      <div className="min-w-0">
+        <p className="flex flex-wrap items-center gap-1.5">
+          <span className="truncate font-semibold text-foreground">{doc.employeeName || "—"}</span>
+          {doc.isSponsored && (
+            <Badge variant="default" className="px-2 text-[11px] leading-[18px]">
+              Sponsored
+            </Badge>
+          )}
+          {doc.is20Hours && (
+            <Badge variant="secondary" className="px-2 text-[11px] leading-[18px]">
+              20 hrs
+            </Badge>
+          )}
+        </p>
+        <p className="truncate text-xs text-muted-foreground">
+          {[doc.status, doc.country, doc.branch || "Unassigned"].filter(Boolean).join(" · ")}
+        </p>
+      </div>
+    </div>
+  )
+
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <div className="relative w-full md:w-auto">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+    <div className="space-y-6 sm:space-y-8">
+      <PageHeader
+        title="Documents"
+        description="Right-to-work, passport and visa expiry for every employee."
+        actions={
+          <>
+            <Button variant="outline" onClick={() => setIsImportModalOpen(true)}>
+              <Upload />
+              Import
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" disabled={isLoading || isExporting || documents.length === 0}>
+                  {isExporting ? <Loader2 className="animate-spin" /> : <Download />}
+                  {isExporting ? "Exporting…" : "Export"}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleExportDocuments("csv")}>
+                  <FileText />
+                  CSV file
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExportDocuments("excel")}>
+                  <FileSpreadsheet />
+                  Excel workbook
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button onClick={() => setIsAddModalOpen(true)}>
+              <Plus />
+              <span className="sm:hidden">Add</span>
+              <span className="hidden sm:inline">Add document</span>
+            </Button>
+          </>
+        }
+      />
+
+      {isError && <ErrorState title="Couldn't load documents" message={handleApiError(error)} onRetry={() => refetch()} />}
+
+      {/* Expiry summary: each tile filters the list */}
+      <div className="grid grid-cols-3 gap-2 min-[400px]:grid-cols-5 sm:gap-3">
+        {statusTiles.map((tile) => {
+          const active = activeTab === tile.key
+          const tone = toneStyles[tile.tone]
+          return (
+            <button
+              key={tile.key}
+              onClick={() => setActiveTab(active ? "all" : tile.key)}
+              aria-pressed={active}
+              className={cn(
+                "surface flex min-w-0 flex-col items-start gap-1.5 px-2.5 py-3 text-left transition-[box-shadow,background-color,transform] duration-200 ease-smooth hover:-translate-y-px hover:shadow-raised focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30 sm:gap-2 sm:p-4",
+                active && cn("ring-2", tone.ring),
+              )}
+            >
+              <span className="flex min-w-0 items-center gap-1.5 text-[11px] font-semibold text-muted-foreground sm:gap-2 sm:text-[13px]">
+                <span className={cn("h-2 w-2 shrink-0 rounded-full", tone.dot)} aria-hidden />
+                <span className="truncate lg:hidden">{tile.short}</span>
+                <span className="hidden truncate lg:inline">{tile.label}</span>
+              </span>
+              {isLoading ? (
+                <Skeleton className="h-7 w-10" />
+              ) : (
+                <span className={cn("font-display text-[22px] font-semibold sm:text-[26px] leading-none tracking-[-0.03em] tabular", tile.count > 0 && tile.tone !== "success" ? tone.text : "text-foreground")}>
+                  {tile.count}
+                </span>
+              )}
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="surface overflow-hidden">
+        <Toolbar className="border-b border-border/70 p-3 sm:p-4">
+          <Tabs value={activeSection} onValueChange={setActiveSection}>
+            <TabsList className="w-full sm:w-auto">
+              <TabsTrigger value="all" className="flex-1 px-2 sm:flex-none sm:px-3">
+                All <span className="text-muted-foreground tabular">{documents.length}</span>
+              </TabsTrigger>
+              <TabsTrigger value="regular" className="flex-1 px-2 sm:flex-none sm:px-3">
+                Regular <span className="text-muted-foreground tabular">{regularDocuments.length}</span>
+              </TabsTrigger>
+              <TabsTrigger value="sponsored" className="flex-1 px-2 sm:flex-none sm:px-3">
+                Sponsored <span className="text-muted-foreground tabular">{sponsoredDocuments.length}</span>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <div className="relative flex-1 sm:max-w-xs lg:ml-auto">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search employee or country..."
-              className="w-full pl-8 md:w-[300px]"
+              placeholder="Search name or country"
+              aria-label="Search employee or country"
+              className="pl-10"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           <Select value={selectedBranch} onValueChange={setSelectedBranch} disabled={isLoadingBranches}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="All Branches" />
+            <SelectTrigger className="sm:w-[180px]" aria-label="Branch">
+              <SelectValue placeholder="All branches" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Branches</SelectItem>
+              <SelectItem value="all">All branches</SelectItem>
               {branches.map((branch) => (
                 <SelectItem key={branch.id} value={branch.name}>
                   {branch.name}
@@ -436,385 +592,148 @@ export function DocumentTrackerTable() {
               ))}
             </SelectContent>
           </Select>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" className="gap-2" onClick={() => setIsImportModalOpen(true)}>
-            <Upload className="h-4 w-4" />
-            Import
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2" disabled={isLoading || isExporting || documents.length === 0}>
-                {isExporting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Exporting...
-                  </>
-                ) : (
-                  <>
-                    <Download className="h-4 w-4" />
-                    Export
-                  </>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleExportDocuments("csv")}>
-                <FileText className="h-4 w-4 mr-2" />
-                Export as CSV
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExportDocuments("excel")}>
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
-                Export as Excel
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button
-            className="gap-2 bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600"
-            onClick={() => setIsAddModalOpen(true)}
-          >
-            <Plus className="h-4 w-4" />
-            Add Document
-          </Button>
-        </div>
-      </div>
+        </Toolbar>
 
-      <Tabs value={activeSection} onValueChange={setActiveSection} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="all" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            All Employees
-            <Badge variant="secondary" className="ml-1">
-              {documents.length}
-            </Badge>
-          </TabsTrigger>
-          <TabsTrigger value="regular" className="flex items-center gap-2">
-            Regular Employees
-            <Badge variant="secondary" className="ml-1">
-              {regularDocuments.length}
-            </Badge>
-          </TabsTrigger>
-          <TabsTrigger value="sponsored" className="flex items-center gap-2">
-            Sponsored Employees
-            <Badge variant="secondary" className="ml-1">
-              {sponsoredDocuments.length}
-            </Badge>
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+        {activeTab !== "all" && (
+          <div className="flex items-center justify-between gap-3 border-b border-border/70 bg-muted/40 px-4 py-2.5 text-sm sm:px-5">
+            <span className="text-muted-foreground">
+              Showing <span className="font-semibold text-foreground">{statusTiles.find((t) => t.key === activeTab)?.label.toLowerCase()}</span>
+            </span>
+            <Button variant="ghost" size="sm" onClick={() => setActiveTab("all")}>
+              <X />
+              Show all
+            </Button>
+          </div>
+        )}
 
-      <div className="flex border-b overflow-x-auto">
-        <button
-          className={cn(
-            "px-4 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap",
-            activeTab === "all"
-              ? "border-blue-500 text-blue-600"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300",
-          )}
-          onClick={() => setActiveTab("all")}
-        >
-          All Documents{" "}
-          <span className="ml-1.5 rounded-full bg-gray-100 px-2 py-0.5">
-            {activeSection === "sponsored"
-              ? sponsoredDocuments.length
-              : activeSection === "regular"
-                ? regularDocuments.length
-                : documents.length}
-          </span>
-        </button>
-        <button
-          className={cn(
-            "px-4 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap",
-            activeTab === "expired"
-              ? "border-blue-500 text-blue-600"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300",
-          )}
-          onClick={() => setActiveTab("expired")}
-        >
-          Expired{" "}
-          <span className="ml-1.5 rounded-full bg-red-100 px-2 py-0.5">
-            {activeSection === "sponsored"
-              ? sponsoredStats.expired.length
-              : activeSection === "regular"
-                ? regularStats.expired.length
-                : regularStats.expired.length + sponsoredStats.expired.length}
-          </span>
-        </button>
-        <button
-          className={cn(
-            "px-4 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap",
-            activeTab === "expiring7"
-              ? "border-blue-500 text-blue-600"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300",
-          )}
-          onClick={() => setActiveTab("expiring7")}
-        >
-          Expiring in 7 Days{" "}
-          <span className="ml-1.5 rounded-full bg-red-100 px-2 py-0.5">
-            {activeSection === "sponsored"
-              ? sponsoredStats.expiringIn7.length
-              : activeSection === "regular"
-                ? regularStats.expiringIn7.length
-                : regularStats.expiringIn7.length + sponsoredStats.expiringIn7.length}
-          </span>
-        </button>
-        <button
-          className={cn(
-            "px-4 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap",
-            activeTab === "expiring30"
-              ? "border-blue-500 text-blue-600"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300",
-          )}
-          onClick={() => setActiveTab("expiring30")}
-        >
-          Expiring in 30 Days{" "}
-          <span className="ml-1.5 rounded-full bg-yellow-100 px-2 py-0.5">
-            {activeSection === "sponsored"
-              ? sponsoredStats.expiringIn30.length
-              : activeSection === "regular"
-                ? regularStats.expiringIn30.length
-                : regularStats.expiringIn30.length + sponsoredStats.expiringIn30.length}
-          </span>
-        </button>
-        <button
-          className={cn(
-            "px-4 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap",
-            activeTab === "expiring90"
-              ? "border-blue-500 text-blue-600"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300",
-          )}
-          onClick={() => setActiveTab("expiring90")}
-        >
-          Expiring in 90 Days{" "}
-          <span className="ml-1.5 rounded-full bg-yellow-50 px-2 py-0.5">
-            {activeSection === "sponsored"
-              ? sponsoredStats.expiringIn90.length
-              : activeSection === "regular"
-                ? regularStats.expiringIn90.length
-                : regularStats.expiringIn90.length + sponsoredStats.expiringIn90.length}
-          </span>
-        </button>
-        <button
-          className={cn(
-            "px-4 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap",
-            activeTab === "valid"
-              ? "border-blue-500 text-blue-600"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300",
-          )}
-          onClick={() => setActiveTab("valid")}
-        >
-          Valid{" "}
-          <span className="ml-1.5 rounded-full bg-green-100 px-2 py-0.5">
-            {activeSection === "sponsored"
-              ? sponsoredStats.valid.length
-              : activeSection === "regular"
-                ? regularStats.valid.length
-                : regularStats.valid.length + sponsoredStats.valid.length}
-          </span>
-        </button>
-      </div>
-
-      <div className="rounded-md border overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">
-                <Checkbox
-                  checked={selectedDocuments.length === filteredDocuments.length && filteredDocuments.length > 0}
-                  onCheckedChange={() => toggleAllDocuments(filteredDocuments)}
-                  aria-label="Select all documents"
-                />
-              </TableHead>
-              <TableHead>
-                <Button variant="ghost" onClick={() => handleSort("employeeName")} className="flex items-center">
-                  EMPLOYEE
-                  {renderSortIndicator("employeeName")}
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button variant="ghost" onClick={() => handleSort("branch")} className="flex items-center">
-                  BRANCH
-                  {renderSortIndicator("branch")}
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button variant="ghost" onClick={() => handleSort("status")} className="flex items-center">
-                  STATUS
-                  {renderSortIndicator("status")}
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button variant="ghost" onClick={() => handleSort("country")} className="flex items-center">
-                  COUNTRY
-                  {renderSortIndicator("country")}
-                </Button>
-              </TableHead>
-
-              {hasAnyDates(documents, "passport") && (
+        {/* Large screens: table */}
+        <div className="hidden lg:block">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
                 <TableHead>
-                  <Button variant="ghost" onClick={() => handleSort("passportDaysLeft")} className="flex items-center">
-                    PASSPORT
-                    {renderSortIndicator("passportDaysLeft")}
-                  </Button>
+                  <Checkbox
+                    checked={selectedDocuments.length === filteredDocuments.length && filteredDocuments.length > 0}
+                    onCheckedChange={() => toggleAllDocuments(filteredDocuments)}
+                    aria-label="Select all documents"
+                  />
                 </TableHead>
-              )}
-
-              {hasAnyDates(documents, "rightToWork") && (
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort("rightToWorkDaysLeft")}
-                    className="flex items-center"
-                  >
-                    RIGHT TO WORK
-                    {renderSortIndicator("rightToWorkDaysLeft")}
-                  </Button>
+                {sortHeader("Employee", "employeeName")}
+                {columnsShown.passport && sortHeader("Passport", "passportDaysLeft")}
+                {columnsShown.rightToWork && sortHeader("Right to work", "rightToWorkDaysLeft")}
+                {columnsShown.brp && sortHeader("BRP", "brpDaysLeft")}
+                {columnsShown.other && sortHeader("Other", "otherDocumentDaysLeft")}
+                <TableHead className="w-12">
+                  <span className="sr-only">Actions</span>
                 </TableHead>
-              )}
-
-              {hasAnyDates(documents, "brp") && (
-                <TableHead>
-                  <Button variant="ghost" onClick={() => handleSort("brpDaysLeft")} className="flex items-center">
-                    BRP
-                    {renderSortIndicator("brpDaysLeft")}
-                  </Button>
-                </TableHead>
-              )}
-
-              {hasAnyDates(documents, "otherDocument") && (
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort("otherDocumentDaysLeft")}
-                    className="flex items-center"
-                  >
-                    OTHER DOCUMENT
-                    {renderSortIndicator("otherDocumentDaysLeft")}
-                  </Button>
-                </TableHead>
-              )}
-
-              <TableHead>ACTIONS</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array.from({ length: 4 }).map((_, index) => (
-                <TableRow key={index}>
-                  <TableCell>
-                    <Skeleton className="h-4 w-4" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-6 w-32" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-6 w-20" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-6 w-20" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-6 w-20" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-6 w-32" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-6 w-32" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-6 w-32" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-6 w-32" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-6 w-24" />
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : filteredDocuments.length > 0 ? (
-              filteredDocuments.map((doc) => (
-                <TableRow key={doc.id}>
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedDocuments.includes(doc.id)}
-                      onCheckedChange={() => toggleDocumentSelection(doc.id)}
-                      aria-label={`Select ${doc.employeeName}`}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, index) => (
+                  <TableRow key={index} className="hover:bg-transparent">
+                    <TableCell colSpan={7} className="py-3.5">
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-9 w-9 rounded-full" />
+                        <Skeleton className="h-4 w-1/5" />
+                        <Skeleton className="ml-auto h-4 w-1/2" />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : filteredDocuments.length > 0 ? (
+                filteredDocuments.map((doc) => (
+                  <TableRow key={doc.id} data-state={selectedDocuments.includes(doc.id) ? "selected" : undefined}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedDocuments.includes(doc.id)}
+                        onCheckedChange={() => toggleDocumentSelection(doc.id)}
+                        aria-label={`Select ${doc.employeeName}`}
+                      />
+                    </TableCell>
+                    <TableCell className="min-w-[240px]">{employeeCell(doc)}</TableCell>
+                    {columnsShown.passport && <TableCell>{formatExpiryDate(doc.passportExpiry, doc.passportDaysLeft)}</TableCell>}
+                    {columnsShown.rightToWork && <TableCell>{formatExpiryDate(doc.rightToWorkExpiry, doc.rightToWorkDaysLeft)}</TableCell>}
+                    {columnsShown.brp && <TableCell>{formatExpiryDate(doc.brpExpiry, doc.brpDaysLeft)}</TableCell>}
+                    {columnsShown.other && (
+                      <TableCell>
+                        {doc.otherDocumentType && doc.otherDocumentExpiry ? (
+                          <div className="space-y-0.5">
+                            <p className="text-xs font-semibold text-muted-foreground">{doc.otherDocumentType}</p>
+                            {formatExpiryDate(doc.otherDocumentExpiry, doc.otherDocumentDaysLeft)}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground/50">—</span>
+                        )}
+                      </TableCell>
+                    )}
+                    <TableCell className="text-right">{rowActions(doc)}</TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={7}>
+                    <EmptyState
+                      icon={FileText}
+                      title={documents.length === 0 ? "No documents yet" : "Nothing matches"}
+                      description={documents.length === 0 ? "Add documents or import a spreadsheet." : "Try another filter or search."}
                     />
                   </TableCell>
-                  <TableCell className="font-medium">
-                    <div className="flex flex-col">
-                      <span>{doc.employeeName || "-"}</span>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {doc.isSponsored && (
-                          <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200 w-fit">Sponsored</Badge>
-                        )}
-                        {doc.is20Hours && (
-                          <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200 w-fit">20hrs</Badge>
-                        )}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{doc.branch || "Unassigned"}</TableCell>
-                  <TableCell>
-                    <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">{doc.status}</Badge>
-                  </TableCell>
-                  <TableCell>{doc.country}</TableCell>
-
-                  {hasAnyDates(documents, "passport") && (
-                    <TableCell>{formatExpiryDate(doc.passportExpiry, doc.passportDaysLeft)}</TableCell>
-                  )}
-
-                  {hasAnyDates(documents, "rightToWork") && (
-                    <TableCell>{formatExpiryDate(doc.rightToWorkExpiry, doc.rightToWorkDaysLeft)}</TableCell>
-                  )}
-
-                  {hasAnyDates(documents, "brp") && (
-                    <TableCell>{formatExpiryDate(doc.brpExpiry, doc.brpDaysLeft)}</TableCell>
-                  )}
-
-                  {hasAnyDates(documents, "otherDocument") && (
-                    <TableCell>
-                      {doc.otherDocumentType ? (
-                        <div>
-                          <div className="text-sm font-medium">{doc.otherDocumentType}</div>
-                          {formatExpiryDate(doc.otherDocumentExpiry, doc.otherDocumentDaysLeft)}
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">N/A</span>
-                      )}
-                    </TableCell>
-                  )}
-
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button variant="outline" size="sm" onClick={() => handleEditDocument(doc)}>
-                        <Pencil className="h-4 w-4 mr-1" />
-                        Edit
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-red-500 border-red-200 hover:bg-red-50"
-                        onClick={() => handleDeleteDocument(doc)}
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Delete
-                      </Button>
-                    </div>
-                  </TableCell>
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={10} className="h-24 text-center">
-                  No documents found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Phones and tablets: cards */}
+        <div className="lg:hidden">
+          {isLoading ? (
+            <ListSkeleton rows={5} />
+          ) : filteredDocuments.length > 0 ? (
+            <ul className="divide-y divide-border/70">
+              {filteredDocuments.map((doc) => {
+                const items = [
+                  { label: "Passport", date: doc.passportExpiry, days: doc.passportDaysLeft },
+                  { label: "Right to work", date: doc.rightToWorkExpiry, days: doc.rightToWorkDaysLeft },
+                  { label: "BRP", date: doc.brpExpiry, days: doc.brpDaysLeft },
+                  { label: doc.otherDocumentType || "Other", date: doc.otherDocumentExpiry, days: doc.otherDocumentDaysLeft },
+                ].filter((item) => item.date)
+                return (
+                  <li key={doc.id} className="space-y-3 px-4 py-4 sm:px-5">
+                    <div className="flex items-start gap-2">
+                      <div className="min-w-0 flex-1">{employeeCell(doc)}</div>
+                      {rowActions(doc)}
+                    </div>
+                    {items.length > 0 ? (
+                      <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        {items.map((item) => (
+                          <div key={item.label} className="space-y-1 rounded-lg bg-muted/50 px-3 py-2.5">
+                            <dt className="truncate text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{item.label}</dt>
+                            <dd className="space-y-1">
+                              <span className="block text-sm font-medium tabular">{formatDisplayDate(item.date as string)}</span>
+                              {expiryBadge(item.days)}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No expiry dates recorded.</p>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          ) : (
+            <EmptyState icon={FileText} title={documents.length === 0 ? "No documents yet" : "Nothing matches"} />
+          )}
+        </div>
+
+        {!isLoading && filteredDocuments.length > 0 && (
+          <div className="border-t border-border/70 px-4 py-3 text-sm text-muted-foreground sm:px-5">
+            {plural(filteredDocuments.length, "employee")}
+            {selectedDocuments.length > 0 && ` · ${selectedDocuments.length} selected`}
+          </div>
+        )}
       </div>
 
       <AddDocumentModal open={isAddModalOpen} onOpenChange={setIsAddModalOpen} />
@@ -827,8 +746,8 @@ export function DocumentTrackerTable() {
         isOpen={isDeleteDialogOpen}
         onClose={() => setIsDeleteDialogOpen(false)}
         onConfirm={confirmDeleteDocument}
-        title="Delete Document"
-        description={`Are you sure you want to delete this document for ${selectedDocument?.employeeName}? This action cannot be undone.`}
+        title="Delete document record"
+        description={`Delete the document record for ${selectedDocument?.employeeName}? This can't be undone.`}
         confirmLabel="Delete"
         cancelLabel="Cancel"
       />

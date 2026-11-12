@@ -92,7 +92,7 @@ export function ResetPasswordModal({ user, open, onOpenChange }: ResetPasswordMo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Reset Password</DialogTitle>
+          <DialogTitle>Reset password</DialogTitle>
           <DialogDescription>Set a new password for {user.name}.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -102,7 +102,7 @@ export function ResetPasswordModal({ user, open, onOpenChange }: ResetPasswordMo
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>New Password</FormLabel>
+                  <FormLabel>New password</FormLabel>
                   <FormControl>
                     <Input type="password" placeholder="••••••••" {...field} />
                   </FormControl>
@@ -115,7 +115,7 @@ export function ResetPasswordModal({ user, open, onOpenChange }: ResetPasswordMo
               name="confirmPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Confirm Password</FormLabel>
+                  <FormLabel>Confirm password</FormLabel>
                   <FormControl>
                     <Input type="password" placeholder="••••••••" {...field} />
                   </FormControl>
@@ -131,9 +131,8 @@ export function ResetPasswordModal({ user, open, onOpenChange }: ResetPasswordMo
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600"
               >
-                {isSubmitting ? "Resetting..." : "Reset Password"}
+                {isSubmitting ? "Resetting..." : "Reset password"}
               </Button>
             </DialogFooter>
           </form>

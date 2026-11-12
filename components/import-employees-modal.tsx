@@ -19,7 +19,6 @@ import { Download, Upload, FileSpreadsheet, FileText, X, AlertCircle, CheckCircl
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { useBranches } from "@/hooks/use-branches"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
 interface ImportEmployeesModalProps {
@@ -51,7 +50,6 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
   const queryClient = useQueryClient()
-  const { data: branches = [] } = useBranches()
 
   // Handle file selection
   const handleFileSelect = (files: FileList | null) => {
@@ -304,10 +302,10 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
     <Dialog open={open} onOpenChange={handleCloseModal}>
       <DialogContent className={showPreview ? "sm:max-w-[800px]" : "sm:max-w-[550px]"}>
         <DialogHeader>
-          <DialogTitle>Import Employees</DialogTitle>
+          <DialogTitle>Import employees</DialogTitle>
           <DialogDescription>
             {showPreview
-              ? "Review the data before importing. Click 'Import Employees' to confirm."
+              ? "Review the data before importing. Click 'Import employees' to confirm."
               : "Upload a CSV or Excel file to import employees. Download a template to get started."}
           </DialogDescription>
         </DialogHeader>
@@ -329,12 +327,12 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Full Name</TableHead>
-                      <TableHead>Employee Code</TableHead>
-                      <TableHead>Job Title</TableHead>
+                      <TableHead>Full name</TableHead>
+                      <TableHead>Employee code</TableHead>
+                      <TableHead>Job title</TableHead>
                       <TableHead>Branch</TableHead>
-                      <TableHead>Days Taken</TableHead>
-                      <TableHead>Days Remaining</TableHead>
+                      <TableHead>Days taken</TableHead>
+                      <TableHead>Days remaining</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -375,7 +373,7 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
             {/* Import results */}
             {importResults && (
               <div className="space-y-2">
-                <Alert variant="default" className="bg-green-50 border-green-200 text-green-800">
+                <Alert variant="success">
                   <CheckCircle className="h-4 w-4" />
                   <AlertTitle>Import completed</AlertTitle>
                   <AlertDescription>Successfully imported {importResults.success} employees.</AlertDescription>
@@ -409,16 +407,16 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-2">
                     <Download className="h-4 w-4" />
-                    Download Template
+                    Download template
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => handleDownloadTemplate("csv")}>
-                    <FileText className="h-4 w-4 mr-2" />
+                    <FileText />
                     CSV Template
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleDownloadTemplate("excel")}>
-                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    <FileSpreadsheet />
                     Excel Template
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -427,8 +425,8 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
 
             {/* File upload area */}
             <div
-              className={`border-2 border-dashed rounded-lg p-6 text-center ${
-                dragActive ? "border-primary bg-primary/5" : "border-border"
+              className={`rounded-xl border-2 border-dashed p-8 text-center transition-colors duration-200 ${
+                dragActive ? "border-primary bg-primary-soft/60" : "border-border bg-muted/30 hover:border-foreground/20"
               }`}
               onDragEnter={handleDrag}
               onDragOver={handleDrag}
@@ -445,7 +443,7 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
 
               {selectedFile ? (
                 <div className="flex flex-col items-center gap-2">
-                  <FileSpreadsheet className="h-10 w-10 text-muted-foreground" />
+                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-success-soft text-success"><FileSpreadsheet className="h-6 w-6" /></span>
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{selectedFile.name}</span>
                     <Button
@@ -462,7 +460,7 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-2">
-                  <Upload className="h-10 w-10 text-muted-foreground" />
+                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-card text-muted-foreground shadow-card"><Upload className="h-5 w-5" /></span>
                   <p className="text-sm font-medium">
                     Drag and drop your file here, or{" "}
                     <button
@@ -484,8 +482,8 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
               <ul className="list-disc list-inside space-y-1">
                 <li>Full Name (required)</li>
                 <li>Employee Code (optional, will be auto-generated if empty)</li>
-                <li>Job Title (optional, defaults to "Unspecified")</li>
-                <li>Branch (optional, defaults to "Unassigned")</li>
+                <li>Job Title (optional, defaults to &quot;Unspecified&quot;)</li>
+                <li>Branch (optional, defaults to &quot;Unassigned&quot;)</li>
                 <li>Days Taken (optional, defaults to 0)</li>
                 <li>Days Remaining (optional, defaults to 25)</li>
               </ul>
@@ -501,17 +499,15 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
             <Button
               onClick={handleUpload}
               disabled={isUploading || previewData.length === 0}
-              className="bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600"
             >
-              {isUploading ? "Importing..." : "Import Employees"}
+              {isUploading ? "Importing…" : "Import employees"}
             </Button>
           ) : (
             <Button
               onClick={handlePreview}
               disabled={!selectedFile || previewLoading}
-              className="bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600"
             >
-              {previewLoading ? "Generating Preview..." : "Preview Data"}
+              {previewLoading ? "Generating Preview..." : "Preview data"}
             </Button>
           )}
         </DialogFooter>

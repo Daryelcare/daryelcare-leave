@@ -55,7 +55,7 @@ export async function GET(request: Request) {
     }
 
     // Return file
-    return new NextResponse(fileContent, {
+    return new NextResponse(new Uint8Array(fileContent), {
       headers: {
         "Content-Type": contentType,
         "Content-Disposition": `attachment; filename="${fileName}"`,

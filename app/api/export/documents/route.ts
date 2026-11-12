@@ -109,7 +109,7 @@ function handleCsvExport(regularEmployees: EmployeeDocument[], sponsoredEmployee
     "Employee Name,Branch,Status,Country,Passport,Passport Days Left,Right to Work,Right to Work Days Left,BRP,BRP Days Left,Other Document,Other Document Days Left,Sponsored\n"
 
   // Add data rows for regular employees
-  for (const [employeeId, employee] of regularEmployeeMap.entries()) {
+  for (const employee of regularEmployeeMap.values()) {
     regularCsv += `"${employee.employeeName}","${employee.branch}","${employee.status}","${employee.country}",`
 
     // Add passport data
@@ -133,7 +133,7 @@ function handleCsvExport(regularEmployees: EmployeeDocument[], sponsoredEmployee
     "Employee Name,Branch,Status,Country,Passport,Passport Days Left,Right to Work,Right to Work Days Left,BRP,BRP Days Left,Other Document,Other Document Days Left,Sponsored,20 Hours Restriction\n"
 
   // Add data rows for sponsored employees
-  for (const [employeeId, employee] of sponsoredEmployeeMap.entries()) {
+  for (const employee of sponsoredEmployeeMap.values()) {
     sponsoredCsv += `"${employee.employeeName}","${employee.branch}","${employee.status}","${employee.country}",`
 
     // Add passport data
@@ -197,7 +197,7 @@ function handleExcelExport(regularEmployees: EmployeeDocument[], sponsoredEmploy
   ])
 
   // Add data rows for regular employees
-  for (const [employeeId, employee] of regularEmployeeMap.entries()) {
+  for (const employee of regularEmployeeMap.values()) {
     regularData.push([
       employee.employeeName,
       employee.branch,
@@ -237,7 +237,7 @@ function handleExcelExport(regularEmployees: EmployeeDocument[], sponsoredEmploy
   ])
 
   // Add data rows for sponsored employees
-  for (const [employeeId, employee] of sponsoredEmployeeMap.entries()) {
+  for (const employee of sponsoredEmployeeMap.values()) {
     sponsoredData.push([
       employee.employeeName,
       employee.branch,

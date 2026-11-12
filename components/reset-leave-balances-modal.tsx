@@ -15,6 +15,8 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle, AlertTriangle, Loader2 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
+import { useQueryClient } from "@tanstack/react-query"
+import { fetchWithAuth } from "@/lib/api-utils"
 
 interface ResetLeaveBalancesModalProps {
   isOpen: boolean
@@ -27,6 +29,7 @@ export function ResetLeaveBalancesModal({ isOpen, onClose }: ResetLeaveBalancesM
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
+  const queryClient = useQueryClient()
 
   const handleReset = async () => {
     if (confirmText !== "RESET") {
@@ -38,23 +41,19 @@ export function ResetLeaveBalancesModal({ isOpen, onClose }: ResetLeaveBalancesM
     setError(null)
 
     try {
-      const response = await fetch("/api/leave-allocations/reset", {
+      const result = await fetchWithAuth("/api/leave-allocations/reset", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({ days }),
       })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || errorData.details || "Failed to reset leave balances")
-      }
-
       toast({
         title: "Success",
-        description: `All employee leave balances have been reset to ${days} days remaining and 0 days taken.`,
+        description: `Leave balances for ${result?.count ?? "all"} active employees were reset to ${days} days remaining and 0 days taken.`,
       })
+
+      // Refresh any employee lists on screen
+      queryClient.invalidateQueries({ queryKey: ["employees"] })
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] })
 
       // Reset form and close modal
       setDays(28)
@@ -74,7 +73,7 @@ export function ResetLeaveBalancesModal({ isOpen, onClose }: ResetLeaveBalancesM
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="text-xl">Reset All Leave Balances</DialogTitle>
+          <DialogTitle className="text-xl">Reset all leave balances</DialogTitle>
           <DialogDescription>This will reset the leave balances for ALL employees in the system.</DialogDescription>
         </DialogHeader>
 
@@ -82,7 +81,7 @@ export function ResetLeaveBalancesModal({ isOpen, onClose }: ResetLeaveBalancesM
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Warning: This action cannot be undone</AlertTitle>
           <AlertDescription>
-            This will set all employees' remaining days to the specified value and reset their taken days to zero. This
+            This will set all employees&apos; remaining days to the specified value and reset their taken days to zero. This
             action is irreversible and will affect all employees in the system.
           </AlertDescription>
         </Alert>

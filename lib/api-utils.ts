@@ -1,6 +1,21 @@
 /**
  * Utility functions for API calls
  */
+import { supabase } from "./supabase"
+
+/**
+ * Headers carrying the logged-in user's Supabase access token, so API routes
+ * can tell who is calling. Empty if nobody is logged in.
+ */
+export async function authHeaders(): Promise<Record<string, string>> {
+  try {
+    const { data } = await supabase.auth.getSession()
+    const token = data.session?.access_token
+    return token ? { Authorization: `Bearer ${token}` } : {}
+  } catch {
+    return {}
+  }
+}
 
 /**
  * Fetch with authentication headers
@@ -14,28 +29,22 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}) {
       ...options,
       headers: {
         "Content-Type": "application/json",
+        ...(await authHeaders()),
         ...options.headers,
       },
     })
 
     if (!response.ok) {
-      const contentType = response.headers.get("content-type")
-
-      // Handle JSON error responses
-      if (contentType && contentType.includes("application/json")) {
-        try {
-          const errorData = await response.json()
-          throw new Error(errorData.error || `API error: ${response.status}`)
-        } catch (jsonError) {
-          // If JSON parsing fails, fall back to text
-          const errorText = await response.text().catch(() => "Unknown error")
-          throw new Error(`API error: ${response.status} - ${errorText.substring(0, 100)}`)
-        }
+      // Read the body once, then use the API's own error message if it sent one
+      const errorText = await response.text().catch(() => "")
+      let message = `API error: ${response.status}`
+      try {
+        const errorData = JSON.parse(errorText)
+        if (errorData?.error) message = errorData.error
+      } catch {
+        if (errorText) message = `API error: ${response.status} - ${errorText.substring(0, 100)}`
       }
-
-      // Handle non-JSON error responses
-      const errorText = await response.text().catch(() => "Unknown error")
-      throw new Error(`API error: ${response.status} - ${errorText.substring(0, 100)}`)
+      throw new Error(message)
     }
 
     // Check if the response is empty

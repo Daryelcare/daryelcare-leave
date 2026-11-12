@@ -20,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/components/ui/use-toast"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
 import { useBranches } from "@/hooks/use-branches"
-import { useApp } from "./app-provider"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
@@ -45,7 +45,6 @@ export function AddUserModal({ open, onOpenChange }: AddUserModalProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const { toast } = useToast()
   const queryClient = useQueryClient()
-  const { user: currentUser } = useApp()
 
   const {
     data: branches = [],
@@ -85,8 +84,7 @@ export function AddUserModal({ open, onOpenChange }: AddUserModalProps) {
     try {
       // If role is admin, set branches to ["All branches"]
       const finalBranches = data.role === "admin" ? ["All branches"] : data.branches || []
-
-      const response = await fetchWithAuth("/api/users", {
+      await fetchWithAuth("/api/users", {
         method: "POST",
         body: JSON.stringify({
           email: data.email,
@@ -140,7 +138,7 @@ export function AddUserModal({ open, onOpenChange }: AddUserModalProps) {
     >
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Add New User</DialogTitle>
+          <DialogTitle>Add user</DialogTitle>
           <DialogDescription>Create a new user account. Fill in all fields below.</DialogDescription>
         </DialogHeader>
 
@@ -170,7 +168,7 @@ export function AddUserModal({ open, onOpenChange }: AddUserModalProps) {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Full Name</FormLabel>
+                  <FormLabel>Full name</FormLabel>
                   <FormControl>
                     <Input placeholder="John Doe" {...field} />
                   </FormControl>
@@ -204,8 +202,8 @@ export function AddUserModal({ open, onOpenChange }: AddUserModalProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="normal">Normal User</SelectItem>
+                      <SelectItem value="admin">Administrator</SelectItem>
+                      <SelectItem value="normal">Branch manager</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -220,17 +218,30 @@ export function AddUserModal({ open, onOpenChange }: AddUserModalProps) {
                 render={() => (
                   <FormItem>
                     <div className="mb-4">
-                      <FormLabel className="text-base">Assigned Branches</FormLabel>
+                      <FormLabel>Assigned branches</FormLabel>
                     </div>
-                    <div className="space-y-2">
+                    {isLoadingBranches && (
+                      <div className="space-y-2">
+                        {[0, 1, 2].map((i) => (
+                          <Skeleton key={i} className="h-11 w-full rounded-lg" />
+                        ))}
+                      </div>
+                    )}
+                    {isBranchesError && (
+                      <p className="text-sm text-destructive">Couldn&apos;t load branches: {handleApiError(branchesError)}</p>
+                    )}
+                    {!isLoadingBranches && branches.length === 0 && (
+                      <p className="text-sm text-muted-foreground">No branches yet. Add them on the Branches page.</p>
+                    )}
+                    <div className="divide-y divide-border/70 overflow-hidden rounded-xl border border-border/80">
                       {branches.map((branch) => (
-                        <div key={branch.id} className="flex items-center space-x-2">
+                        <div key={branch.id} className="flex items-center px-3.5 py-2.5 transition-colors hover:bg-muted/40">
                           <FormField
                             control={form.control}
                             name="branches"
                             render={({ field }) => {
                               return (
-                                <FormItem key={branch.id} className="flex flex-row items-start space-x-3 space-y-0">
+                                <FormItem key={branch.id} className="flex w-full flex-row items-center gap-3 space-y-0">
                                   <FormControl>
                                     <Checkbox
                                       checked={field.value?.includes(branch.name)}
@@ -242,7 +253,7 @@ export function AddUserModal({ open, onOpenChange }: AddUserModalProps) {
                                       }}
                                     />
                                   </FormControl>
-                                  <FormLabel className="font-normal">{branch.name}</FormLabel>
+                                  <FormLabel className="flex-1 cursor-pointer py-0.5 font-medium">{branch.name}</FormLabel>
                                 </FormItem>
                               )
                             }}
@@ -263,9 +274,8 @@ export function AddUserModal({ open, onOpenChange }: AddUserModalProps) {
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600"
               >
-                {isSubmitting ? "Adding..." : "Add User"}
+                {isSubmitting ? "Adding…" : "Add User"}
               </Button>
             </DialogFooter>
           </form>

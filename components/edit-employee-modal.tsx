@@ -30,15 +30,18 @@ const formSchema = z.object({
   employeeCode: z.string().min(2, { message: "Employee code is required." }),
   jobTitle: z.string().min(2, { message: "Job title is required." }),
   branch: z.string().min(1, { message: "Branch is required." }),
-  daysRemaining: z.coerce.number().min(0, { message: "Remaining leave days must be a positive number." }),
-  daysTaken: z.coerce.number().min(0, { message: "Taken leave days must be a positive number." }),
-  hours: z.coerce.number().optional(),
+  // Can be negative: leave can be booked beyond the allowance
+  daysRemaining: z.coerce.number<number>(),
+  daysTaken: z.coerce.number<number>().min(0, { message: "Taken leave days must be a positive number." }),
+  hours: z.coerce.number<number>().optional(),
   email: z.string().email({ message: "Invalid email address" }).optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
   status: z.enum(["active", "inactive"]),
 })
 
-type FormValues = z.infer<typeof formSchema>
+// What the form fields hold, and what validation turns them into
+type FormInput = z.input<typeof formSchema>
+type FormValues = z.output<typeof formSchema>
 
 interface EditEmployeeModalProps {
   employeeId: string
@@ -73,7 +76,7 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
   })
 
   // Initialize form
-  const form = useForm<FormValues>({
+  const form = useForm<FormInput, unknown, FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
@@ -95,7 +98,7 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
           branch: employee.branch,
           daysRemaining: employee.daysRemaining,
           daysTaken: employee.daysTaken,
-          hours: employee.hours,
+          hours: employee.hours ?? undefined,
           email: employee.email || "",
           phone: employee.phone || "",
           status: employee.status as "active" | "inactive",
@@ -139,7 +142,7 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Edit Employee</DialogTitle>
+            <DialogTitle>Edit employee</DialogTitle>
             <DialogDescription>Loading employee data...</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -158,7 +161,7 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Edit Employee</DialogTitle>
+            <DialogTitle>Edit employee</DialogTitle>
             <DialogDescription>Error loading employee data</DialogDescription>
           </DialogHeader>
           <div className="text-destructive">Failed to load employee data: {handleApiError(error)}</div>
@@ -176,8 +179,8 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Edit Employee</DialogTitle>
-          <DialogDescription>Update the employee details. Click save when you're done.</DialogDescription>
+          <DialogTitle>Edit employee</DialogTitle>
+          <DialogDescription>Update the employee details.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -186,7 +189,7 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Full Name</FormLabel>
+                  <FormLabel>Full name</FormLabel>
                   <FormControl>
                     <Input placeholder="John Doe" {...field} />
                   </FormControl>
@@ -199,7 +202,7 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
               name="employeeCode"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Employee Code</FormLabel>
+                  <FormLabel>Employee code</FormLabel>
                   <FormControl>
                     <Input placeholder="EMP001" {...field} />
                   </FormControl>
@@ -212,9 +215,9 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
               name="jobTitle"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Job Title</FormLabel>
+                  <FormLabel>Job title</FormLabel>
                   <FormControl>
-                    <Input placeholder="Software Engineer" {...field} />
+                    <Input placeholder="e.g. Care Assistant" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -255,7 +258,7 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
                 name="daysTaken"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Days Taken</FormLabel>
+                    <FormLabel>Days taken</FormLabel>
                     <FormControl>
                       <Input type="number" {...field} />
                     </FormControl>
@@ -268,7 +271,7 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
                 name="daysRemaining"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Days Remaining</FormLabel>
+                    <FormLabel>Days remaining</FormLabel>
                     <FormControl>
                       <Input type="number" {...field} />
                     </FormControl>
@@ -304,7 +307,7 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email (Optional)</FormLabel>
+                  <FormLabel>Email <span className="font-normal text-muted-foreground">(optional)</span></FormLabel>
                   <FormControl>
                     <Input type="email" placeholder="john.doe@example.com" {...field} value={field.value || ""} />
                   </FormControl>
@@ -317,7 +320,7 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Phone (Optional)</FormLabel>
+                  <FormLabel>Phone <span className="font-normal text-muted-foreground">(optional)</span></FormLabel>
                   <FormControl>
                     <Input placeholder="+1234567890" {...field} value={field.value || ""} />
                   </FormControl>
@@ -353,9 +356,8 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600"
               >
-                {isSubmitting ? "Saving..." : "Save Changes"}
+                {isSubmitting ? "Saving…" : "Save changes"}
               </Button>
             </DialogFooter>
           </form>

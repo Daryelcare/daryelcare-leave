@@ -5,14 +5,23 @@ import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Loader2 } from "lucide-react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger } from "@/components/ui/select"
+import { settingsHref, visibleSettingsSections } from "@/lib/navigation"
+import { cn } from "@/lib/utils"
+import { UserManagementTable } from "./user-management-table"
+import { BranchManagementTable } from "./branch-management-table"
+import { LeavePeriodManager } from "./leave-period-manager"
+import { AdminSettings } from "./admin-settings"
+import { Avatar, Field, PageHeader, SectionHeader } from "./page-kit"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
-import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
+import { handleApiError } from "@/lib/api-utils"
 import { useApp } from "./app-provider"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { BranchManagementTable } from "./branch-management-table"
+import { changeOwnPassword } from "@/lib/auth"
 import { LeaveTypeManagementTable } from "./leave-type-management-table"
 
 // Password change form schema
@@ -60,14 +69,7 @@ export function SettingsForm() {
 
     setIsSubmitting(true)
     try {
-      await fetchWithAuth("/api/users/change-password", {
-        method: "POST",
-        body: JSON.stringify({
-          userId: user.id,
-          currentPassword: data.currentPassword,
-          newPassword: data.newPassword,
-        }),
-      })
+      await changeOwnPassword(data.currentPassword, data.newPassword)
 
       toast({
         title: "Success",
@@ -87,146 +89,188 @@ export function SettingsForm() {
     }
   }
 
-  return (
-    <Tabs defaultValue="account" className="w-full">
-      <TabsList>
-        <TabsTrigger value="account">Account</TabsTrigger>
-        <TabsTrigger value="password">Password</TabsTrigger>
-        {isAdmin && (
-          <>
-            <TabsTrigger value="branches">Branch Management</TabsTrigger>
-            <TabsTrigger value="leave-types">Leave Types</TabsTrigger>
-          </>
-        )}
-      </TabsList>
+  const passwordFields: { name: "currentPassword" | "newPassword" | "confirmPassword"; label: string; auto: string }[] = [
+    { name: "currentPassword", label: "Current password", auto: "current-password" },
+    { name: "newPassword", label: "New password", auto: "new-password" },
+    { name: "confirmPassword", label: "Confirm new password", auto: "new-password" },
+  ]
 
-      <TabsContent value="account">
-        <Card>
-          <CardHeader>
-            <CardTitle>Account Information</CardTitle>
-            <CardDescription>View your account details</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1">
-              <h3 className="text-sm font-medium">Name</h3>
-              <p>{user?.name || "Not available"}</p>
-            </div>
-            <div className="space-y-1">
-              <h3 className="text-sm font-medium">Email</h3>
-              <p>{user?.email || "Not available"}</p>
-            </div>
-            <div className="space-y-1">
-              <h3 className="text-sm font-medium">Role</h3>
-              <p className="capitalize">{user?.role || "Not available"}</p>
-            </div>
-            <div className="space-y-1">
-              <h3 className="text-sm font-medium">Branches</h3>
-              <div className="flex flex-wrap gap-2">
-                {user?.branches && user.branches.length > 0 ? (
-                  user.branches.map((branch, index) => (
-                    <span key={index} className="inline-block rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium">
-                      {branch}
-                    </span>
-                  ))
-                ) : (
-                  <p>No branches assigned</p>
-                )}
+  // Which section is open lives in the address (?section=), so links and back work
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const sections = visibleSettingsSections(isAdmin)
+  const requested = searchParams.get("section")
+  const current = sections.find((s) => s.id === requested) || sections[0]
+  const openSection = (id: string) => router.replace(settingsHref(id), { scroll: false })
+  const groups = (["Personal", "Organisation"] as const)
+    .map((group) => ({ group, items: sections.filter((s) => s.group === group) }))
+    .filter((g) => g.items.length > 0)
+
+  const content = () => {
+    switch (current.id) {
+      case "account":
+        return (
+          <div className="space-y-4">
+            <SectionHeader title={current.title} description={current.description} />
+            <div className="surface overflow-hidden">
+              <div className="flex items-center gap-4 p-5 sm:p-6">
+                <Avatar name={user?.name} className="h-14 w-14 text-lg" />
+                <div className="min-w-0">
+                  <p className="truncate font-display text-lg font-semibold tracking-[-0.02em]">{user?.name || "Your account"}</p>
+                  <p className="truncate text-sm text-muted-foreground">{user?.email}</p>
+                </div>
               </div>
+              <dl className="grid gap-5 border-t border-border/70 p-5 sm:grid-cols-2 sm:p-6">
+                <Field label="Name">{user?.name || "—"}</Field>
+                <Field label="Email">{user?.email || "—"}</Field>
+                <Field label="Role">{isAdmin ? "Administrator" : "Branch manager"}</Field>
+                <Field label="Branches">
+                  <span className="flex flex-wrap gap-1.5">
+                    {isAdmin ? (
+                      "All branches"
+                    ) : user?.branches && user.branches.length > 0 ? (
+                      user.branches.map((branch) => (
+                        <Badge key={branch} variant="outline">
+                          {branch}
+                        </Badge>
+                      ))
+                    ) : (
+                      <span className="text-muted-foreground">No branches assigned</span>
+                    )}
+                  </span>
+                </Field>
+              </dl>
+              <p className="border-t border-border/70 bg-muted/40 px-5 py-3 text-xs text-muted-foreground sm:px-6">
+                To change your name, role or branches, ask an administrator.
+              </p>
             </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
+          </div>
+        )
+      case "password":
+        return (
+          <div className="space-y-4">
+            <SectionHeader
+              title={current.title}
+              description="Use at least 8 characters. You'll stay signed in on this device."
+            />
+            <div className="surface max-w-xl overflow-hidden">
+              <Form {...passwordForm}>
+                <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)}>
+                  <div className="space-y-4 p-5 sm:p-6">
+                    {passwordFields.map((item) => (
+                      <FormField
+                        key={item.name}
+                        control={passwordForm.control}
+                        name={item.name}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{item.label}</FormLabel>
+                            <FormControl>
+                              <Input type="password" autoComplete={item.auto} {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    ))}
+                  </div>
+                  <div className="flex justify-end border-t border-border/70 bg-muted/40 px-5 py-3 sm:px-6">
+                    <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+                      {isSubmitting && <Loader2 className="animate-spin" />}
+                      {isSubmitting ? "Updating…" : "Update password"}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </div>
+          </div>
+        )
+      case "users":
+        return <UserManagementTable />
+      case "branches":
+        return <BranchManagementTable />
+      case "leave-types":
+        return <LeaveTypeManagementTable />
+      case "leave-periods":
+        return <LeavePeriodManager />
+      case "advanced":
+        return (
+          <div className="space-y-4">
+            <SectionHeader title={current.title} description={current.description} />
+            <AdminSettings />
+          </div>
+        )
+      default:
+        return null
+    }
+  }
 
-      <TabsContent value="password">
-        <Card>
-          <CardHeader>
-            <CardTitle>Change Password</CardTitle>
-            <CardDescription>Update your password</CardDescription>
-          </CardHeader>
-          <Form {...passwordForm}>
-            <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)}>
-              <CardContent className="space-y-4">
-                <FormField
-                  control={passwordForm.control}
-                  name="currentPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Current Password</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="Enter your current password" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={passwordForm.control}
-                  name="newPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>New Password</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="Enter your new password" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={passwordForm.control}
-                  name="confirmPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Confirm New Password</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="Confirm your new password" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-              <CardFooter>
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600"
-                >
-                  {isSubmitting ? "Updating..." : "Update Password"}
-                </Button>
-              </CardFooter>
-            </form>
-          </Form>
-        </Card>
-      </TabsContent>
+  return (
+    <div className="space-y-6 sm:space-y-8">
+      <PageHeader
+        title="Settings"
+        description={isAdmin ? "Your account, and how your organisation is set up." : "Your account and password."}
+      />
 
-      {isAdmin && (
-        <>
-          <TabsContent value="branches">
-            <Card>
-              <CardHeader>
-                <CardTitle>Branch Management</CardTitle>
-                <CardDescription>Add, edit, and manage company branches</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <BranchManagementTable />
-              </CardContent>
-            </Card>
-          </TabsContent>
+      <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-10">
+        {/* Large screens: grouped section menu */}
+        <nav aria-label="Settings sections" className="hidden lg:block">
+          <div className="sticky top-20 space-y-5">
+            {groups.map(({ group, items }) => (
+              <div key={group} className="space-y-1">
+                <p className="eyebrow px-3 pb-1">{group}</p>
+                {items.map((section) => {
+                  const active = section.id === current.id
+                  return (
+                    <button
+                      key={section.id}
+                      onClick={() => openSection(section.id)}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "flex h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30",
+                        active
+                          ? "bg-primary-soft font-semibold text-primary"
+                          : "text-foreground/80 hover:bg-secondary hover:text-foreground",
+                      )}
+                    >
+                      <section.icon className={cn("h-[18px] w-[18px] shrink-0", active ? "text-primary" : "text-muted-foreground")} />
+                      {section.title}
+                    </button>
+                  )
+                })}
+              </div>
+            ))}
+          </div>
+        </nav>
 
-          <TabsContent value="leave-types">
-            <Card>
-              <CardHeader>
-                <CardTitle>Leave Types Management</CardTitle>
-                <CardDescription>Add, edit, and manage leave types</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <LeaveTypeManagementTable />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </>
-      )}
-    </Tabs>
+        {/* Phones and tablets: a section picker */}
+        <div className="lg:hidden">
+          <Select value={current.id} onValueChange={openSection}>
+            <SelectTrigger aria-label="Settings section" className="h-11">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <current.icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="truncate font-semibold">{current.title}</span>
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              {groups.map(({ group, items }) => (
+                <SelectGroup key={group}>
+                  <SelectLabel>{group}</SelectLabel>
+                  {items.map((section) => (
+                    <SelectItem key={section.id} value={section.id}>
+                      {section.title}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div key={current.id} className="page-enter min-w-0 max-w-4xl">
+          {content()}
+        </div>
+      </div>
+    </div>
   )
 }

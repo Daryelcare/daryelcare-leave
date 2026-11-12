@@ -29,7 +29,56 @@ export interface LeaveRequest {
   duration: number
   reason?: string
   status: string
-  remaining: number
+  remaining: number | null
   submittedDate?: string
   addedBy: string
+}
+
+export type UserRole = "admin" | "normal"
+
+// A person who can log in (row in the `users` table)
+export interface User {
+  id: string
+  email: string
+  name?: string
+  role: UserRole
+  branches: string[]
+  createdAt?: string
+}
+
+// A member of staff (row in the `employees` table)
+export interface Employee {
+  id: string
+  name: string
+  employeeCode: string
+  jobTitle: string
+  branch: string
+  daysTaken: number
+  daysRemaining: number
+  hours?: number | null
+  email?: string
+  phone?: string
+  status: string
+}
+
+// One employee's document record (row in the `documents` table).
+// Dates are DD/MM/YYYY strings; days-left values are calculated from them.
+export interface EmployeeDocument {
+  id: string
+  employeeId: string
+  employeeName: string
+  branch: string
+  status: string
+  country: string | null
+  passportExpiry: string | null
+  passportDaysLeft: number | null
+  rightToWorkExpiry: string | null
+  rightToWorkDaysLeft: number | null
+  brpExpiry: string | null
+  brpDaysLeft: number | null
+  otherDocumentType: string | null
+  otherDocumentExpiry: string | null
+  otherDocumentDaysLeft: number | null
+  isSponsored: boolean
+  is20Hours: boolean
 }

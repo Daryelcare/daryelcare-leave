@@ -2,9 +2,10 @@
 
 import { useState } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { Plus, Trash2 } from "lucide-react"
+import { Building2, Pencil, Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { DeleteConfirmationDialog } from "./delete-confirmation-dialog"
+import { EmptyState, ErrorState, ListSkeleton, SectionHeader } from "./page-kit"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
@@ -28,6 +29,7 @@ export function BranchManagementTable() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null)
+  const [branchToDelete, setBranchToDelete] = useState<Branch | null>(null)
 
   // Fetch branches
   const {
@@ -110,8 +112,6 @@ export function BranchManagementTable() {
 
   // Delete branch
   const deleteBranch = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this branch?")) return
-
     try {
       await fetchWithAuth(`/api/branches/${id}`, {
         method: "DELETE",
@@ -139,147 +139,160 @@ export function BranchManagementTable() {
     setIsEditModalOpen(true)
   }
 
-  if (isError) {
-    return (
-      <div className="rounded-md bg-destructive/15 p-4 text-destructive">
-        <p>Error loading branches: {handleApiError(error)}</p>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button onClick={() => setIsAddModalOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Branch
-        </Button>
-      </div>
-
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Created At</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={3} className="h-24 text-center">
-                  Loading...
-                </TableCell>
-              </TableRow>
-            ) : branches.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={3} className="h-24 text-center">
-                  No branches found
-                </TableCell>
-              </TableRow>
-            ) : (
-              branches.map((branch: Branch) => (
-                <TableRow key={branch.id}>
-                  <TableCell>{branch.name}</TableCell>
-                  <TableCell>{new Date(branch.createdAt || "").toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleEditClick(branch)}>
-                        Edit
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => deleteBranch(branch.id)}
-                        className="text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Add Branch Modal */}
-      <Dialog
-        open={isAddModalOpen}
-        onOpenChange={(open) => {
-          setIsAddModalOpen(open)
-          if (!open) resetForm()
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Branch</DialogTitle>
-          </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(addBranch)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Branch Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Enter branch name" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>
-                  Cancel
+      <SectionHeader
+        title="Branches"
+        description={
+          isLoading
+            ? "The branches your staff work in."
+            : `${branches.length} ${branches.length === 1 ? "branch" : "branches"}, used to group staff and manager access.`
+        }
+        actions={
+          <Button onClick={() => setIsAddModalOpen(true)}>
+            <Plus />
+            Add branch
+          </Button>
+        }
+      />
+      <div className="surface overflow-hidden">
+        {isError ? (
+          <ErrorState title="Couldn't load branches" message={handleApiError(error)} className="m-4 sm:m-5" />
+        ) : isLoading ? (
+          <ListSkeleton rows={3} />
+        ) : branches.length === 0 ? (
+          <EmptyState
+            icon={Building2}
+            title="No branches yet"
+            description="Add your first branch to start organising staff."
+          />
+        ) : (
+          <ul className="divide-y divide-border/70">
+            {branches.map((branch: Branch) => (
+              <li key={branch.id} className="flex items-center gap-3 px-5 py-3 sm:px-6">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
+                  <Building2 className="h-4 w-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold">{branch.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Added{" "}
+                    {branch.created_at
+                      ? new Date(branch.created_at).toLocaleDateString("en-GB", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "—"}
+                  </p>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => handleEditClick(branch)}>
+                  <Pencil />
+                  <span className="hidden sm:inline">Rename</span>
                 </Button>
-                <Button type="submit">Add Branch</Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Branch Modal */}
-      <Dialog
-        open={isEditModalOpen}
-        onOpenChange={(open) => {
-          setIsEditModalOpen(open)
-          if (!open) resetForm()
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Branch</DialogTitle>
-          </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(editBranch)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Branch Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Enter branch name" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)}>
-                  Cancel
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 text-muted-foreground hover:bg-destructive-soft hover:text-destructive"
+                  onClick={() => setBranchToDelete(branch)}
+                  aria-label={`Delete ${branch.name}`}
+                >
+                  <Trash2 />
                 </Button>
-                <Button type="submit">Save Changes</Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <DeleteConfirmationDialog
+          isOpen={!!branchToDelete}
+          onClose={() => setBranchToDelete(null)}
+          onConfirm={() => {
+            if (branchToDelete) deleteBranch(branchToDelete.id)
+            setBranchToDelete(null)
+          }}
+          title="Delete branch"
+          description={`Delete ${branchToDelete?.name}? Staff and managers assigned to it keep the branch name, but it won't appear in lists. This can't be undone.`}
+          confirmLabel="Delete branch"
+          cancelLabel="Cancel"
+        />
+
+        {/* Add Branch Modal */}
+        <Dialog
+          open={isAddModalOpen}
+          onOpenChange={(open) => {
+            setIsAddModalOpen(open)
+            if (!open) resetForm()
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add branch</DialogTitle>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(addBranch)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Branch name</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g. Lambeth" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit">Add branch</Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Branch Modal */}
+        <Dialog
+          open={isEditModalOpen}
+          onOpenChange={(open) => {
+            setIsEditModalOpen(open)
+            if (!open) resetForm()
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Rename branch</DialogTitle>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(editBranch)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Branch name</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g. Lambeth" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit">Save</Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   )
 }

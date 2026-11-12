@@ -1,24 +1,33 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
-  type ColumnDef,
-  type ColumnFiltersState,
-  type SortingState,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  useReactTable,
-} from "@tanstack/react-table"
-import { MoreHorizontal, Plus, Upload, Search, Trash2 } from "lucide-react"
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  FileText,
+  History,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  Upload,
+  Users,
+} from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
+import { Avatar, EmptyState, ErrorState, ListSkeleton, PageHeader, Toolbar, plural } from "./page-kit"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
@@ -50,12 +59,10 @@ import { ExportButton } from "./export-button"
 import { useApp } from "./app-provider"
 
 export function EmployeeTable() {
-  const [sorting, setSorting] = useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
   const [pageIndex, setPageIndex] = useState(0)
-  const [pageSize, setPageSize] = useState(60)
+  const [pageSize, setPageSize] = useState(50)
 
   const [serverSortColumn, setServerSortColumn] = useState<string>("name")
   const [serverSortOrder, setServerSortOrder] = useState<"asc" | "desc">("asc")
@@ -101,7 +108,7 @@ export function EmployeeTable() {
     isError,
     error,
     refetch,
-  } = useQuery({
+  } = useQuery<{ data: Employee[]; total: number }>({
     queryKey: [
       "employees",
       selectedBranch,
@@ -142,13 +149,8 @@ export function EmployeeTable() {
         const response = await fetchWithAuth(`/api/employees?${params.toString()}`)
 
         if (!response || !response.data) {
-          console.log("No data received from API, using empty array")
           return { data: [], total: 0 }
         }
-
-        console.log(
-          `Received ${response.data.length} employees out of ${response.total} total with page size ${pageSize}`,
-        )
 
         return response
       } catch (error) {
@@ -156,7 +158,7 @@ export function EmployeeTable() {
         throw error
       }
     },
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   })
 
   const employees = employeesResponse?.data || []
@@ -174,7 +176,7 @@ export function EmployeeTable() {
       })
 
       queryClient.invalidateQueries({ queryKey: ["employees"] })
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to delete employee. Please try again.",
@@ -318,156 +320,6 @@ export function EmployeeTable() {
     setPageIndex(0)
   }
 
-  const columns: ColumnDef<Employee>[] = [
-    {
-      id: "select",
-      header: ({ table }) =>
-        isAdmin ? (
-          <Checkbox
-            checked={selectedEmployeeIds.length === employees.length && employees.length > 0}
-            onCheckedChange={toggleSelectAll}
-            aria-label="Select all"
-          />
-        ) : null,
-      cell: ({ row }) =>
-        isAdmin ? (
-          <Checkbox
-            checked={selectedEmployeeIds.includes(row.original.id)}
-            onCheckedChange={() => toggleSelectEmployee(row.original.id)}
-            aria-label={`Select ${row.original.name}`}
-          />
-        ) : null,
-      enableSorting: false,
-      enableHiding: false,
-    },
-    {
-      accessorKey: "name",
-      header: ({ column }) => (
-        <Button variant="ghost" onClick={() => handleServerSort("name")} className="flex items-center gap-1">
-          Name
-          {serverSortColumn === "name" && <span className="ml-1">{serverSortOrder === "asc" ? "↑" : "↓"}</span>}
-        </Button>
-      ),
-      cell: ({ row }) => <div className="font-medium">{row.getValue("name")}</div>,
-    },
-    {
-      accessorKey: "employeeCode",
-      header: ({ column }) => (
-        <Button variant="ghost" onClick={() => handleServerSort("employee_code")} className="flex items-center gap-1">
-          Employee Code
-          {serverSortColumn === "employee_code" && (
-            <span className="ml-1">{serverSortOrder === "asc" ? "↑" : "↓"}</span>
-          )}
-        </Button>
-      ),
-      cell: ({ row }) => <div>{row.getValue("employeeCode")}</div>,
-    },
-    {
-      accessorKey: "jobTitle",
-      header: ({ column }) => (
-        <Button variant="ghost" onClick={() => handleServerSort("job_title")} className="flex items-center gap-1">
-          Job Title
-          {serverSortColumn === "job_title" && <span className="ml-1">{serverSortOrder === "asc" ? "↑" : "↓"}</span>}
-        </Button>
-      ),
-      cell: ({ row }) => <div>{row.getValue("jobTitle")}</div>,
-    },
-    {
-      accessorKey: "branch",
-      header: ({ column }) => (
-        <Button variant="ghost" onClick={() => handleServerSort("branch")} className="flex items-center gap-1">
-          Branch
-          {serverSortColumn === "branch" && <span className="ml-1">{serverSortOrder === "asc" ? "↑" : "↓"}</span>}
-        </Button>
-      ),
-      cell: ({ row }) => <div>{row.getValue("branch")}</div>,
-    },
-    {
-      accessorKey: "hours",
-      header: ({ column }) => (
-        <Button variant="ghost" onClick={() => handleServerSort("hours")} className="flex items-center gap-1">
-          Hours
-          {serverSortColumn === "hours" && <span className="ml-1">{serverSortOrder === "asc" ? "↑" : "↓"}</span>}
-        </Button>
-      ),
-      cell: ({ row }) => <div className="text-center">{row.original.hours || "N/A"}</div>,
-    },
-    {
-      accessorKey: "daysTaken",
-      header: ({ column }) => (
-        <Button variant="ghost" onClick={() => handleServerSort("days_taken")} className="flex items-center gap-1">
-          Days Taken
-          {serverSortColumn === "days_taken" && <span className="ml-1">{serverSortOrder === "asc" ? "↑" : "↓"}</span>}
-        </Button>
-      ),
-      cell: ({ row }) => <div className="text-center">{row.getValue("daysTaken")}</div>,
-    },
-    {
-      accessorKey: "daysRemaining",
-      header: ({ column }) => (
-        <Button variant="ghost" onClick={() => handleServerSort("days_remaining")} className="flex items-center gap-1">
-          Days Remaining
-          {serverSortColumn === "days_remaining" && (
-            <span className="ml-1">{serverSortOrder === "asc" ? "↑" : "↓"}</span>
-          )}
-        </Button>
-      ),
-      cell: ({ row }) => <div className="text-center">{row.getValue("daysRemaining")}</div>,
-    },
-    // Only include the actions column for admin users
-    ...(isAdmin
-      ? [
-          {
-            id: "actions",
-            header: "Actions",
-            cell: ({ row }) => {
-              const employee = row.original
-
-              return (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                      <span className="sr-only">Open menu</span>
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => handleViewDetails(employee)}>View Details</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleEditEmployee(employee)}>Edit Employee</DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => handleViewLeaveHistory(employee)}>
-                      View Leave History
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleManageDocuments(employee)}>
-                      Manage Documents
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteEmployee(employee)}>
-                      Delete Employee
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )
-            },
-          },
-        ]
-      : []),
-  ]
-
-  const table = useReactTable({
-    data: employees,
-    columns,
-    onColumnFiltersChange: setColumnFilters,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    state: {
-      columnFilters,
-    },
-    manualPagination: true,
-    pageCount: Math.ceil(totalEmployees / pageSize),
-  })
-
   const handleBranchChange = (value: string) => {
     // If user is not admin and tries to select "all" but has assigned branches,
     // prevent this by setting to their first assigned branch
@@ -479,141 +331,212 @@ export function EmployeeTable() {
     setPageIndex(0)
   }
 
-  if (isError) {
-    return (
-      <div className="rounded-md bg-destructive/15 p-4 text-destructive">
-        <p>Error loading employees: {handleApiError(error)}</p>
-        <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-2">
-          Try Again
-        </Button>
-      </div>
-    )
-  }
+  const branchOptions = branches.filter((branch) => isAdmin || (user?.branches && user.branches.includes(branch.name)))
+  const canChooseAll = isAdmin || (user?.branches && user.branches.length > 1)
+  const allSelected = employees.length > 0 && selectedEmployeeIds.length === employees.length
+  const firstRow = employees.length > 0 ? pageIndex * pageSize + 1 : 0
+  const lastRow = Math.min((pageIndex + 1) * pageSize, totalEmployees)
 
-  if (isBranchesError) {
-    return (
-      <div className="rounded-md bg-destructive/15 p-4 text-destructive">
-        <p>Error loading branches: {handleApiError(branchesError)}</p>
-        <div className="mt-2 text-sm">
-          <p>Please ensure that:</p>
-          <ul className="list-disc pl-5 mt-1">
-            <li>The Supabase integration is properly set up</li>
-            <li>The branches table exists in your database</li>
-            <li>The API route is correctly configured</li>
-          </ul>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="mt-2">
-          Try Again
+  const sortHeader = (label: string, column: string, align: "left" | "right" = "left", className?: string) => (
+    <TableHead className={cn(align === "right" && "text-right", className)}>
+      <button
+        onClick={() => handleServerSort(column)}
+        className={cn(
+          "inline-flex items-center gap-1 rounded-md transition-colors hover:text-foreground",
+          serverSortColumn === column && "text-foreground",
+        )}
+      >
+        {label}
+        {serverSortColumn === column ? (
+          serverSortOrder === "asc" ? (
+            <ArrowUp className="h-3.5 w-3.5" />
+          ) : (
+            <ArrowDown className="h-3.5 w-3.5" />
+          )
+        ) : (
+          <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />
+        )}
+      </button>
+    </TableHead>
+  )
+
+  const rowActions = (employee: Employee) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+          <span className="sr-only">Actions for {employee.name}</span>
+          <MoreHorizontal />
         </Button>
-      </div>
-    )
-  }
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+        <DropdownMenuItem onClick={() => handleViewDetails(employee)}>
+          <Eye />
+          View details
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleEditEmployee(employee)}>
+          <Pencil />
+          Edit employee
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => handleViewLeaveHistory(employee)}>
+          <History />
+          Leave history
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleManageDocuments(employee)}>
+          <FileText />
+          Documents
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="text-destructive focus:text-destructive [&_svg]:!text-destructive"
+          onClick={() => handleDeleteEmployee(employee)}
+        >
+          <Trash2 />
+          Delete employee
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+
+  const balanceBadge = (days: number) => (
+    <Badge
+      variant={days < 0 ? "destructive" : days <= 5 ? "warning" : "secondary"}
+      className="tabular"
+      dot={days <= 5}
+    >
+      {days}
+    </Badge>
+  )
 
   return (
-    <div className="space-y-4 w-full">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative w-full sm:max-w-xs">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search employees..."
-            className="w-full pl-8"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {isAdmin && selectedEmployeeIds.length > 0 && (
-            <Button variant="destructive" size="sm" className="gap-1" onClick={() => setIsBatchDeleteDialogOpen(true)}>
-              <Trash2 className="h-4 w-4" />
-              Delete Selected ({selectedEmployeeIds.length})
-            </Button>
-          )}
-          <Select value={selectedBranch} onValueChange={handleBranchChange}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="All Branches" />
-            </SelectTrigger>
-            <SelectContent>
-              {/* Only show "All Branches" option if user is admin or has multiple branches */}
-              {(isAdmin || (user?.branches && user.branches.length > 1)) && (
-                <SelectItem value="all">All Branches</SelectItem>
-              )}
-              {/* Filter branches based on user role */}
-              {branches
-                .filter((branch) => isAdmin || (user?.branches && user.branches.includes(branch.name)))
-                .map((branch) => (
-                  <SelectItem key={branch.id} value={branch.name}>
-                    {branch.name}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
-          {isAdmin && (
+    <div className="space-y-6 sm:space-y-8">
+      <PageHeader
+        title="Employees"
+        description={
+          isLoading ? "Staff across your branches." : `${plural(totalEmployees, "person", "people")} across ${selectedBranch === "all" ? (isAdmin ? "all branches" : "your branches") : selectedBranch}.`
+        }
+        actions={
+          isAdmin && (
             <>
-              <Button variant="outline" size="sm" className="gap-1" onClick={() => setIsImportModalOpen(true)}>
-                <Upload className="h-4 w-4" />
+              <Button variant="outline" onClick={() => setIsImportModalOpen(true)}>
+                <Upload />
                 Import
               </Button>
               <ExportButton
                 endpoint="employees"
-                filters={{
-                  branch: selectedBranch,
-                  search: searchQuery,
-                  exportAll: "true",
-                }}
+                filters={{ branch: selectedBranch, search: searchQuery, exportAll: "true" }}
                 sortColumn={serverSortColumn}
                 sortOrder={serverSortOrder}
-                size="sm"
+                size="default"
               />
-              <Button
-                size="sm"
-                className="gap-1 bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600"
-                onClick={() => setIsAddModalOpen(true)}
-              >
-                <Plus className="h-4 w-4" />
-                Add Employee
+              <Button onClick={() => setIsAddModalOpen(true)}>
+                <Plus />
+                Add employee
               </Button>
             </>
-          )}
-        </div>
-      </div>
+          )
+        }
+      />
 
-      {isBatchDeleting && (
-        <div className="w-full">
-          <Progress value={deleteProgress} />
-          <p className="text-sm text-muted-foreground mt-1 text-center">Deleting employees... {deleteProgress}%</p>
-        </div>
+      {isError && <ErrorState title="Couldn't load employees" message={handleApiError(error)} onRetry={() => refetch()} />}
+      {isBranchesError && (
+        <ErrorState title="Couldn't load branches" message={handleApiError(branchesError)} onRetry={() => window.location.reload()} />
       )}
 
-      <div className="rounded-md border overflow-hidden w-full">
-        <div className="overflow-x-auto">
+      <div className="surface overflow-hidden">
+        {/* Filters */}
+        <Toolbar className="border-b border-border/70 p-3 sm:p-4">
+          <div className="relative flex-1 sm:max-w-sm">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search by name or code"
+              aria-label="Search employees"
+              className="pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <Select value={selectedBranch} onValueChange={handleBranchChange}>
+            <SelectTrigger className="sm:w-[200px]" aria-label="Branch">
+              <SelectValue placeholder="All branches" />
+            </SelectTrigger>
+            <SelectContent>
+              {canChooseAll && <SelectItem value="all">All branches</SelectItem>}
+              {branchOptions.map((branch) => (
+                <SelectItem key={branch.id} value={branch.name}>
+                  {branch.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {isLoadingBranches && <span className="sr-only">Loading branches</span>}
+        </Toolbar>
+
+        {/* Selection bar */}
+        {isAdmin && selectedEmployeeIds.length > 0 && (
+          <div className="page-enter flex items-center justify-between gap-3 border-b border-border/70 bg-primary-soft/60 px-4 py-2.5 sm:px-5">
+            <p className="text-sm font-semibold text-primary">{selectedEmployeeIds.length} selected</p>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setSelectedEmployeeIds([])}>
+                Clear
+              </Button>
+              <Button variant="destructive" size="sm" onClick={() => setIsBatchDeleteDialogOpen(true)}>
+                <Trash2 />
+                Delete
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {isBatchDeleting && (
+          <div className="space-y-1.5 border-b border-border/70 px-5 py-3">
+            <Progress value={deleteProgress} />
+            <p className="text-xs text-muted-foreground">Deleting employees… {deleteProgress}%</p>
+          </div>
+        )}
+
+        {/* Desktop and tablet: table */}
+        <div className="hidden md:block">
           <Table>
             <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
+              <TableRow className="hover:bg-transparent">
+                {isAdmin && (
+                  <TableHead>
+                    <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} aria-label="Select all" />
+                  </TableHead>
+                )}
+                {sortHeader("Name", "name")}
+                {sortHeader("Code", "employee_code", "left", "hidden lg:table-cell")}
+                {sortHeader("Branch", "branch")}
+                {sortHeader("Hours", "hours", "right")}
+                {sortHeader("Taken", "days_taken", "right")}
+                {sortHeader("Remaining", "days_remaining", "right")}
+                {isAdmin && <TableHead className="w-12"><span className="sr-only">Actions</span></TableHead>}
+              </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                Array.from({ length: Math.min(10, pageSize) }).map((_, index) => (
-                  <TableRow key={index}>
-                    {columns.map((_, cellIndex) => (
-                      <TableCell key={cellIndex}>
-                        <Skeleton className="h-6 w-full" />
-                      </TableCell>
-                    ))}
+                Array.from({ length: 8 }).map((_, index) => (
+                  <TableRow key={index} className="hover:bg-transparent">
+                    <TableCell colSpan={isAdmin ? 8 : 6} className="py-3">
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-9 w-9 rounded-full" />
+                        <Skeleton className="h-4 w-1/4" />
+                        <Skeleton className="ml-auto h-4 w-1/3" />
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))
               ) : employees.length > 0 ? (
                 employees.map((employee) => (
-                  <TableRow key={employee.id}>
+                  <TableRow
+                    key={employee.id}
+                    data-state={selectedEmployeeIds.includes(employee.id) ? "selected" : undefined}
+                    className="cursor-pointer"
+                    onClick={() => handleViewDetails(employee)}
+                  >
                     {isAdmin && (
-                      <TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <Checkbox
                           checked={selectedEmployeeIds.includes(employee.id)}
                           onCheckedChange={() => toggleSelectEmployee(employee.id)}
@@ -622,105 +545,134 @@ export function EmployeeTable() {
                       </TableCell>
                     )}
                     <TableCell>
-                      <div className="font-medium">{employee.name}</div>
+                      <div className="flex items-center gap-3">
+                        <Avatar name={employee.name} />
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold text-foreground">{employee.name}</p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {employee.jobTitle}
+                            {employee.status !== "active" && " · Inactive"}
+                          </p>
+                        </div>
+                      </div>
                     </TableCell>
-                    <TableCell>{employee.employeeCode}</TableCell>
-                    <TableCell>{employee.jobTitle}</TableCell>
+                    <TableCell className="hidden tabular text-muted-foreground lg:table-cell">{employee.employeeCode}</TableCell>
                     <TableCell>{employee.branch}</TableCell>
-                    <TableCell className="text-center">{employee.hours || "N/A"}</TableCell>
-                    <TableCell className="text-center">{employee.daysTaken}</TableCell>
-                    <TableCell className="text-center">{employee.daysRemaining}</TableCell>
+                    <TableCell className="text-right tabular">{employee.hours ?? "—"}</TableCell>
+                    <TableCell className="text-right tabular">{employee.daysTaken}</TableCell>
+                    <TableCell className="text-right">{balanceBadge(employee.daysRemaining)}</TableCell>
                     {isAdmin && (
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <span className="sr-only">Open menu</span>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => handleViewDetails(employee)}>
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEditEmployee(employee)}>
-                              Edit Employee
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => handleViewLeaveHistory(employee)}>
-                              View Leave History
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleManageDocuments(employee)}>
-                              Manage Documents
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-destructive"
-                              onClick={() => handleDeleteEmployee(employee)}
-                            >
-                              Delete Employee
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                        {rowActions(employee)}
                       </TableCell>
                     )}
                   </TableRow>
                 ))
               ) : (
-                <TableRow>
-                  <TableCell colSpan={columns.length} className="h-24 text-center">
-                    No employees found.
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={isAdmin ? 8 : 6}>
+                    <EmptyState
+                      icon={Users}
+                      title={searchQuery ? "No matching employees" : "No employees yet"}
+                      description={searchQuery ? "Try a different name or code." : "Add employees or import a spreadsheet."}
+                    />
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
         </div>
-      </div>
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Show</span>
-          <Select value={pageSize === 500 ? "all" : pageSize.toString()} onValueChange={handlePageSizeChange}>
-            <SelectTrigger className="w-[80px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="10">10</SelectItem>
-              <SelectItem value="50">50</SelectItem>
-              <SelectItem value="100">100</SelectItem>
-              <SelectItem value="200">200</SelectItem>
-              <SelectItem value="all">All</SelectItem>
-            </SelectContent>
-          </Select>
-          <span className="text-sm text-muted-foreground">per page</span>
-        </div>
-        <div className="flex items-center justify-end gap-2">
-          <div className="text-sm text-muted-foreground">
-            Showing {employees.length > 0 ? pageIndex * pageSize + 1 : 0}-
-            {Math.min((pageIndex + 1) * pageSize, totalEmployees)} of {totalEmployees} employees
-          </div>
-          <div className="space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPageIndex(Math.max(0, pageIndex - 1))}
-              disabled={pageIndex === 0 || isLoading}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPageIndex(pageIndex + 1)}
-              disabled={(pageIndex + 1) * pageSize >= totalEmployees || isLoading}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      </div>
 
+        {/* Phones: cards */}
+        <div className="md:hidden">
+          {isLoading ? (
+            <ListSkeleton rows={6} />
+          ) : employees.length > 0 ? (
+            <ul className="divide-y divide-border/70">
+              {employees.map((employee) => (
+                <li key={employee.id} className="flex items-center gap-3 px-4 py-3">
+                  {isAdmin && (
+                    <Checkbox
+                      checked={selectedEmployeeIds.includes(employee.id)}
+                      onCheckedChange={() => toggleSelectEmployee(employee.id)}
+                      aria-label={`Select ${employee.name}`}
+                    />
+                  )}
+                  <button
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                    onClick={() => handleViewDetails(employee)}
+                  >
+                    <Avatar name={employee.name} className="hidden min-[360px]:flex" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[15px] font-semibold">{employee.name}</span>
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {employee.jobTitle} · {employee.branch}
+                      </span>
+                    </span>
+                    <span className="flex shrink-0 flex-col items-end gap-0.5">
+                      {balanceBadge(employee.daysRemaining)}
+                      <span className="text-[11px] text-muted-foreground">days left</span>
+                    </span>
+                  </button>
+                  {isAdmin && rowActions(employee)}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EmptyState
+              icon={Users}
+              title={searchQuery ? "No matching employees" : "No employees yet"}
+              description={searchQuery ? "Try a different name or code." : undefined}
+            />
+          )}
+        </div>
+
+        {/* Pagination */}
+        <div className="flex flex-col gap-3 border-t border-border/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>Rows</span>
+            <Select value={pageSize === 500 ? "all" : pageSize.toString()} onValueChange={handlePageSizeChange}>
+              <SelectTrigger className="h-9 w-[84px]" aria-label="Rows per page">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+                <SelectItem value="200">200</SelectItem>
+                <SelectItem value="all">All</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center justify-between gap-3 sm:justify-end">
+            <p className="text-sm tabular text-muted-foreground">
+              {firstRow}–{lastRow} of {totalEmployees}
+            </p>
+            <div className="flex gap-1.5">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9"
+                onClick={() => setPageIndex(Math.max(0, pageIndex - 1))}
+                disabled={pageIndex === 0 || isLoading}
+                aria-label="Previous page"
+              >
+                <ChevronLeft />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9"
+                onClick={() => setPageIndex(pageIndex + 1)}
+                disabled={(pageIndex + 1) * pageSize >= totalEmployees || isLoading}
+                aria-label="Next page"
+              >
+                <ChevronRight />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
       <AddEmployeeModal open={isAddModalOpen} onOpenChange={setIsAddModalOpen} />
       <ImportEmployeesModal open={isImportModalOpen} onOpenChange={setIsImportModalOpen} />
 
@@ -767,7 +719,7 @@ export function EmployeeTable() {
       <Dialog open={isBatchDeleteDialogOpen} onOpenChange={setIsBatchDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Delete Multiple Employees</DialogTitle>
+            <DialogTitle>Delete selected employees</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete {selectedEmployeeIds.length} selected employees? This action cannot be
               undone.
@@ -789,7 +741,7 @@ export function EmployeeTable() {
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleBatchDelete} disabled={isBatchDeleting}>
-              {isBatchDeleting ? "Deleting..." : "Delete Employees"}
+              {isBatchDeleting ? "Deleting..." : "Delete employees"}
             </Button>
           </DialogFooter>
         </DialogContent>

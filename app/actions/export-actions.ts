@@ -1,11 +1,10 @@
-import { supabase } from "@/lib/supabaseClient"
-import type { LeaveRequest, Employee, EmployeeDocument } from "@/lib/types"
+import { supabase } from "@/lib/supabase"
+import type { LeaveRequest, Employee } from "@/lib/types"
 import {
   convertToCSV,
   convertToExcel,
   formatEmployeesForExport,
   formatLeaveRequestsForExport,
-  formatDocumentsForExport,
 } from "@/lib/export-utils"
 
 // Export employees function
@@ -14,7 +13,6 @@ export async function exportEmployees(formData: FormData) {
     const format = formData.get("format") as string
     const branch = formData.get("branch") as string
     const search = formData.get("search") as string
-    const exportAll = formData.get("exportAll") === "true"
 
     // Get sorting parameters
     const sortColumn = formData.get("sortColumn") as string
@@ -125,7 +123,6 @@ export async function exportLeaveRequests(formData: FormData) {
     const startDate = formData.get("startDate") as string
     const endDate = formData.get("endDate") as string
     const dateFilterMode = (formData.get("dateFilterMode") as string) || "overlap"
-    const exportAll = formData.get("exportAll") === "true"
 
     // Get sorting parameters
     const sortColumn = formData.get("sortColumn") as string
@@ -246,7 +243,6 @@ export async function exportLeaveRequests(formData: FormData) {
     let contentType = ""
 
     const currentDate = new Date().toISOString().split("T")[0]
-    const filterMode = dateFilterMode === "overlap" ? "overlapping" : "restrictive"
 
     if (format === "csv") {
       fileContent = convertToCSV(formattedData)
@@ -271,143 +267,6 @@ export async function exportLeaveRequests(formData: FormData) {
     return {
       success: false,
       message: error instanceof Error ? error.message : "Failed to export leave requests",
-    }
-  }
-}
-
-// Export documents function
-export async function exportDocuments(formData: FormData) {
-  try {
-    const format = formData.get("format") as string
-    const branch = formData.get("branch") as string
-    const status = formData.get("status") as string
-    const search = formData.get("search") as string
-    const exportAll = formData.get("exportAll") === "true"
-
-    // Get sorting parameters
-    const sortColumn = formData.get("sortColumn") as string
-    const sortDirection = formData.get("sortDirection") as string
-
-    // Build the query
-    let query = supabase.from("documents").select("*")
-
-    // Apply filters
-    if (branch && branch !== "all") {
-      query = query.eq("branch", branch)
-    }
-
-    if (search) {
-      query = query.or(`employee_name.ilike.%${search}%,country.ilike.%${search}%`)
-    }
-
-    // Apply status filter
-    if (status && status !== "all") {
-      switch (status) {
-        case "expired":
-          query = query.or(
-            "passport_days_left.lte.0,right_to_work_days_left.lte.0,brp_days_left.lte.0,other_document_days_left.lte.0",
-          )
-          break
-        case "expiring7":
-          query = query.or(
-            "passport_days_left.gt.0,passport_days_left.lte.7," +
-              "right_to_work_days_left.gt.0,right_to_work_days_left.lte.7," +
-              "brp_days_left.gt.0,brp_days_left.lte.7," +
-              "other_document_days_left.gt.0,other_document_days_left.lte.7",
-          )
-          break
-        case "expiring30":
-          query = query.or(
-            "passport_days_left.gt.7,passport_days_left.lte.30," +
-              "right_to_work_days_left.gt.7,right_to_work_days_left.lte.30," +
-              "brp_days_left.gt.7,brp_days_left.lte.30," +
-              "other_document_days_left.gt.7,other_document_days_left.lte.30",
-          )
-          break
-        case "expiring90":
-          query = query.or(
-            "passport_days_left.gt.30,passport_days_left.lte.90," +
-              "right_to_work_days_left.gt.30,right_to_work_days_left.lte.90," +
-              "brp_days_left.gt.30,brp_days_left.lte.90," +
-              "other_document_days_left.gt.30,other_document_days_left.lte.90",
-          )
-          break
-        case "valid":
-          query = query.and(
-            "passport_days_left.gt.90,right_to_work_days_left.gt.90,brp_days_left.gt.90,other_document_days_left.gt.90",
-          )
-          break
-      }
-    }
-
-    // Apply sorting if provided
-    if (sortColumn && sortDirection) {
-      // Map frontend column names to database column names if needed
-      const dbColumn = sortColumn.includes("_") ? sortColumn : sortColumn.replace(/([A-Z])/g, "_$1").toLowerCase()
-      query = query.order(dbColumn, { ascending: sortDirection === "asc" })
-    }
-
-    // Execute the query
-    const { data, error } = await query
-
-    if (error) {
-      throw error
-    }
-
-    // Transform the data to match our frontend types
-    const documents: EmployeeDocument[] = data.map((doc) => ({
-      id: doc.id,
-      employeeId: doc.employee_id,
-      employeeName: doc.employee_name,
-      branch: doc.branch,
-      status: doc.status,
-      country: doc.country,
-      passportExpiry: doc.passport_expiry || null,
-      passportDaysLeft: doc.passport_days_left || null,
-      rightToWorkExpiry: doc.right_to_work_expiry || null,
-      rightToWorkDaysLeft: doc.right_to_work_days_left || null,
-      brpExpiry: doc.brp_expiry || null,
-      brpDaysLeft: doc.brp_days_left || null,
-      otherDocumentType: doc.other_document_type || null,
-      otherDocumentExpiry: doc.other_document_expiry || null,
-      otherDocumentDaysLeft: doc.other_document_days_left || null,
-      isSponsored: doc.is_sponsored || false,
-      is20Hours: doc.is_20_hours || false,
-    }))
-
-    // Format the data for export
-    const formattedData = formatDocumentsForExport(documents)
-
-    // Generate the file content based on the format
-    let fileContent = ""
-    let fileName = ""
-    let contentType = ""
-
-    const currentDate = new Date().toISOString().split("T")[0]
-
-    if (format === "csv") {
-      fileContent = convertToCSV(formattedData)
-      fileName = `documents-${currentDate}.csv`
-      contentType = "text/csv"
-    } else if (format === "excel") {
-      fileContent = convertToExcel(formattedData)
-      fileName = `documents-${currentDate}.xls`
-      contentType = "application/vnd.ms-excel"
-    } else {
-      throw new Error("Unsupported export format")
-    }
-
-    return {
-      success: true,
-      fileContent,
-      fileName,
-      contentType,
-    }
-  } catch (error) {
-    console.error("Error exporting documents:", error)
-    return {
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to export documents",
     }
   }
 }

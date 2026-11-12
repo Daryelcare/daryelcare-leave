@@ -1,13 +1,6 @@
-import { UserManagementTable } from "@/components/user-management-table"
+import { redirect } from "next/navigation"
 
-export default function UserManagementPage() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
-        <p className="text-muted-foreground">Manage user roles and branch assignments</p>
-      </div>
-      <UserManagementTable />
-    </div>
-  )
+// Managed in Settings now
+export default function RedirectToSettings() {
+  redirect("/dashboard/settings?section=users")
 }

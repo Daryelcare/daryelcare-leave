@@ -2,8 +2,9 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const data = await request.json()
     const { error } = await supabase
       .from("leave_types")
@@ -17,7 +18,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         allow_negative_balance: data.allowNegativeBalance,
         is_active: data.isActive,
       })
-      .eq("id", params.id)
+      .eq("id", id)
 
     if (error) {
       console.error("Failed to update leave type:", error)
@@ -31,9 +32,10 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { error } = await supabase.from("leave_types").delete().eq("id", params.id)
+    const { id } = await params
+    const { error } = await supabase.from("leave_types").delete().eq("id", id)
 
     if (error) {
       console.error("Failed to delete leave type:", error)

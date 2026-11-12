@@ -209,23 +209,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to create/update document" }, { status: 500 })
   }
 }
-
-// Helper function to calculate days left
-function calculateDaysLeft(dateString: string): number | null {
-  if (!dateString) return null
-
-  // Parse date in format DD/MM/YYYY
-  const parts = dateString.split("/")
-  if (parts.length !== 3) return null
-
-  const day = Number.parseInt(parts[0], 10)
-  const month = Number.parseInt(parts[1], 10) - 1 // Month is 0-indexed in JavaScript
-  const year = Number.parseInt(parts[2], 10)
-
-  const expiryDate = new Date(year, month, day)
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-
-  const diffTime = expiryDate.getTime() - today.getTime()
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-}

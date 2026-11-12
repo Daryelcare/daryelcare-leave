@@ -15,6 +15,7 @@ interface ExportButtonProps {
   sortOrder?: string
   className?: string
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
+  size?: "default" | "sm" | "lg" | "icon"
   onExportStart?: () => void
   onExportEnd?: () => void
 }
@@ -27,6 +28,7 @@ export function ExportButton({
   sortOrder,
   className,
   variant = "outline",
+  size,
   onExportStart,
   onExportEnd,
 }: ExportButtonProps) {
@@ -95,12 +97,12 @@ export function ExportButton({
       document.body.removeChild(a)
 
       toast({
-        title: "Export Successful",
+        title: "Export ready",
         description: `Your ${format.toUpperCase()} file has been downloaded.`,
       })
     } catch (error) {
       toast({
-        title: "Export Failed",
+        title: "Export failed",
         description: "There was an error exporting the data. Please try again.",
         variant: "destructive",
       })
@@ -114,15 +116,15 @@ export function ExportButton({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant={variant} size="sm" className={`gap-1 ${className}`} disabled={disabled || isExporting}>
+        <Button variant={variant} size={size ?? "sm"} className={className} disabled={disabled || isExporting}>
           {isExporting ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Exporting...
+              <Loader2 className="animate-spin" />
+              Exporting…
             </>
           ) : (
             <>
-              <Download className="h-4 w-4" />
+              <Download />
               Export
             </>
           )}
@@ -130,12 +132,12 @@ export function ExportButton({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={() => handleExport("csv")}>
-          <FileText className="h-4 w-4 mr-2" />
-          Export as CSV
+          <FileText />
+          CSV file
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => handleExport("excel")}>
-          <FileSpreadsheet className="h-4 w-4 mr-2" />
-          Export as Excel
+          <FileSpreadsheet />
+          Excel workbook
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

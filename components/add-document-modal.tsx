@@ -5,9 +5,10 @@ import { useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { CalendarIcon, CheckCircle2 } from "lucide-react"
+import { CheckCircle2 } from "lucide-react"
 import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
+import { DatePicker } from "@/components/ui/date-picker"
 import {
   Dialog,
   DialogContent,
@@ -19,14 +20,11 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
 import { useToast } from "@/components/ui/use-toast"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
-import { cn } from "@/lib/utils"
 import { useQuery } from "@tanstack/react-query"
 import { Switch } from "@/components/ui/switch"
-import type { EmployeeDocument } from "@/lib/types"
+import type { EmployeeDocument, Employee } from "@/lib/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 // List of all countries
@@ -250,7 +248,9 @@ const formSchema = z.object({
   is20Hours: z.boolean().default(false),
 })
 
-type FormValues = z.infer<typeof formSchema>
+// What the form fields hold, and what validation turns them into
+type FormInput = z.input<typeof formSchema>
+type FormValues = z.output<typeof formSchema>
 
 interface AddDocumentModalProps {
   open: boolean
@@ -265,7 +265,7 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
   // Initialize form
-  const form = useForm<FormValues>({
+  const form = useForm<FormInput, unknown, FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       employeeId: "",
@@ -294,7 +294,10 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
   }, [status, form])
 
   // Fetch ALL employees without pagination
-  const { data: employeesResponse = { data: [], total: 0 }, isLoading: isLoadingEmployees } = useQuery({
+  const { data: employeesResponse = { data: [], total: 0 }, isLoading: isLoadingEmployees } = useQuery<{
+    data: Employee[]
+    total: number
+  }>({
     queryKey: ["employees", "all"],
     queryFn: async () => {
       try {
@@ -464,16 +467,11 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
   }
 
   // Format date for display
-  const formatExistingDate = (dateString: string | null | undefined, daysLeft: number | null | undefined) => {
-    if (!dateString) return "N/A"
-    return `${dateString} (${daysLeft} days left)`
-  }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Add Document</DialogTitle>
+          <DialogTitle>Add document</DialogTitle>
           <DialogDescription>
             Add documents for an employee. You can add multiple document types at once.
           </DialogDescription>
@@ -516,13 +514,13 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
             )}
 
             {successMessage && (
-              <Alert className="bg-green-50 border-green-200 text-green-800">
+              <Alert variant="success">
                 <CheckCircle2 className="h-4 w-4" />
                 <AlertDescription>{successMessage}</AlertDescription>
               </Alert>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="status"
@@ -572,14 +570,14 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
               />
             </div>
 
-            <div className="border rounded-md p-4">
-              <h3 className="text-sm font-medium mb-3">Document Expiry Dates</h3>
+            <div className="rounded-xl border border-border/80 bg-muted/30 p-4">
+              <h3 className="mb-3 text-sm font-semibold">Expiry dates</h3>
 
-              <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+              <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
                 {/* Passport */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <h4 className="text-sm font-medium">Passport</h4>
+                    <h4 className="text-[13px] font-semibold">Passport</h4>
                     {existingDocument?.passportExpiry && (
                       <span className="text-xs text-muted-foreground">Current: {existingDocument.passportExpiry}</span>
                     )}
@@ -589,30 +587,13 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
                     name="passportExpiryDate"
                     render={({ field }) => (
                       <FormItem className="space-y-0">
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant={"outline"}
-                                className={cn(
-                                  "w-full pl-3 text-left font-normal text-sm h-9",
-                                  !field.value && "text-muted-foreground",
-                                )}
-                              >
-                                {field.value ? format(field.value, "dd/MM/yyyy") : <span>Select date</span>}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value || undefined}
-                              onSelect={field.onChange}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
+                        <FormControl>
+                          <DatePicker
+                            value={field.value || undefined}
+                            onChange={field.onChange}
+                            placeholder="Select date"
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -622,7 +603,7 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
                 {/* Right to Work */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <h4 className="text-sm font-medium">Right to Work</h4>
+                    <h4 className="text-[13px] font-semibold">Right to work</h4>
                     {existingDocument?.rightToWorkExpiry && (
                       <span className="text-xs text-muted-foreground">
                         Current: {existingDocument.rightToWorkExpiry}
@@ -634,30 +615,13 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
                     name="rightToWorkExpiryDate"
                     render={({ field }) => (
                       <FormItem className="space-y-0">
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant={"outline"}
-                                className={cn(
-                                  "w-full pl-3 text-left font-normal text-sm h-9",
-                                  !field.value && "text-muted-foreground",
-                                )}
-                              >
-                                {field.value ? format(field.value, "dd/MM/yyyy") : <span>Select date</span>}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value || undefined}
-                              onSelect={field.onChange}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
+                        <FormControl>
+                          <DatePicker
+                            value={field.value || undefined}
+                            onChange={field.onChange}
+                            placeholder="Select date"
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -667,7 +631,7 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
                 {/* BRP */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <h4 className="text-sm font-medium">BRP</h4>
+                    <h4 className="text-[13px] font-semibold">BRP</h4>
                     {existingDocument?.brpExpiry && (
                       <span className="text-xs text-muted-foreground">Current: {existingDocument.brpExpiry}</span>
                     )}
@@ -677,30 +641,13 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
                     name="brpExpiryDate"
                     render={({ field }) => (
                       <FormItem className="space-y-0">
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant={"outline"}
-                                className={cn(
-                                  "w-full pl-3 text-left font-normal text-sm h-9",
-                                  !field.value && "text-muted-foreground",
-                                )}
-                              >
-                                {field.value ? format(field.value, "dd/MM/yyyy") : <span>Select date</span>}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value || undefined}
-                              onSelect={field.onChange}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
+                        <FormControl>
+                          <DatePicker
+                            value={field.value || undefined}
+                            onChange={field.onChange}
+                            placeholder="Select date"
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -708,23 +655,23 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
                 </div>
 
                 {/* Other Document */}
-                <div className="space-y-1">
+                <div className="space-y-1 sm:col-span-2">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-medium">Other Document</h4>
+                    <h4 className="text-[13px] font-semibold">Other document</h4>
                     {existingDocument?.otherDocumentExpiry && (
                       <span className="text-xs text-muted-foreground">
                         Current: {existingDocument.otherDocumentType}
                       </span>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid gap-2 sm:grid-cols-2">
                     <FormField
                       control={form.control}
                       name="otherDocumentType"
                       render={({ field }) => (
                         <FormItem className="space-y-0">
                           <FormControl>
-                            <Input placeholder="Document name" className="h-9 text-sm" {...field} />
+                            <Input placeholder="Document name, e.g. DBS" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -735,30 +682,9 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
                       name="otherExpiryDate"
                       render={({ field }) => (
                         <FormItem className="space-y-0">
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant={"outline"}
-                                  className={cn(
-                                    "w-full pl-3 text-left font-normal text-sm h-9",
-                                    !field.value && "text-muted-foreground",
-                                  )}
-                                >
-                                  {field.value ? format(field.value, "dd/MM/yyyy") : <span>Date</span>}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={field.value || undefined}
-                                onSelect={field.onChange}
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
+                          <FormControl>
+                            <DatePicker value={field.value || undefined} onChange={field.onChange} placeholder="Date" />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -768,14 +694,14 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="isSponsored"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center space-x-2 rounded-lg border p-2 shadow-sm h-full">
+                  <FormItem className="flex flex-row items-center space-x-2 h-full rounded-xl border border-border/80 bg-card px-3 py-2.5">
                     <div className="flex-1">
-                      <FormLabel className="text-sm">Sponsored Employee</FormLabel>
+                      <FormLabel className="text-sm">Sponsored employee</FormLabel>
                     </div>
                     <FormControl>
                       <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -789,7 +715,7 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
                   control={form.control}
                   name="is20Hours"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-x-2 rounded-lg border p-2 shadow-sm h-full">
+                    <FormItem className="flex flex-row items-center space-x-2 h-full rounded-xl border border-border/80 bg-card px-3 py-2.5">
                       <div className="flex-1">
                         <FormLabel className="text-sm">20 Hours Restriction</FormLabel>
                       </div>
@@ -806,12 +732,8 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600"
-              >
-                {isSubmitting ? "Saving..." : "Save All Documents"}
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Saving…" : "Save documents"}
               </Button>
             </DialogFooter>
           </form>

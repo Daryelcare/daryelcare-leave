@@ -2,9 +2,9 @@ import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
 
 // Update branch
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = params.id
+    const { id } = await params
     const { name } = await request.json()
 
     const { error } = await supabase.from("branches").update({ name }).eq("id", id)
@@ -22,9 +22,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 }
 
 // Delete branch
-export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = params.id
+    const { id } = await params
 
     const { error } = await supabase.from("branches").delete().eq("id", id)
 

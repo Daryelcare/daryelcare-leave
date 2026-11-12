@@ -331,22 +331,22 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
 
   // Function to determine document status color
   const getStatusColor = (daysLeft: number | null) => {
-    if (!daysLeft && daysLeft !== 0) return "text-gray-400"
-    if (daysLeft <= 0) return "text-red-500"
-    if (daysLeft <= 7) return "text-red-500"
-    if (daysLeft <= 30) return "text-orange-500"
-    if (daysLeft <= 90) return "text-yellow-500"
-    return "text-green-500"
+    if (!daysLeft && daysLeft !== 0) return "text-muted-foreground/60"
+    if (daysLeft <= 0) return "text-destructive"
+    if (daysLeft <= 7) return "text-destructive"
+    if (daysLeft <= 30) return "text-warning"
+    if (daysLeft <= 90) return "text-primary"
+    return "text-success"
   }
 
   return (
     <Dialog open={open} onOpenChange={handleCloseModal}>
       <DialogContent className={showPreview ? "sm:max-w-[900px]" : "sm:max-w-[550px]"}>
         <DialogHeader>
-          <DialogTitle>Import Documents</DialogTitle>
+          <DialogTitle>Import documents</DialogTitle>
           <DialogDescription>
             {showPreview
-              ? "Review the data before importing. Click 'Import Documents' to confirm."
+              ? "Review the data before importing. Click 'Import documents' to confirm."
               : "Upload a CSV or Excel file to import documents. Download a template to get started."}
           </DialogDescription>
         </DialogHeader>
@@ -371,18 +371,18 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
             {/* Invalid Records Section - Show only if there are invalid records */}
             {previewData.filter((doc) => !doc.isValid).length > 0 && (
               <div className="mb-4">
-                <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-2">
-                  <h3 className="text-sm font-medium text-red-800 flex items-center">
+                <div className="mb-2 rounded-xl border border-destructive/20 bg-destructive-soft p-3">
+                  <h3 className="flex items-center text-sm font-semibold text-destructive">
                     <AlertCircle className="h-4 w-4 mr-2" />
                     Invalid Records ({previewData.filter((doc) => !doc.isValid).length})
                     {skipInvalid && " - These records will be skipped during import"}
                   </h3>
                 </div>
 
-                <div className="border border-red-200 rounded-md overflow-hidden">
+                <div className="overflow-hidden rounded-xl border border-destructive/20">
                   <div className="max-h-[200px] overflow-auto">
                     <Table>
-                      <TableHeader className="bg-red-50">
+                      <TableHeader className="bg-destructive-soft">
                         <TableRow>
                           <TableHead>Employee</TableHead>
                           <TableHead>Branch</TableHead>
@@ -390,14 +390,14 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                           <TableHead>Document Status</TableHead>
                           <TableHead>Country</TableHead>
                           <TableHead>Passport Expiry</TableHead>
-                          <TableHead>Right to Work</TableHead>
+                          <TableHead>Right to work</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {previewData
                           .filter((doc) => !doc.isValid)
                           .map((doc, index) => (
-                            <TableRow key={`invalid-${index}`} className="bg-red-50/50">
+                            <TableRow key={`invalid-${index}`} className="bg-destructive-soft/40">
                               <TableCell>
                                 <div>
                                   <div className="font-medium">{doc.employeeName}</div>
@@ -405,9 +405,9 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                                 </div>
                               </TableCell>
                               <TableCell>{doc.branch}</TableCell>
-                              <TableCell className="text-red-600 font-medium">{doc.validationMessage}</TableCell>
+                              <TableCell className="font-medium text-destructive">{doc.validationMessage}</TableCell>
                               <TableCell>
-                                <Badge className="bg-blue-100 text-blue-800">{doc.status}</Badge>
+                                <Badge variant="secondary">{doc.status}</Badge>
                               </TableCell>
                               <TableCell>{doc.country}</TableCell>
                               <TableCell>
@@ -419,7 +419,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                                     )}
                                   </div>
                                 ) : (
-                                  <span className="text-gray-400">N/A</span>
+                                  <span className="text-muted-foreground/50">—</span>
                                 )}
                               </TableCell>
                               <TableCell>
@@ -431,7 +431,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                                     )}
                                   </div>
                                 ) : (
-                                  <span className="text-gray-400">N/A</span>
+                                  <span className="text-muted-foreground/50">—</span>
                                 )}
                               </TableCell>
                             </TableRow>
@@ -445,8 +445,8 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
 
             {/* Valid Records Section */}
             <div>
-              <div className="bg-green-50 border border-green-200 rounded-md p-3 mb-2">
-                <h3 className="text-sm font-medium text-green-800 flex items-center">
+              <div className="mb-2 rounded-xl border border-success/20 bg-success-soft p-3">
+                <h3 className="flex items-center text-sm font-semibold text-success">
                   <CheckCircle className="h-4 w-4 mr-2" />
                   Valid Records ({previewData.filter((doc) => doc.isValid).length})
                   {previewData.filter((doc) => doc.isValid).length === 0 && " - No valid records found"}
@@ -464,7 +464,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                         <TableHead>Country</TableHead>
                         <TableHead>Passport Expiry</TableHead>
                         <TableHead>BRP Expiry</TableHead>
-                        <TableHead>Right to Work</TableHead>
+                        <TableHead>Right to work</TableHead>
                         <TableHead>Sponsored</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -482,7 +482,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                               </TableCell>
                               <TableCell>{doc.branch}</TableCell>
                               <TableCell>
-                                <Badge className="bg-blue-100 text-blue-800">{doc.status}</Badge>
+                                <Badge variant="secondary">{doc.status}</Badge>
                               </TableCell>
                               <TableCell>{doc.country}</TableCell>
                               <TableCell>
@@ -494,7 +494,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                                     )}
                                   </div>
                                 ) : (
-                                  <span className="text-gray-400">N/A</span>
+                                  <span className="text-muted-foreground/50">—</span>
                                 )}
                               </TableCell>
                               <TableCell>
@@ -506,7 +506,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                                     )}
                                   </div>
                                 ) : (
-                                  <span className="text-gray-400">N/A</span>
+                                  <span className="text-muted-foreground/50">—</span>
                                 )}
                               </TableCell>
                               <TableCell>
@@ -518,22 +518,22 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                                     )}
                                   </div>
                                 ) : (
-                                  <span className="text-gray-400">N/A</span>
+                                  <span className="text-muted-foreground/50">—</span>
                                 )}
                               </TableCell>
                               <TableCell>
                                 <div className="flex flex-col gap-1">
                                   <Badge
                                     className={
-                                      doc.isSponsored ? "bg-purple-100 text-purple-800" : "bg-gray-100 text-gray-800"
+                                      doc.isSponsored ? "bg-primary-soft text-primary" : "bg-secondary text-muted-foreground"
                                     }
                                   >
-                                    {doc.isSponsored ? "Sponsored" : "Not Sponsored"}
+                                    {doc.isSponsored ? "Sponsored" : "Not sponsored"}
                                   </Badge>
                                   {doc.isSponsored && (
                                     <Badge
                                       className={
-                                        doc.is20Hrs ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-800"
+                                        doc.is20Hrs ? "bg-primary-soft text-primary" : "bg-secondary text-muted-foreground"
                                       }
                                     >
                                       {doc.is20Hrs ? "20hrs" : "No Restriction"}
@@ -570,7 +570,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
             {/* Import results */}
             {importResults && (
               <div className="space-y-2">
-                <Alert variant="default" className="bg-green-50 border-green-200 text-green-800">
+                <Alert variant="success">
                   <CheckCircle className="h-4 w-4" />
                   <AlertTitle>Import completed</AlertTitle>
                   <AlertDescription>
@@ -608,16 +608,16 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-2">
                     <Download className="h-4 w-4" />
-                    Download Template
+                    Download template
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => handleDownloadTemplate("csv")}>
-                    <FileText className="h-4 w-4 mr-2" />
+                    <FileText />
                     CSV Template
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleDownloadTemplate("excel")}>
-                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    <FileSpreadsheet />
                     Excel Template
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -626,8 +626,8 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
 
             {/* File upload area */}
             <div
-              className={`border-2 border-dashed rounded-lg p-6 text-center ${
-                dragActive ? "border-primary bg-primary/5" : "border-border"
+              className={`rounded-xl border-2 border-dashed p-8 text-center transition-colors duration-200 ${
+                dragActive ? "border-primary bg-primary-soft/60" : "border-border bg-muted/30 hover:border-foreground/20"
               }`}
               onDragEnter={handleDrag}
               onDragOver={handleDrag}
@@ -644,7 +644,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
 
               {selectedFile ? (
                 <div className="flex flex-col items-center gap-2">
-                  <FileSpreadsheet className="h-10 w-10 text-muted-foreground" />
+                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-success-soft text-success"><FileSpreadsheet className="h-6 w-6" /></span>
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{selectedFile.name}</span>
                     <Button
@@ -661,7 +661,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-2">
-                  <Upload className="h-10 w-10 text-muted-foreground" />
+                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-card text-muted-foreground shadow-card"><Upload className="h-5 w-5" /></span>
                   <p className="text-sm font-medium">
                     Drag and drop your file here, or{" "}
                     <button
@@ -699,7 +699,6 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
             <Button
               onClick={handleUpload}
               disabled={isUploading || previewData.length === 0}
-              className="bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600"
             >
               {isUploading ? (
                 <>
@@ -707,14 +706,13 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                   Importing...
                 </>
               ) : (
-                "Import Documents"
+                "Import documents"
               )}
             </Button>
           ) : (
             <Button
               onClick={handlePreview}
               disabled={!selectedFile || previewLoading}
-              className="bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600"
             >
               {previewLoading ? (
                 <>
@@ -722,7 +720,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                   Generating Preview...
                 </>
               ) : (
-                "Preview Data"
+                "Preview data"
               )}
             </Button>
           )}

@@ -5,9 +5,9 @@ import { useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { CalendarIcon } from "lucide-react"
 import { format, parse } from "date-fns"
 import { Button } from "@/components/ui/button"
+import { DatePicker } from "@/components/ui/date-picker"
 import {
   Dialog,
   DialogContent,
@@ -19,11 +19,8 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
 import { useToast } from "@/components/ui/use-toast"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
-import { cn } from "@/lib/utils"
 import type { EmployeeDocument } from "@/lib/types"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -39,7 +36,9 @@ const formSchema = z.object({
   is20Hours: z.boolean().default(false),
 })
 
-type FormValues = z.infer<typeof formSchema>
+// What the form fields hold, and what validation turns them into
+type FormInput = z.input<typeof formSchema>
+type FormValues = z.output<typeof formSchema>
 
 interface EditDocumentModalProps {
   document: EmployeeDocument
@@ -62,11 +61,11 @@ export function EditDocumentModal({ document, open, onOpenChange }: EditDocument
   }
 
   // Initialize form
-  const form = useForm<FormValues>({
+  const form = useForm<FormInput, unknown, FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       status: document.status,
-      country: document.country,
+      country: document.country ?? "",
       documentType: "passport",
       customDocumentType: document.otherDocumentType || "",
       expiryDate: null,
@@ -125,7 +124,7 @@ export function EditDocumentModal({ document, open, onOpenChange }: EditDocument
       const daysLeft = data.expiryDate ? calculateDaysLeft(data.expiryDate) : null
 
       // Prepare update data
-      const updateData: any = {
+      const updateData: Record<string, unknown> = {
         status: data.status,
         country: data.country,
         isSponsored: data.isSponsored,
@@ -143,7 +142,7 @@ export function EditDocumentModal({ document, open, onOpenChange }: EditDocument
         updateData.brpExpiry = format(data.expiryDate, "dd/MM/yyyy")
         updateData.brpDaysLeft = daysLeft
       } else if (activeTab === "other" && data.expiryDate) {
-        updateData.otherDocumentType = data.customDocumentType || "Other Document"
+        updateData.otherDocumentType = data.customDocumentType || "Other document"
         updateData.otherDocumentExpiry = format(data.expiryDate, "dd/MM/yyyy")
         updateData.otherDocumentDaysLeft = daysLeft
       }
@@ -178,7 +177,7 @@ export function EditDocumentModal({ document, open, onOpenChange }: EditDocument
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
-          <DialogTitle>Edit Document</DialogTitle>
+          <DialogTitle>Edit document</DialogTitle>
           <DialogDescription>Edit document details for {document.employeeName}.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -186,7 +185,7 @@ export function EditDocumentModal({ document, open, onOpenChange }: EditDocument
             <Tabs value={activeTab} onValueChange={handleDocumentTypeSelect} className="w-full">
               <TabsList className="grid grid-cols-4 mb-4">
                 <TabsTrigger value="passport">Passport</TabsTrigger>
-                <TabsTrigger value="rightToWork">Right to Work</TabsTrigger>
+                <TabsTrigger value="rightToWork">Right to work</TabsTrigger>
                 <TabsTrigger value="brp">BRP</TabsTrigger>
                 <TabsTrigger value="other">Other</TabsTrigger>
               </TabsList>
@@ -211,7 +210,7 @@ export function EditDocumentModal({ document, open, onOpenChange }: EditDocument
                 name="customDocumentType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Document Name</FormLabel>
+                    <FormLabel>Document name</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter document name" {...field} />
                     </FormControl>
@@ -221,7 +220,7 @@ export function EditDocumentModal({ document, open, onOpenChange }: EditDocument
               />
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="status"
@@ -265,28 +264,14 @@ export function EditDocumentModal({ document, open, onOpenChange }: EditDocument
               name="expiryDate"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>Expiry Date</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
-                        >
-                          {field.value ? format(field.value, "PPP") : <span>Pick a date (optional)</span>}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value || undefined}
-                        onSelect={field.onChange}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <FormLabel>Expiry date</FormLabel>
+                  <FormControl>
+                    <DatePicker
+                      value={field.value || undefined}
+                      onChange={field.onChange}
+                      placeholder="Pick a date (optional)"
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -296,9 +281,9 @@ export function EditDocumentModal({ document, open, onOpenChange }: EditDocument
               control={form.control}
               name="isSponsored"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                <FormItem className="flex flex-row items-center justify-between rounded-xl border border-border/80 bg-card px-3.5 py-3">
                   <div className="space-y-0.5">
-                    <FormLabel>Sponsored Employee</FormLabel>
+                    <FormLabel>Sponsored employee</FormLabel>
                     <div className="text-sm text-muted-foreground">
                       Mark if this employee is sponsored and requires additional tracking
                     </div>
@@ -315,9 +300,9 @@ export function EditDocumentModal({ document, open, onOpenChange }: EditDocument
                 control={form.control}
                 name="is20Hours"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <FormItem className="flex flex-row items-center justify-between rounded-xl border border-border/80 bg-card px-3.5 py-3">
                     <div className="space-y-0.5">
-                      <FormLabel>20 Hours Restriction</FormLabel>
+                      <FormLabel>20-hour restriction</FormLabel>
                       <div className="text-sm text-muted-foreground">
                         Mark if this sponsored employee is restricted to 20 hours per week
                       </div>
@@ -334,12 +319,8 @@ export function EditDocumentModal({ document, open, onOpenChange }: EditDocument
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600"
-              >
-                {isSubmitting ? "Saving..." : "Save Changes"}
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Saving…" : "Save changes"}
               </Button>
             </DialogFooter>
           </form>

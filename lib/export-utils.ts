@@ -5,7 +5,9 @@ import type { LeaveRequest, Employee, EmployeeDocument } from "@/lib/types"
  * @param data Array of objects to convert
  * @returns CSV string
  */
-export function convertToCSV(data: any[]): string {
+type ExportRow = Record<string, string | number | null | undefined>
+
+export function convertToCSV(data: ExportRow[]): string {
   if (data.length === 0) return ""
 
   // Get headers from the first object
@@ -38,7 +40,7 @@ export function convertToCSV(data: any[]): string {
  * @param data Array of objects to convert
  * @returns Excel XML string
  */
-export function convertToExcel(data: any[]): string {
+export function convertToExcel(data: ExportRow[]): string {
   if (data.length === 0) return ""
 
   // Create a simple XML spreadsheet format
@@ -104,7 +106,7 @@ function formatHeader(header: string): string {
  * @param employees Array of employees to format
  * @returns Formatted array for export
  */
-export function formatEmployeesForExport(employees: Employee[]): any[] {
+export function formatEmployeesForExport(employees: Employee[]): ExportRow[] {
   return employees.map((emp) => ({
     Name: emp.name,
     "Employee Code": emp.employeeCode,
@@ -124,7 +126,7 @@ export function formatEmployeesForExport(employees: Employee[]): any[] {
  * @param leaveRequests Array of leave requests to format
  * @returns Formatted array for export
  */
-export function formatLeaveRequestsForExport(leaveRequests: LeaveRequest[]): any[] {
+export function formatLeaveRequestsForExport(leaveRequests: LeaveRequest[]): ExportRow[] {
   return leaveRequests.map((req) => ({
     Employee: req.employee,
     "Employee Code": req.employeeCode,
@@ -146,7 +148,7 @@ export function formatLeaveRequestsForExport(leaveRequests: LeaveRequest[]): any
  * @param documents Array of documents to format
  * @returns Formatted array for export
  */
-export function formatDocumentsForExport(documents: EmployeeDocument[]): any[] {
+export function formatDocumentsForExport(documents: EmployeeDocument[]): ExportRow[] {
   return documents.map((doc) => ({
     Employee: doc.employeeName,
     Branch: doc.branch,
