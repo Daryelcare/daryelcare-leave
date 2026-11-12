@@ -3,7 +3,16 @@
 import { useState, type ReactNode } from "react"
 import Link from "next/link"
 import { useQuery } from "@tanstack/react-query"
-import { ArrowRight, CalendarDays, CalendarRange, FileWarning, PartyPopper, Plane, Scale, ShieldCheck } from "lucide-react"
+import {
+  ArrowRight,
+  CalendarDays,
+  CalendarRange,
+  FileWarning,
+  PartyPopper,
+  Plane,
+  Scale,
+  ShieldCheck,
+} from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -57,7 +66,12 @@ const LIST_LIMIT = 6
 function formatDay(iso: string) {
   const time = parseDateToUtc(iso)
   if (time === null) return iso
-  return new Date(time).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" })
+  return new Date(time).toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  })
 }
 
 function formatRange(entry: LeaveEntry) {
@@ -65,7 +79,9 @@ function formatRange(entry: LeaveEntry) {
 }
 
 function greeting() {
-  const hour = Number(new Intl.DateTimeFormat("en-GB", { hour: "numeric", hour12: false, timeZone: "Europe/London" }).format(new Date()))
+  const hour = Number(
+    new Intl.DateTimeFormat("en-GB", { hour: "numeric", hour12: false, timeZone: "Europe/London" }).format(new Date()),
+  )
   if (hour < 12) return "Good morning"
   if (hour < 18) return "Good afternoon"
   return "Good evening"
@@ -93,7 +109,11 @@ export function DashboardHome() {
   const typeColor = (type: string) => leaveTypes.find((t) => t.name === type)?.color || "#6366f1"
 
   const peopleOffThisWeek = new Set(data?.offThisWeek.map((l) => l.employeeId)).size
-  const documentItems = data?.documents ? [...data.documents.expired, ...data.documents.expiringSoon] : []
+  // Right to work is the check that matters most: it leads, other documents follow
+  const allDocumentItems = data?.documents ? [...data.documents.expired, ...data.documents.expiringSoon] : []
+  const documentItems = allDocumentItems.filter((d) => d.document === "Right to work")
+  const otherDocumentItems = allDocumentItems.filter((d) => d.document !== "Right to work")
+  const rtwExpired = documentItems.filter((d) => d.daysLeft <= 0).length
   const balanceItems = data ? [...data.balances.negative, ...data.balances.low] : []
   const offList = (range === "today" ? data?.offToday : data?.offThisWeek) || []
   const firstName = user?.name?.split(" ")[0]
@@ -139,7 +159,9 @@ export function DashboardHome() {
         }
       />
 
-      {isError && <ErrorState title="Couldn't load the dashboard" message={handleApiError(error)} onRetry={() => refetch()} />}
+      {isError && (
+        <ErrorState title="Couldn't load the dashboard" message={handleApiError(error)} onRetry={() => refetch()} />
+      )}
 
       {/* Headline numbers */}
       <div className={cn("grid grid-cols-2 gap-3 sm:gap-4", isAdmin ? "lg:grid-cols-4" : "lg:grid-cols-3")}>
@@ -159,14 +181,14 @@ export function DashboardHome() {
         />
         {isAdmin && (
           <StatCard
-            label="Documents"
+            label="Right to work"
             icon={FileWarning}
             loading={isLoading}
             value={documentItems.length}
-            tone={data?.documents?.expired.length ? "danger" : documentItems.length ? "warning" : "success"}
+            tone={rtwExpired ? "danger" : documentItems.length ? "warning" : "success"}
             detail={
               data?.documents
-                ? `${data.documents.expired.length} expired · ${data.documents.expiringSoon.length} due in ${data.documents.warningDays}d`
+                ? `${rtwExpired} expired · ${documentItems.length - rtwExpired} due in ${data.documents.warningDays}d`
                 : undefined
             }
           />
@@ -213,7 +235,9 @@ export function DashboardHome() {
                 ))}
               </ul>
               <PanelFooter href={LEAVE_CALENDAR_HREF}>
-                {offList.length > LIST_LIMIT ? `${offList.length - LIST_LIMIT} more in the team calendar` : "Open the team calendar"}
+                {offList.length > LIST_LIMIT
+                  ? `${offList.length - LIST_LIMIT} more in the team calendar`
+                  : "Open the team calendar"}
               </PanelFooter>
             </>
           ) : (
@@ -232,7 +256,7 @@ export function DashboardHome() {
           {isAdmin && (
             <section className="surface overflow-hidden">
               <PanelHeading
-                title="Documents"
+                title="Right to work"
                 description={`Expired or due within ${data?.documents?.warningDays ?? 30} days`}
                 count={isLoading ? undefined : documentItems.length}
               />
@@ -256,17 +280,41 @@ export function DashboardHome() {
                           variant={doc.daysLeft <= 0 ? "destructive" : doc.daysLeft <= 7 ? "warning" : "secondary"}
                           className="shrink-0"
                         >
-                          {doc.daysLeft < 0 ? `${Math.abs(doc.daysLeft)}d overdue` : doc.daysLeft === 0 ? "Today" : `${doc.daysLeft}d`}
+                          {doc.daysLeft < 0
+                            ? `${Math.abs(doc.daysLeft)}d overdue`
+                            : doc.daysLeft === 0
+                              ? "Today"
+                              : `${doc.daysLeft}d`}
                         </Badge>
                       </li>
                     ))}
                   </ul>
-                  <PanelFooter href="/dashboard/document-tracker">
-                    {documentItems.length > LIST_LIMIT ? `${documentItems.length - LIST_LIMIT} more in Documents` : "Open Documents"}
+                  <PanelFooter href="/dashboard/document-tracker?expiry=within30">
+                    {documentItems.length > LIST_LIMIT
+                      ? `${documentItems.length - LIST_LIMIT} more in Documents`
+                      : "Open Documents"}
                   </PanelFooter>
                 </>
               ) : (
-                <EmptyState icon={ShieldCheck} title="All documents in date" compact className="border-t border-border/70" />
+                <EmptyState
+                  icon={ShieldCheck}
+                  title="Right to work all in date"
+                  compact
+                  className="border-t border-border/70"
+                />
+              )}
+              {/* Other documents: a quiet one-line summary */}
+              {!isLoading && otherDocumentItems.length > 0 && (
+                <Link
+                  href="/dashboard/document-tracker?type=all&expiry=within30"
+                  className="flex items-center justify-between gap-3 border-t border-border/70 bg-muted/40 px-5 py-2.5 text-xs text-muted-foreground transition-colors hover:text-foreground sm:px-6"
+                >
+                  <span>
+                    Other documents: {otherDocumentItems.filter((d) => d.daysLeft <= 0).length} expired ·{" "}
+                    {otherDocumentItems.filter((d) => d.daysLeft > 0).length} due soon
+                  </span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
               )}
             </section>
           )}
@@ -291,14 +339,20 @@ export function DashboardHome() {
                           {emp.branch} · {plural(emp.daysTaken, "day")} taken
                         </p>
                       </div>
-                      <Badge dot variant={emp.daysRemaining < 0 ? "destructive" : "warning"} className="shrink-0 tabular">
+                      <Badge
+                        dot
+                        variant={emp.daysRemaining < 0 ? "destructive" : "warning"}
+                        className="shrink-0 tabular"
+                      >
                         {plural(emp.daysRemaining, "day")}
                       </Badge>
                     </li>
                   ))}
                 </ul>
                 <PanelFooter href="/dashboard/employees">
-                  {balanceItems.length > LIST_LIMIT ? `${balanceItems.length - LIST_LIMIT} more in Employees` : "Open Employees"}
+                  {balanceItems.length > LIST_LIMIT
+                    ? `${balanceItems.length - LIST_LIMIT} more in Employees`
+                    : "Open Employees"}
                 </PanelFooter>
               </>
             ) : (
@@ -319,7 +373,9 @@ function PanelHeading({ title, description, count }: { title: string; descriptio
         <p className="text-sm text-muted-foreground">{description}</p>
       </div>
       {count !== undefined && count > 0 && (
-        <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold tabular text-foreground/80">{count}</span>
+        <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold tabular text-foreground/80">
+          {count}
+        </span>
       )}
     </div>
   )
@@ -340,7 +396,9 @@ function LeaveRow({ leave, color }: { leave: LeaveEntry; color: string }) {
       </div>
       <div className="shrink-0 text-right">
         <p className="hidden text-sm font-medium tabular sm:block">{formatRange(leave)}</p>
-        <p className="text-sm font-medium tabular sm:hidden">{formatDisplayRange(leave.startDate, leave.endDate).replace(/ \d{4}$/, "")}</p>
+        <p className="text-sm font-medium tabular sm:hidden">
+          {formatDisplayRange(leave.startDate, leave.endDate).replace(/ \d{4}$/, "")}
+        </p>
         <p className="text-xs text-muted-foreground">{plural(leave.duration, "day")}</p>
       </div>
     </li>

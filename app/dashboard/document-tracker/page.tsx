@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { Suspense } from "react"
 import { DocumentTrackerTable } from "@/components/document-tracker-table"
 
 export const metadata: Metadata = {
@@ -7,5 +8,10 @@ export const metadata: Metadata = {
 }
 
 export default function DocumentTrackerPage() {
-  return <DocumentTrackerTable />
+  // Filters are read from the address, which needs a Suspense boundary
+  return (
+    <Suspense>
+      <DocumentTrackerTable />
+    </Suspense>
+  )
 }

@@ -8,7 +8,7 @@ import { signOut } from "@/lib/auth"
 import { toast } from "@/hooks/use-toast"
 
 // Signs the user out of Supabase, forgets the saved user and cached data,
-// and goes to the login page. Used by both the header menu and the sidebar.
+// and goes to the login page. Used by the account menu and the phone "More" sheet.
 export function useLogout() {
   const router = useRouter()
   const queryClient = useQueryClient()

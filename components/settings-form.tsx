@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Loader2 } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger } from "@/components/ui/select"
 import { settingsHref, visibleSettingsSections } from "@/lib/navigation"
 import { cn } from "@/lib/utils"
 import { UserManagementTable } from "./user-management-table"
@@ -89,11 +88,12 @@ export function SettingsForm() {
     }
   }
 
-  const passwordFields: { name: "currentPassword" | "newPassword" | "confirmPassword"; label: string; auto: string }[] = [
-    { name: "currentPassword", label: "Current password", auto: "current-password" },
-    { name: "newPassword", label: "New password", auto: "new-password" },
-    { name: "confirmPassword", label: "Confirm new password", auto: "new-password" },
-  ]
+  const passwordFields: { name: "currentPassword" | "newPassword" | "confirmPassword"; label: string; auto: string }[] =
+    [
+      { name: "currentPassword", label: "Current password", auto: "current-password" },
+      { name: "newPassword", label: "New password", auto: "new-password" },
+      { name: "confirmPassword", label: "Confirm new password", auto: "new-password" },
+    ]
 
   // Which section is open lives in the address (?section=), so links and back work
   const router = useRouter()
@@ -102,6 +102,51 @@ export function SettingsForm() {
   const requested = searchParams.get("section")
   const current = sections.find((s) => s.id === requested) || sections[0]
   const openSection = (id: string) => router.replace(settingsHref(id), { scroll: false })
+  // Keep the open tab visible when the row scrolls sideways on small screens
+  const activeTabRef = useRef<HTMLButtonElement>(null)
+  const tabRowRef = useRef<HTMLDivElement>(null)
+  const [fade, setFade] = useState({ left: false, right: false })
+  const updateFade = () => {
+    const row = tabRowRef.current
+    if (!row) return
+    setFade({ left: row.scrollLeft > 2, right: row.scrollLeft + row.clientWidth < row.scrollWidth - 2 })
+  }
+  useEffect(() => {
+    const row = tabRowRef.current
+    const tab = activeTabRef.current
+    if (row && tab) {
+      // Only scroll when the open tab is cut off, leaving room to see its neighbour
+      const margin = 40
+      const left = tab.offsetLeft // the row is the offset parent, so this ignores its scroll
+      if (left < row.scrollLeft) row.scrollLeft = Math.max(0, left - margin)
+      else if (left + tab.offsetWidth > row.scrollLeft + row.clientWidth)
+        row.scrollLeft = left + tab.offsetWidth - row.clientWidth + margin
+    }
+    updateFade()
+  }, [current.id])
+  useEffect(() => {
+    window.addEventListener("resize", updateFade)
+    return () => window.removeEventListener("resize", updateFade)
+  }, [])
+  // Arrow keys, Home and End move between tabs
+  const onTabKey = (e: React.KeyboardEvent) => {
+    const i = sections.findIndex((s) => s.id === current.id)
+    const next =
+      e.key === "ArrowRight"
+        ? i + 1
+        : e.key === "ArrowLeft"
+          ? i - 1
+          : e.key === "Home"
+            ? 0
+            : e.key === "End"
+              ? sections.length - 1
+              : null
+    if (next === null) return
+    e.preventDefault()
+    const target = sections[(next + sections.length) % sections.length]
+    openSection(target.id)
+    requestAnimationFrame(() => document.getElementById(`settings-tab-${target.id}`)?.focus())
+  }
   const groups = (["Personal", "Organisation"] as const)
     .map((group) => ({ group, items: sections.filter((s) => s.group === group) }))
     .filter((g) => g.items.length > 0)
@@ -116,7 +161,9 @@ export function SettingsForm() {
               <div className="flex items-center gap-4 p-5 sm:p-6">
                 <Avatar name={user?.name} className="h-14 w-14 text-lg" />
                 <div className="min-w-0">
-                  <p className="truncate font-display text-lg font-semibold tracking-[-0.02em]">{user?.name || "Your account"}</p>
+                  <p className="truncate font-display text-lg font-semibold tracking-[-0.02em]">
+                    {user?.name || "Your account"}
+                  </p>
                   <p className="truncate text-sm text-muted-foreground">{user?.email}</p>
                 </div>
               </div>
@@ -212,62 +259,80 @@ export function SettingsForm() {
         description={isAdmin ? "Your account, and how your organisation is set up." : "Your account and password."}
       />
 
-      <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-10">
-        {/* Large screens: grouped section menu */}
-        <nav aria-label="Settings sections" className="hidden lg:block">
-          <div className="sticky top-20 space-y-5">
-            {groups.map(({ group, items }) => (
-              <div key={group} className="space-y-1">
-                <p className="eyebrow px-3 pb-1">{group}</p>
-                {items.map((section) => {
-                  const active = section.id === current.id
-                  return (
-                    <button
-                      key={section.id}
-                      onClick={() => openSection(section.id)}
-                      aria-current={active ? "page" : undefined}
-                      className={cn(
-                        "flex h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30",
-                        active
-                          ? "bg-primary-soft font-semibold text-primary"
-                          : "text-foreground/80 hover:bg-secondary hover:text-foreground",
-                      )}
-                    >
-                      <section.icon className={cn("h-[18px] w-[18px] shrink-0", active ? "text-primary" : "text-muted-foreground")} />
-                      {section.title}
-                    </button>
-                  )
-                })}
+      <div className="space-y-6 sm:space-y-8">
+        {/* Section tabs, grouped Personal / Organisation. Scrolls sideways on small screens. */}
+        <div className="relative -mx-4 border-b border-border sm:mx-0">
+          <div
+            ref={tabRowRef}
+            onScroll={updateFade}
+            role="tablist"
+            aria-label="Settings sections"
+            onKeyDown={onTabKey}
+            className="relative flex gap-6 overflow-x-auto px-4 [scrollbar-width:none] sm:gap-8 sm:px-0 [&::-webkit-scrollbar]:hidden"
+          >
+            {groups.map(({ group, items }, gi) => (
+              <div
+                key={group}
+                className={cn("flex shrink-0 flex-col", gi > 0 && "border-l border-border pl-6 sm:pl-8")}
+              >
+                <p className="eyebrow pb-1.5">{group}</p>
+                <div className="flex gap-1">
+                  {items.map((section) => {
+                    const active = section.id === current.id
+                    return (
+                      <button
+                        key={section.id}
+                        id={`settings-tab-${section.id}`}
+                        role="tab"
+                        type="button"
+                        aria-selected={active}
+                        aria-controls="settings-panel"
+                        tabIndex={active ? 0 : -1}
+                        onClick={() => openSection(section.id)}
+                        ref={active ? activeTabRef : undefined}
+                        className={cn(
+                          "relative -mb-px flex h-11 shrink-0 items-center whitespace-nowrap rounded-t-lg px-2.5 text-sm font-medium transition-colors duration-150",
+                          "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-ring/30",
+                          "after:absolute after:inset-x-2.5 after:bottom-0 after:h-0.5 after:rounded-full after:transition-colors",
+                          active
+                            ? "font-semibold text-primary after:bg-primary"
+                            : "text-muted-foreground after:bg-transparent hover:text-foreground",
+                        )}
+                      >
+                        {section.title}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             ))}
+            {/* End padding for the sideways-scrolling row on phones */}
+            <span aria-hidden className="-ml-6 w-4 shrink-0 sm:-ml-8 sm:w-0" />
           </div>
-        </nav>
-
-        {/* Phones and tablets: a section picker */}
-        <div className="lg:hidden">
-          <Select value={current.id} onValueChange={openSection}>
-            <SelectTrigger aria-label="Settings section" className="h-11">
-              <div className="flex min-w-0 items-center gap-2.5">
-                <current.icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="truncate font-semibold">{current.title}</span>
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              {groups.map(({ group, items }) => (
-                <SelectGroup key={group}>
-                  <SelectLabel>{group}</SelectLabel>
-                  {items.map((section) => (
-                    <SelectItem key={section.id} value={section.id}>
-                      {section.title}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* Edge fades show there are more tabs to scroll to */}
+          <div
+            aria-hidden
+            className={cn(
+              "pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-background to-transparent transition-opacity",
+              fade.left ? "opacity-100" : "opacity-0",
+            )}
+          />
+          <div
+            aria-hidden
+            className={cn(
+              "pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-background to-transparent transition-opacity",
+              fade.right ? "opacity-100" : "opacity-0",
+            )}
+          />
         </div>
 
-        <div key={current.id} className="page-enter min-w-0 max-w-4xl">
+        <div
+          key={current.id}
+          id="settings-panel"
+          role="tabpanel"
+          aria-labelledby={`settings-tab-${current.id}`}
+          className="page-enter min-w-0 max-w-5xl"
+        >
           {content()}
         </div>
       </div>

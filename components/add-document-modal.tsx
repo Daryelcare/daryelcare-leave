@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { CheckCircle2 } from "lucide-react"
+import { CheckCircle2, ShieldCheck } from "lucide-react"
 import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { DatePicker } from "@/components/ui/date-picker"
@@ -570,8 +570,44 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
               />
             </div>
 
+            {/* Right to work comes first: it's the check that matters most */}
+            <div className="rounded-xl border border-primary/30 bg-primary-soft/60 p-4">
+              {/* Right to Work */}
+              <div>
+                <div className="mb-1.5 flex items-center justify-between gap-2">
+                  <h4 className="flex items-center gap-2 text-sm font-semibold">
+                    <ShieldCheck className="h-4 w-4 text-primary" />
+                    Right to work
+                  </h4>
+                  {existingDocument?.rightToWorkExpiry && (
+                    <span className="text-xs text-muted-foreground">Current: {existingDocument.rightToWorkExpiry}</span>
+                  )}
+                </div>
+                <FormField
+                  control={form.control}
+                  name="rightToWorkExpiryDate"
+                  render={({ field }) => (
+                    <FormItem className="space-y-0">
+                      <FormControl>
+                        <DatePicker
+                          value={field.value || undefined}
+                          onChange={field.onChange}
+                          placeholder="Select date"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <p className="mt-2 text-xs text-muted-foreground">
+                When this employee&apos;s permission to work ends. Leave blank only if it doesn&apos;t expire.
+              </p>
+            </div>
+
             <div className="rounded-xl border border-border/80 bg-muted/30 p-4">
-              <h3 className="mb-3 text-sm font-semibold">Expiry dates</h3>
+              <h3 className="mb-3 text-[13px] font-semibold text-muted-foreground">Other documents</h3>
 
               <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
                 {/* Passport */}
@@ -585,34 +621,6 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
                   <FormField
                     control={form.control}
                     name="passportExpiryDate"
-                    render={({ field }) => (
-                      <FormItem className="space-y-0">
-                        <FormControl>
-                          <DatePicker
-                            value={field.value || undefined}
-                            onChange={field.onChange}
-                            placeholder="Select date"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {/* Right to Work */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <h4 className="text-[13px] font-semibold">Right to work</h4>
-                    {existingDocument?.rightToWorkExpiry && (
-                      <span className="text-xs text-muted-foreground">
-                        Current: {existingDocument.rightToWorkExpiry}
-                      </span>
-                    )}
-                  </div>
-                  <FormField
-                    control={form.control}
-                    name="rightToWorkExpiryDate"
                     render={({ field }) => (
                       <FormItem className="space-y-0">
                         <FormControl>

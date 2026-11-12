@@ -1,12 +1,19 @@
 "use client"
 
 import Link from "next/link"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { useQuery } from "@tanstack/react-query"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ArrowRight, FileText } from "lucide-react"
+import { ArrowRight, FileText, ShieldCheck } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { formatDisplayDate } from "@/lib/dates"
 import { EmptyState, ErrorState } from "./page-kit"
@@ -36,7 +43,8 @@ export function EmployeeDocumentsModal({ employeeId, employeeName, isOpen, onClo
   const badgeFor = (daysLeft: number | null) => {
     if (daysLeft === null) return null
     const variant = daysLeft <= 7 ? "destructive" : daysLeft <= 30 ? "warning" : daysLeft <= 90 ? "default" : "success"
-    const label = daysLeft < 0 ? `${Math.abs(daysLeft)}d overdue` : daysLeft === 0 ? "Expires today" : `${daysLeft}d left`
+    const label =
+      daysLeft < 0 ? `${Math.abs(daysLeft)}d overdue` : daysLeft === 0 ? "Expires today" : `${daysLeft}d left`
     return (
       <Badge variant={variant} dot={daysLeft <= 90} className="px-2 text-[11px] leading-[18px] tabular">
         {label}
@@ -63,11 +71,15 @@ export function EmployeeDocumentsModal({ employeeId, employeeName, isOpen, onClo
         ) : documents.length > 0 ? (
           <div className="space-y-5">
             {documents.map((doc) => {
+              // Right to work leads; the other documents follow, quieter
               const items = [
                 { label: "Passport", date: doc.passportExpiry, days: doc.passportDaysLeft },
-                { label: "Right to work", date: doc.rightToWorkExpiry, days: doc.rightToWorkDaysLeft },
                 { label: "BRP", date: doc.brpExpiry, days: doc.brpDaysLeft },
-                { label: doc.otherDocumentType || "Other", date: doc.otherDocumentExpiry, days: doc.otherDocumentDaysLeft },
+                {
+                  label: doc.otherDocumentType || "Other",
+                  date: doc.otherDocumentExpiry,
+                  days: doc.otherDocumentDaysLeft,
+                },
               ].filter((item) => item.date)
               return (
                 <div key={doc.id} className="space-y-3">
@@ -77,10 +89,26 @@ export function EmployeeDocumentsModal({ employeeId, employeeName, isOpen, onClo
                     {doc.isSponsored && <Badge variant="default">Sponsored</Badge>}
                     {doc.is20Hours && <Badge variant="secondary">20 hrs</Badge>}
                   </div>
-                  {items.length > 0 ? (
+                  <div className="flex items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary-soft/60 px-4 py-3.5">
+                    <div>
+                      <p className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                        Right to work
+                      </p>
+                      <p className="font-display text-base font-semibold tabular">
+                        {doc.rightToWorkExpiry ? formatDisplayDate(doc.rightToWorkExpiry) : "No expiry recorded"}
+                      </p>
+                    </div>
+                    {doc.rightToWorkExpiry && badgeFor(doc.rightToWorkDaysLeft)}
+                  </div>
+                  {items.length > 0 && <p className="eyebrow pt-1">Other documents</p>}
+                  {items.length > 0 && (
                     <dl className="grid gap-2.5 sm:grid-cols-2">
                       {items.map((item) => (
-                        <div key={item.label} className="flex items-center justify-between gap-3 rounded-xl border border-border/80 px-4 py-3">
+                        <div
+                          key={item.label}
+                          className="flex items-center justify-between gap-3 rounded-xl border border-border/80 px-4 py-3"
+                        >
                           <div>
                             <dt className="text-xs font-semibold text-muted-foreground">{item.label}</dt>
                             <dd className="text-sm font-semibold tabular">{formatDisplayDate(item.date as string)}</dd>
@@ -89,15 +117,18 @@ export function EmployeeDocumentsModal({ employeeId, employeeName, isOpen, onClo
                         </div>
                       ))}
                     </dl>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No expiry dates recorded.</p>
                   )}
                 </div>
               )
             })}
           </div>
         ) : (
-          <EmptyState icon={FileText} title="No documents recorded" description="Add this employee's passport, BRP or right-to-work dates from the Documents page." compact />
+          <EmptyState
+            icon={FileText}
+            title="No documents recorded"
+            description="Add this employee's right to work date, and any passport or BRP dates, from the Documents page."
+            compact
+          />
         )}
 
         <DialogFooter>
