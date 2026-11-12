@@ -14,6 +14,7 @@ import { useBranches } from "@/hooks/use-branches"
 import { useLeaveTypes } from "@/hooks/use-leave-types"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
 import { formatDisplayRange, parseDateToUtc } from "@/lib/dates"
+import { LEAVE_CALENDAR_HREF } from "@/lib/navigation"
 import { cn } from "@/lib/utils"
 
 type LeaveEntry = {
@@ -129,9 +130,9 @@ export function DashboardHome() {
               </Select>
             )}
             <Button asChild variant="outline" className="hidden sm:inline-flex">
-              <Link href="/dashboard/calendar">
+              <Link href={LEAVE_CALENDAR_HREF}>
                 <CalendarRange />
-                Team calendar
+                Leave calendar
               </Link>
             </Button>
           </>
@@ -211,7 +212,7 @@ export function DashboardHome() {
                   <LeaveRow key={leave.id} leave={leave} color={typeColor(leave.type)} />
                 ))}
               </ul>
-              <PanelFooter href="/dashboard/calendar">
+              <PanelFooter href={LEAVE_CALENDAR_HREF}>
                 {offList.length > LIST_LIMIT ? `${offList.length - LIST_LIMIT} more in the team calendar` : "Open the team calendar"}
               </PanelFooter>
             </>

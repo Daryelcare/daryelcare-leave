@@ -31,7 +31,6 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "Overview",
     items: [
       { title: "Dashboard", short: "Home", href: "/dashboard", icon: LayoutGrid },
-      { title: "Team Calendar", short: "Calendar", href: "/dashboard/calendar", icon: CalendarRange },
     ],
   },
   {
@@ -54,8 +53,20 @@ export const NAV_GROUPS: NavGroup[] = [
   },
 ]
 
-/** Items in the phone tab bar (the rest live in the "More" drawer) */
-export const TAB_BAR_HREFS = ["/dashboard", "/dashboard/calendar", "/dashboard/leave-management", "/dashboard/employees"]
+/** The team calendar is a view of the Leave page */
+export const LEAVE_PATH = "/dashboard/leave-management"
+export const LEAVE_CALENDAR_HREF = `${LEAVE_PATH}?view=calendar`
+
+/**
+ * Phone tab bar (everything else lives in the "More" drawer). Leave and
+ * Calendar are the same page in two views, told apart by ?view=calendar.
+ */
+export const TAB_BAR: { title: string; href: string; icon: LucideIcon; isActive: (path: string, view: string | null) => boolean }[] = [
+  { title: "Home", href: "/dashboard", icon: LayoutGrid, isActive: (p) => p === "/dashboard" },
+  { title: "Leave", href: LEAVE_PATH, icon: CalendarDays, isActive: (p, v) => p === LEAVE_PATH && v !== "calendar" },
+  { title: "Calendar", href: LEAVE_CALENDAR_HREF, icon: CalendarRange, isActive: (p, v) => p === LEAVE_PATH && v === "calendar" },
+  { title: "People", href: "/dashboard/employees", icon: Users, isActive: (p) => p.startsWith("/dashboard/employees") },
+]
 
 export function visibleGroups(isAdmin: boolean): NavGroup[] {
   return NAV_GROUPS.map((group) => ({ ...group, items: group.items.filter((item) => isAdmin || !item.adminOnly) })).filter(

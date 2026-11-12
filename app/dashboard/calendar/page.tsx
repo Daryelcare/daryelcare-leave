@@ -1,11 +1,6 @@
-import type { Metadata } from "next"
-import { TeamCalendar } from "@/components/team-calendar"
+import { redirect } from "next/navigation"
 
-export const metadata: Metadata = {
-  title: "Team Calendar - DARYELCARE Leave Management",
-  description: "Who is off, by branch",
-}
-
+// The team calendar is now a view of the Leave page
 export default function CalendarPage() {
-  return <TeamCalendar />
+  redirect("/dashboard/leave-management?view=calendar")
 }

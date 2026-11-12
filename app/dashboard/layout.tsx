@@ -9,7 +9,7 @@ import { SidebarProvider } from "@/components/ui/sidebar"
 import { Toaster } from "@/components/ui/toaster"
 import { useApp } from "@/components/app-provider"
 import { usePathname, useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { getCurrentUser } from "@/lib/auth"
 import { supabase } from "@/lib/supabase"
 
@@ -35,7 +35,9 @@ export default function DashboardLayout({
             </div>
           </main>
         </div>
-        <MobileTabBar />
+        <Suspense fallback={null}>
+          <MobileTabBar />
+        </Suspense>
       </AuthCheck>
       <Toaster />
     </SidebarProvider>

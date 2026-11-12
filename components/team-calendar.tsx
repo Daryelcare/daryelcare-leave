@@ -67,7 +67,7 @@ function shortDate(iso: string) {
   return new Date(time).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" })
 }
 
-export function TeamCalendar() {
+export function TeamCalendar({ embedded = false }: { embedded?: boolean } = {}) {
   const { user } = useApp()
   const isAdmin = user?.role === "admin"
   const myBranches = user?.branches || []
@@ -171,10 +171,12 @@ export function TeamCalendar() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      <PageHeader
-        title="Team Calendar"
-        description="Who is off, by branch, with a warning when too many people are away at once."
-      />
+      {!embedded && (
+        <PageHeader
+          title="Team Calendar"
+          description="Who is off, by branch, with a warning when too many people are away at once."
+        />
+      )}
 
       {/* Controls */}
       <div className="surface flex flex-col gap-4 p-3 sm:p-4 lg:flex-row lg:items-end lg:justify-between">
@@ -183,10 +185,10 @@ export function TeamCalendar() {
             <ChevronLeft />
           </Button>
           <h2 className="min-w-0 flex-1 truncate text-center text-lg font-semibold sm:min-w-[180px] sm:flex-none sm:text-xl">
-            <span className="min-[400px]:hidden">
+            <span className="min-[360px]:hidden">
               {new Date(Date.UTC(view.year, view.month, 1)).toLocaleDateString("en-GB", { month: "short", year: "numeric", timeZone: "UTC" })}
             </span>
-            <span className="hidden min-[400px]:inline">{monthLabel(view.year, view.month)}</span>
+            <span className="hidden min-[360px]:inline">{monthLabel(view.year, view.month)}</span>
           </h2>
           <Button variant="ghost" size="icon" className="shrink-0" onClick={() => goToMonth(1)} aria-label="Next month">
             <ChevronRight />
@@ -196,7 +198,7 @@ export function TeamCalendar() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 sm:flex sm:items-end">
+        <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 sm:flex sm:items-end">
           {branchOptions.length > 1 && (
             <div className="space-y-1.5">
               <Label htmlFor="calendar-branch" className="text-xs text-muted-foreground">
@@ -217,7 +219,7 @@ export function TeamCalendar() {
               </Select>
             </div>
           )}
-          <div className={cn("space-y-1.5", branchOptions.length <= 1 && "min-[400px]:col-span-2")}>
+          <div className={cn("space-y-1.5", branchOptions.length <= 1 && "min-[360px]:col-span-2")}>
             <Label htmlFor="calendar-threshold" className="text-xs text-muted-foreground">
               Warning level
             </Label>

@@ -13,6 +13,8 @@ import {
   ArrowUp,
   ArrowUpDown,
   CalendarDays,
+  CalendarRange,
+  List,
   Download,
   Eye,
   FileSpreadsheet,
@@ -47,8 +49,19 @@ import { AddLeaveModal } from "./add-leave-modal"
 import { EditLeaveModal } from "./edit-leave-modal"
 import type { LeaveRequest } from "@/lib/types"
 import { useApp } from "./app-provider"
+import { TeamCalendar } from "./team-calendar"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useRouter, useSearchParams } from "next/navigation"
+import { LEAVE_CALENDAR_HREF, LEAVE_PATH } from "@/lib/navigation"
+
+type LeaveView = "list" | "calendar"
 
 export function LeaveManagementTable() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const view: LeaveView = searchParams.get("view") === "calendar" ? "calendar" : "list"
+  const setView = (next: LeaveView) =>
+    router.replace(next === "calendar" ? LEAVE_CALENDAR_HREF : LEAVE_PATH, { scroll: false })
   const [employeeSearch, setEmployeeSearch] = useState("")
   const [selectedType, setSelectedType] = useState<string>("all")
   const [debouncedEmployeeSearch, setDebouncedEmployeeSearch] = useState("")
@@ -127,12 +140,10 @@ export function LeaveManagementTable() {
 
       if (debouncedBranch !== "all") {
         params.append("branch", debouncedBranch)
-      }
-      else if (!isAdmin && user?.branches && user.branches.length > 0) {
+      } else if (!isAdmin && user?.branches && user.branches.length > 0) {
         if (user.branches.length === 1) {
           params.append("branch", user.branches[0])
-        }
-        else {
+        } else {
           params.append("branches", user.branches.join(","))
         }
       }
@@ -280,7 +291,10 @@ export function LeaveManagementTable() {
     <TableHead className={className}>
       <button
         onClick={() => handleSort(column)}
-        className={cn("inline-flex items-center gap-1 transition-colors hover:text-foreground", sortColumn === column && "text-foreground")}
+        className={cn(
+          "inline-flex items-center gap-1 transition-colors hover:text-foreground",
+          sortColumn === column && "text-foreground",
+        )}
       >
         {label}
         {sortColumn !== column ? (
@@ -329,27 +343,51 @@ export function LeaveManagementTable() {
     <div className="space-y-6 sm:space-y-8">
       <PageHeader
         title="Leave"
-        description={isAdmin ? "Every leave entry across your organisation." : "Leave for employees in your branches."}
+        description={
+          view === "calendar"
+            ? "Who is off, by branch, with a warning when too many people are away at once."
+            : isAdmin
+              ? "Every leave entry across your organisation."
+              : "Leave for employees in your branches."
+        }
         actions={
           <>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" disabled={isExporting}>
-                  {isExporting ? <Loader2 className="animate-spin" /> : <Download />}
-                  {isExporting ? `Exporting ${exportFormat === "csv" ? "CSV" : "Excel"}…` : "Export"}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => handleExport("csv")}>
-                  <FileText />
-                  CSV file
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleExport("excel")}>
-                  <FileSpreadsheet />
-                  Excel workbook
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Tabs
+              value={view}
+              onValueChange={(v) => setView(v === "calendar" ? "calendar" : "list")}
+              className="w-full sm:w-auto"
+            >
+              <TabsList className="w-full sm:w-auto" aria-label="Leave view">
+                <TabsTrigger value="list" className="flex-1 sm:flex-none">
+                  <List />
+                  List
+                </TabsTrigger>
+                <TabsTrigger value="calendar" className="flex-1 sm:flex-none">
+                  <CalendarRange />
+                  Calendar
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            {view === "list" && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" disabled={isExporting}>
+                    {isExporting ? <Loader2 className="animate-spin" /> : <Download />}
+                    {isExporting ? `Exporting ${exportFormat === "csv" ? "CSV" : "Excel"}…` : "Export"}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleExport("csv")}>
+                    <FileText />
+                    CSV file
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport("excel")}>
+                    <FileSpreadsheet />
+                    Excel workbook
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             {canAdd && (
               <Button onClick={() => setIsAddModalOpen(true)}>
                 <Plus />
@@ -360,184 +398,233 @@ export function LeaveManagementTable() {
         }
       />
 
-      {isMockData && (
-        <Alert variant="warning">
-          <AlertTriangle />
-          <AlertTitle>Using mock branch data</AlertTitle>
-          <AlertDescription>Supabase environment variables are missing. Set up the Supabase integration to use real data.</AlertDescription>
-        </Alert>
-      )}
-      {isError && <ErrorState title="Couldn't load leave" message={handleApiError(error)} onRetry={() => refetch()} />}
-      {isBranchesError && <ErrorState title="Couldn't load branches" message={handleApiError(branchesError)} onRetry={() => window.location.reload()} />}
-      {isLeaveTypesError && (
-        <ErrorState title="Couldn't load leave types" message={handleApiError(leaveTypesError)} onRetry={() => window.location.reload()} />
-      )}
+      <div key={view} className="page-enter space-y-6 sm:space-y-8">
+        {view === "calendar" ? (
+          <TeamCalendar embedded />
+        ) : (
+          <>
+            {isMockData && (
+              <Alert variant="warning">
+                <AlertTriangle />
+                <AlertTitle>Using mock branch data</AlertTitle>
+                <AlertDescription>
+                  Supabase environment variables are missing. Set up the Supabase integration to use real data.
+                </AlertDescription>
+              </Alert>
+            )}
+            {isError && (
+              <ErrorState title="Couldn't load leave" message={handleApiError(error)} onRetry={() => refetch()} />
+            )}
+            {isBranchesError && (
+              <ErrorState
+                title="Couldn't load branches"
+                message={handleApiError(branchesError)}
+                onRetry={() => window.location.reload()}
+              />
+            )}
+            {isLeaveTypesError && (
+              <ErrorState
+                title="Couldn't load leave types"
+                message={handleApiError(leaveTypesError)}
+                onRetry={() => window.location.reload()}
+              />
+            )}
 
-      <div className="surface overflow-hidden">
-        <Toolbar className="border-b border-border/70 p-3 sm:p-4">
-          <div className="relative flex-1 sm:max-w-xs">
-            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search employee"
-              aria-label="Search employee name"
-              className="pl-10"
-              value={employeeSearch}
-              onChange={(e) => setEmployeeSearch(e.target.value)}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-2.5 sm:flex">
-            <Select value={selectedBranch} onValueChange={setSelectedBranch} disabled={isLoadingBranches}>
-              <SelectTrigger className="sm:w-[180px]" aria-label="Branch">
-                <SelectValue placeholder="All branches" />
-              </SelectTrigger>
-              <SelectContent>
-                {(isAdmin || (user?.branches && user.branches.length > 1)) && <SelectItem value="all">All branches</SelectItem>}
-                {branches
-                  .filter((branch) => isAdmin || (user?.branches && user.branches.includes(branch.name)))
-                  .map((branch) => (
-                    <SelectItem key={branch.id} value={branch.name}>
-                      {branch.name}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-            <Select value={selectedType} onValueChange={setSelectedType} disabled={isLoadingLeaveTypes}>
-              <SelectTrigger className="sm:w-[180px]" aria-label="Leave type">
-                <SelectValue placeholder="All types" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All types</SelectItem>
-                {leaveTypes.map((type) => (
-                  <SelectItem key={type.id} value={type.name}>
-                    {type.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {filtersActive && (
-            <Button variant="ghost" onClick={resetFilters} disabled={isLoading} className="sm:ml-auto">
-              <X />
-              Clear filters
-            </Button>
-          )}
-        </Toolbar>
+            <div className="surface overflow-hidden">
+              <Toolbar className="border-b border-border/70 p-3 sm:p-4">
+                <div className="relative flex-1 sm:max-w-xs">
+                  <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Search employee"
+                    aria-label="Search employee name"
+                    className="pl-10"
+                    value={employeeSearch}
+                    onChange={(e) => setEmployeeSearch(e.target.value)}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2.5 sm:flex">
+                  <Select value={selectedBranch} onValueChange={setSelectedBranch} disabled={isLoadingBranches}>
+                    <SelectTrigger className="sm:w-[180px]" aria-label="Branch">
+                      <SelectValue placeholder="All branches" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(isAdmin || (user?.branches && user.branches.length > 1)) && (
+                        <SelectItem value="all">All branches</SelectItem>
+                      )}
+                      {branches
+                        .filter((branch) => isAdmin || (user?.branches && user.branches.includes(branch.name)))
+                        .map((branch) => (
+                          <SelectItem key={branch.id} value={branch.name}>
+                            {branch.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={selectedType} onValueChange={setSelectedType} disabled={isLoadingLeaveTypes}>
+                    <SelectTrigger className="sm:w-[180px]" aria-label="Leave type">
+                      <SelectValue placeholder="All types" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All types</SelectItem>
+                      {leaveTypes.map((type) => (
+                        <SelectItem key={type.id} value={type.name}>
+                          {type.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {filtersActive && (
+                  <Button variant="ghost" onClick={resetFilters} disabled={isLoading} className="sm:ml-auto">
+                    <X />
+                    Clear filters
+                  </Button>
+                )}
+              </Toolbar>
 
-        {/* Desktop and tablet: table */}
-        <div className="hidden md:block">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                {sortHeader("Employee", "employee")}
-                {sortHeader("Type", "type")}
-                {sortHeader("Dates", "startDate")}
-                {sortHeader("Days", "duration", "text-right")}
-                {sortHeader("Balance after", "remaining", "hidden text-right lg:table-cell")}
-                {sortHeader("Status", "status")}
-                <TableHead className="w-12">
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 6 }).map((_, index) => (
-                  <TableRow key={index} className="hover:bg-transparent">
-                    <TableCell colSpan={7} className="py-3">
-                      <div className="flex items-center gap-3">
-                        <Skeleton className="h-9 w-9 rounded-full" />
-                        <Skeleton className="h-4 w-1/5" />
-                        <Skeleton className="ml-auto h-4 w-1/3" />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : leaveRequests.length > 0 ? (
-                leaveRequests.map((row) => (
-                  <TableRow key={row.id} className="cursor-pointer" onClick={() => handleViewDetails(row.id)}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar name={row.employee} />
-                        <div className="min-w-0">
-                          <p className="truncate font-semibold text-foreground">{row.employee}</p>
-                          <p className="truncate text-xs text-muted-foreground">
-                            {row.branch}
-                            {row.employeeCode && row.employeeCode !== row.employeeId ? ` · ${row.employeeCode}` : ""}
-                          </p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="inline-flex items-center gap-2 whitespace-nowrap">
-                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: typeColor(row.type) }} aria-hidden />
-                        {row.type}
-                      </span>
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap tabular">{formatDisplayRange(row.startDate, row.endDate)}</TableCell>
-                    <TableCell className="text-right tabular">{row.duration}</TableCell>
-                    <TableCell className={cn("hidden text-right tabular lg:table-cell", (row.remaining ?? 0) < 0 && "font-semibold text-destructive")}>
-                      {row.remaining ?? "—"}
-                    </TableCell>
-                    <TableCell>{statusBadge(row.status)}</TableCell>
-                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                      {rowActions(row)}
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={7}>
-                    <EmptyState
-                      icon={CalendarDays}
-                      title={filtersActive ? "No leave matches these filters" : "No leave recorded yet"}
-                      description={filtersActive ? "Try clearing the filters." : "Add a leave entry to get started."}
-                    />
-                  </TableCell>
-                </TableRow>
+              {/* Desktop and tablet: table */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      {sortHeader("Employee", "employee")}
+                      {sortHeader("Type", "type")}
+                      {sortHeader("Dates", "startDate")}
+                      {sortHeader("Days", "duration", "text-right")}
+                      {sortHeader("Balance after", "remaining", "hidden text-right lg:table-cell")}
+                      {sortHeader("Status", "status")}
+                      <TableHead className="w-12">
+                        <span className="sr-only">Actions</span>
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoading ? (
+                      Array.from({ length: 6 }).map((_, index) => (
+                        <TableRow key={index} className="hover:bg-transparent">
+                          <TableCell colSpan={7} className="py-3">
+                            <div className="flex items-center gap-3">
+                              <Skeleton className="h-9 w-9 rounded-full" />
+                              <Skeleton className="h-4 w-1/5" />
+                              <Skeleton className="ml-auto h-4 w-1/3" />
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : leaveRequests.length > 0 ? (
+                      leaveRequests.map((row) => (
+                        <TableRow key={row.id} className="cursor-pointer" onClick={() => handleViewDetails(row.id)}>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <Avatar name={row.employee} />
+                              <div className="min-w-0">
+                                <p className="truncate font-semibold text-foreground">{row.employee}</p>
+                                <p className="truncate text-xs text-muted-foreground">
+                                  {row.branch}
+                                  {row.employeeCode && row.employeeCode !== row.employeeId
+                                    ? ` · ${row.employeeCode}`
+                                    : ""}
+                                </p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="inline-flex items-center gap-2 whitespace-nowrap">
+                              <span
+                                className="h-2 w-2 rounded-full"
+                                style={{ backgroundColor: typeColor(row.type) }}
+                                aria-hidden
+                              />
+                              {row.type}
+                            </span>
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap tabular">
+                            {formatDisplayRange(row.startDate, row.endDate)}
+                          </TableCell>
+                          <TableCell className="text-right tabular">{row.duration}</TableCell>
+                          <TableCell
+                            className={cn(
+                              "hidden text-right tabular lg:table-cell",
+                              (row.remaining ?? 0) < 0 && "font-semibold text-destructive",
+                            )}
+                          >
+                            {row.remaining ?? "—"}
+                          </TableCell>
+                          <TableCell>{statusBadge(row.status)}</TableCell>
+                          <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                            {rowActions(row)}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow className="hover:bg-transparent">
+                        <TableCell colSpan={7}>
+                          <EmptyState
+                            icon={CalendarDays}
+                            title={filtersActive ? "No leave matches these filters" : "No leave recorded yet"}
+                            description={
+                              filtersActive ? "Try clearing the filters." : "Add a leave entry to get started."
+                            }
+                          />
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Phones: cards */}
+              <div className="md:hidden">
+                {isLoading ? (
+                  <ListSkeleton rows={5} />
+                ) : leaveRequests.length > 0 ? (
+                  <ul className="divide-y divide-border/70">
+                    {leaveRequests.map((row) => (
+                      <li key={row.id} className="flex items-start gap-3 px-4 py-3.5">
+                        <button
+                          className="flex min-w-0 flex-1 items-start gap-3 text-left"
+                          onClick={() => handleViewDetails(row.id)}
+                        >
+                          <Avatar name={row.employee} />
+                          <span className="min-w-0 flex-1 space-y-1">
+                            <span className="flex items-center justify-between gap-2">
+                              <span className="truncate text-[15px] font-semibold">{row.employee}</span>
+                              {statusBadge(row.status)}
+                            </span>
+                            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <span
+                                className="h-2 w-2 shrink-0 rounded-full"
+                                style={{ backgroundColor: typeColor(row.type) }}
+                                aria-hidden
+                              />
+                              <span className="truncate">
+                                {row.type} · {row.branch}
+                              </span>
+                            </span>
+                            <span className="block text-[13px] font-medium tabular">
+                              {formatDisplayRange(row.startDate, row.endDate)} · {plural(row.duration, "day")}
+                            </span>
+                          </span>
+                        </button>
+                        {rowActions(row)}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <EmptyState
+                    icon={CalendarDays}
+                    title={filtersActive ? "No leave matches these filters" : "No leave recorded yet"}
+                  />
+                )}
+              </div>
+
+              {!isLoading && leaveRequests.length > 0 && (
+                <div className="border-t border-border/70 px-4 py-3 text-sm text-muted-foreground sm:px-5">
+                  {plural(leaveRequests.length, "entry", "entries")}
+                </div>
               )}
-            </TableBody>
-          </Table>
-        </div>
-
-        {/* Phones: cards */}
-        <div className="md:hidden">
-          {isLoading ? (
-            <ListSkeleton rows={5} />
-          ) : leaveRequests.length > 0 ? (
-            <ul className="divide-y divide-border/70">
-              {leaveRequests.map((row) => (
-                <li key={row.id} className="flex items-start gap-3 px-4 py-3.5">
-                  <button className="flex min-w-0 flex-1 items-start gap-3 text-left" onClick={() => handleViewDetails(row.id)}>
-                    <Avatar name={row.employee} />
-                    <span className="min-w-0 flex-1 space-y-1">
-                      <span className="flex items-center justify-between gap-2">
-                        <span className="truncate text-[15px] font-semibold">{row.employee}</span>
-                        {statusBadge(row.status)}
-                      </span>
-                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: typeColor(row.type) }} aria-hidden />
-                        <span className="truncate">
-                          {row.type} · {row.branch}
-                        </span>
-                      </span>
-                      <span className="block text-[13px] font-medium tabular">
-                        {formatDisplayRange(row.startDate, row.endDate)} · {plural(row.duration, "day")}
-                      </span>
-                    </span>
-                  </button>
-                  {rowActions(row)}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <EmptyState icon={CalendarDays} title={filtersActive ? "No leave matches these filters" : "No leave recorded yet"} />
-          )}
-        </div>
-
-        {!isLoading && leaveRequests.length > 0 && (
-          <div className="border-t border-border/70 px-4 py-3 text-sm text-muted-foreground sm:px-5">
-            {plural(leaveRequests.length, "entry", "entries")}
-          </div>
+            </div>
+          </>
         )}
       </div>
 
@@ -546,7 +633,11 @@ export function LeaveManagementTable() {
       <EditLeaveModal leave={leaveToEdit} open={!!leaveToEdit} onOpenChange={(open) => !open && setLeaveToEdit(null)} />
 
       {selectedLeaveId && (
-        <LeaveDetailsModal leaveId={selectedLeaveId} isOpen={isDetailsModalOpen} onClose={() => setIsDetailsModalOpen(false)} />
+        <LeaveDetailsModal
+          leaveId={selectedLeaveId}
+          isOpen={isDetailsModalOpen}
+          onClose={() => setIsDetailsModalOpen(false)}
+        />
       )}
 
       <DeleteConfirmationDialog
