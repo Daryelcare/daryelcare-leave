@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
+import { matchesDocumentStatus, withLiveDaysLeft } from "@/lib/document-status"
 import * as XLSX from "xlsx"
 import type { EmployeeDocument } from "@/lib/types"
 
@@ -23,46 +24,6 @@ export async function POST(request: Request) {
 
     if (search) {
       query = query.or(`employee_name.ilike.%${search}%,country.ilike.%${search}%`)
-    }
-
-    // Apply status filter
-    if (status && status !== "all") {
-      switch (status) {
-        case "expired":
-          query = query.or(
-            "passport_days_left.lte.0,right_to_work_days_left.lte.0,brp_days_left.lte.0,other_document_days_left.lte.0",
-          )
-          break
-        case "expiring7":
-          query = query.or(
-            "passport_days_left.gt.0,passport_days_left.lte.7," +
-              "right_to_work_days_left.gt.0,right_to_work_days_left.lte.7," +
-              "brp_days_left.gt.0,brp_days_left.lte.7," +
-              "other_document_days_left.gt.0,other_document_days_left.lte.7",
-          )
-          break
-        case "expiring30":
-          query = query.or(
-            "passport_days_left.gt.7,passport_days_left.lte.30," +
-              "right_to_work_days_left.gt.7,right_to_work_days_left.lte.30," +
-              "brp_days_left.gt.7,brp_days_left.lte.30," +
-              "other_document_days_left.gt.7,other_document_days_left.lte.30",
-          )
-          break
-        case "expiring90":
-          query = query.or(
-            "passport_days_left.gt.30,passport_days_left.lte.90," +
-              "right_to_work_days_left.gt.30,right_to-work_days_left.lte.90," +
-              "brp_days_left.gt.30,brp_days_left.lte.90," +
-              "other_document_days_left.gt.30,other_document_days_left.lte.90",
-          )
-          break
-        case "valid":
-          query = query.and(
-            "passport_days_left.gt.90,right_to_work_days_left.gt.90,brp_days_left.gt.90,other_document_days_left.gt.90",
-          )
-          break
-      }
     }
 
     // Apply sorting
@@ -95,8 +56,14 @@ export async function POST(request: Request) {
       throw error
     }
 
+    // Recalculate days left from the expiry dates (the stored values go stale),
+    // then apply the status filter on the fresh numbers
+    const rows = (data || [])
+      .map((doc) => withLiveDaysLeft(doc))
+      .filter((doc) => !status || status === "all" || matchesDocumentStatus(doc, status))
+
     // Transform the data to match our frontend types
-    const documents = data.map((doc) => ({
+    const documents = rows.map((doc) => ({
       id: doc.id,
       employeeId: doc.employee_id,
       employeeName: doc.employee_name,
@@ -104,14 +71,14 @@ export async function POST(request: Request) {
       status: doc.status,
       country: doc.country,
       passportExpiry: doc.passport_expiry || null,
-      passportDaysLeft: doc.passport_days_left || null,
+      passportDaysLeft: doc.passport_days_left ?? null,
       rightToWorkExpiry: doc.right_to_work_expiry || null,
-      rightToWorkDaysLeft: doc.right_to_work_days_left || null,
+      rightToWorkDaysLeft: doc.right_to_work_days_left ?? null,
       brpExpiry: doc.brp_expiry || null,
-      brpDaysLeft: doc.brp_days_left || null,
+      brpDaysLeft: doc.brp_days_left ?? null,
       otherDocumentType: doc.other_document_type || null,
       otherDocumentExpiry: doc.other_document_expiry || null,
-      otherDocumentDaysLeft: doc.other_document_days_left || null,
+      otherDocumentDaysLeft: doc.other_document_days_left ?? null,
       isSponsored: doc.is_sponsored || false,
       is20Hours: doc.is_20_hours || false,
     }))
