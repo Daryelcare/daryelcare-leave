@@ -41,6 +41,18 @@
     --input: 220 13% 87%;
     --ring: 204 82% 45%;
     --radius: 0.75rem;
+<<<<<<< HEAD
+=======
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 14% 30%;
+    --sidebar-primary: 204 82% 38%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 16% 95%;
+    --sidebar-accent-foreground: 222 22% 12%;
+    --sidebar-border: 220 14% 91%;
+    --sidebar-ring: 204 82% 45%;
+>>>>>>> origin/claude/tender-gates-d8wf98
   }
 
   .dark {
@@ -69,6 +81,17 @@
     --border: 222 12% 19%;
     --input: 222 12% 22%;
     --ring: 204 80% 56%;
+<<<<<<< HEAD
+=======
+    --sidebar-background: 222 16% 10%;
+    --sidebar-foreground: 220 10% 72%;
+    --sidebar-primary: 204 80% 56%;
+    --sidebar-primary-foreground: 222 30% 8%;
+    --sidebar-accent: 222 12% 16%;
+    --sidebar-accent-foreground: 220 14% 96%;
+    --sidebar-border: 222 12% 17%;
+    --sidebar-ring: 204 80% 56%;
+>>>>>>> origin/claude/tender-gates-d8wf98
   }
 }
 

@@ -16,7 +16,11 @@ import {
   Users,
 } from "lucide-react"
 
+<<<<<<< HEAD
 // One place that defines the app's navigation, used by the top bar, the
+=======
+// One place that defines the app's navigation, used by the sidebar, the
+>>>>>>> origin/claude/tender-gates-d8wf98
 // mobile tab bar and the page titles in the header.
 
 export type NavItem = {
