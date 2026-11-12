@@ -4,21 +4,12 @@ import { useEffect, useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import {
-<<<<<<< HEAD
   AlertTriangle,
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
   CalendarClock,
   ChevronRight,
-=======
-  MoreHorizontal,
-  Pencil,
-  Trash2,
-  Plus,
-  Search,
-  X,
->>>>>>> origin/claude/tender-gates-d8wf98
   Download,
   FileSpreadsheet,
   FileText,
@@ -72,22 +63,6 @@ import {
 import { AddDocumentModal } from "./add-document-modal"
 import { EditDocumentModal } from "./edit-document-modal"
 import { DeleteConfirmationDialog } from "./delete-confirmation-dialog"
-<<<<<<< HEAD
-=======
-import { Checkbox } from "@/components/ui/checkbox"
-import type { EmployeeDocument } from "@/lib/types"
-import { cn } from "@/lib/utils"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { formatDisplayDate } from "@/lib/dates"
-import { Avatar, EmptyState, ErrorState, ListSkeleton, PageHeader, Toolbar, plural } from "./page-kit"
->>>>>>> origin/claude/tender-gates-d8wf98
 import { ImportDocumentsModal } from "./import-documents-modal"
 import { Avatar, EmptyState, ErrorState, ListSkeleton, PageHeader, plural } from "./page-kit"
 
@@ -167,27 +142,6 @@ const isFilter = (v: string | null): v is ExpiryFilter => EXPIRY_FILTERS.some((f
 const isKind = (v: string | null): v is DocKind => DOC_KINDS.some((k) => k.id === v)
 
 export function DocumentTrackerTable() {
-<<<<<<< HEAD
-=======
-  const [searchQuery, setSearchQuery] = useState("")
-  const [selectedBranch, setSelectedBranch] = useState<string>("all")
-  const selectedStatus = "all" // status is filtered with the tiles, on the page
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [selectedDocument, setSelectedDocument] = useState<EmployeeDocument | null>(null)
-  const [selectedDocuments, setSelectedDocuments] = useState<string[]>([])
-  const [activeTab, setActiveTab] = useState<string>("all")
-  const [activeSection, setActiveSection] = useState<string>("all")
-  const [isExporting, setIsExporting] = useState(false)
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false)
-  const serverSortColumn = "employeeName"
-  const serverSortOrder = "asc"
-  const [sortColumn, setSortColumn] = useState<string | null>("employeeName")
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
-
->>>>>>> origin/claude/tender-gates-d8wf98
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const { data: branches = [], isLoading: isLoadingBranches } = useBranches()
@@ -267,7 +221,6 @@ export function DocumentTrackerTable() {
     })
   }, [scoped, expiry, kind, sort])
 
-<<<<<<< HEAD
   // Drop selections that are no longer on screen
   useEffect(() => {
     setSelected((prev) => {
@@ -302,15 +255,6 @@ export function DocumentTrackerTable() {
       compliant,
       upcoming,
       percent: dated > 0 ? Math.round((compliant / dated) * 100) : 100,
-=======
-      queryClient.invalidateQueries({ queryKey: ["documents"] })
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to delete document. Please try again.",
-        variant: "destructive",
-      })
->>>>>>> origin/claude/tender-gates-d8wf98
     }
   }, [scoped, kind])
 
@@ -368,123 +312,8 @@ export function DocumentTrackerTable() {
     return `${parts.filter(Boolean).join("-").toLowerCase()}.csv`
   }
 
-<<<<<<< HEAD
   // The full register from the server (CSV or Excel), with branch and search applied
   const exportRegister = async (format: "csv" | "excel") => {
-=======
-  const toggleAllDocuments = (docs: EmployeeDocument[]) => {
-    if (selectedDocuments.length === docs.length) {
-      setSelectedDocuments([])
-    } else {
-      setSelectedDocuments(docs.map((doc) => doc.id))
-    }
-  }
-
-  const getDocumentStatus = (daysLeft: number | null) => {
-    if (!daysLeft && daysLeft !== 0) return "valid"
-    if (daysLeft <= 0) return "expired"
-    if (daysLeft <= 7) return "expiring7"
-    if (daysLeft <= 30) return "expiring30"
-    if (daysLeft <= 90) return "expiring90"
-    return "valid"
-  }
-
-  const sponsoredDocuments = documents.filter((doc) => doc.isSponsored)
-  const regularDocuments = documents.filter((doc) => !doc.isSponsored)
-
-  const calculateStats = (docs: EmployeeDocument[]) => {
-    return {
-      expired: docs.filter(
-        (doc) =>
-          (doc.passportDaysLeft !== null && doc.passportDaysLeft <= 0) ||
-          (doc.rightToWorkDaysLeft !== null && doc.rightToWorkDaysLeft <= 0) ||
-          (doc.brpDaysLeft !== null && doc.brpDaysLeft <= 0) ||
-          (doc.otherDocumentDaysLeft !== null && doc.otherDocumentDaysLeft <= 0),
-      ),
-      expiringIn7: docs.filter(
-        (doc) =>
-          (doc.passportDaysLeft !== null && doc.passportDaysLeft > 0 && doc.passportDaysLeft <= 7) ||
-          (doc.rightToWorkDaysLeft !== null && doc.rightToWorkDaysLeft > 0 && doc.rightToWorkDaysLeft <= 7) ||
-          (doc.brpDaysLeft !== null && doc.brpDaysLeft > 0 && doc.brpDaysLeft <= 7) ||
-          (doc.otherDocumentDaysLeft !== null && doc.otherDocumentDaysLeft > 0 && doc.otherDocumentDaysLeft <= 7),
-      ),
-      expiringIn30: docs.filter(
-        (doc) =>
-          (doc.passportDaysLeft !== null && doc.passportDaysLeft > 7 && doc.passportDaysLeft <= 30) ||
-          (doc.rightToWorkDaysLeft !== null && doc.rightToWorkDaysLeft > 7 && doc.rightToWorkDaysLeft <= 30) ||
-          (doc.brpDaysLeft !== null && doc.brpDaysLeft > 7 && doc.brpDaysLeft <= 30) ||
-          (doc.otherDocumentDaysLeft !== null && doc.otherDocumentDaysLeft > 7 && doc.otherDocumentDaysLeft <= 30),
-      ),
-      expiringIn90: docs.filter(
-        (doc) =>
-          (doc.passportDaysLeft !== null && doc.passportDaysLeft > 30 && doc.passportDaysLeft <= 90) ||
-          (doc.rightToWorkDaysLeft !== null && doc.rightToWorkDaysLeft > 30 && doc.rightToWorkDaysLeft <= 90) ||
-          (doc.brpDaysLeft !== null && doc.brpDaysLeft > 30 && doc.brpDaysLeft <= 90) ||
-          (doc.otherDocumentDaysLeft !== null && doc.otherDocumentDaysLeft > 30 && doc.otherDocumentDaysLeft <= 90),
-      ),
-      valid: docs.filter(
-        (doc) =>
-          (doc.passportDaysLeft === null || doc.passportDaysLeft > 90) &&
-          (doc.rightToWorkDaysLeft === null || doc.rightToWorkDaysLeft > 90) &&
-          (doc.brpDaysLeft === null || doc.brpDaysLeft > 90) &&
-          (doc.otherDocumentDaysLeft === null || doc.otherDocumentDaysLeft > 90),
-      ),
-    }
-  }
-
-
-  const getFilteredDocuments = () => {
-    const docsToFilter =
-      activeSection === "sponsored" ? sponsoredDocuments : activeSection === "regular" ? regularDocuments : documents
-
-    switch (activeTab) {
-      case "expired":
-        return docsToFilter.filter(
-          (doc) =>
-            (doc.passportDaysLeft !== null && doc.passportDaysLeft <= 0) ||
-            (doc.rightToWorkDaysLeft !== null && doc.rightToWorkDaysLeft <= 0) ||
-            (doc.brpDaysLeft !== null && doc.brpDaysLeft <= 0) ||
-            (doc.otherDocumentDaysLeft !== null && doc.otherDocumentDaysLeft <= 0),
-        )
-      case "expiring7":
-        return docsToFilter.filter(
-          (doc) =>
-            (doc.passportDaysLeft !== null && doc.passportDaysLeft > 0 && doc.passportDaysLeft <= 7) ||
-            (doc.rightToWorkDaysLeft !== null && doc.rightToWorkDaysLeft > 0 && doc.rightToWorkDaysLeft <= 7) ||
-            (doc.brpDaysLeft !== null && doc.brpDaysLeft > 0 && doc.brpDaysLeft <= 7) ||
-            (doc.otherDocumentDaysLeft !== null && doc.otherDocumentDaysLeft > 0 && doc.otherDocumentDaysLeft <= 7),
-        )
-      case "expiring30":
-        return docsToFilter.filter(
-          (doc) =>
-            (doc.passportDaysLeft !== null && doc.passportDaysLeft > 7 && doc.passportDaysLeft <= 30) ||
-            (doc.rightToWorkDaysLeft !== null && doc.rightToWorkDaysLeft > 7 && doc.rightToWorkDaysLeft <= 30) ||
-            (doc.brpDaysLeft !== null && doc.brpDaysLeft > 7 && doc.brpDaysLeft <= 30) ||
-            (doc.otherDocumentDaysLeft !== null && doc.otherDocumentDaysLeft > 7 && doc.otherDocumentDaysLeft <= 30),
-        )
-      case "expiring90":
-        return docsToFilter.filter(
-          (doc) =>
-            (doc.passportDaysLeft !== null && doc.passportDaysLeft > 30 && doc.passportDaysLeft <= 90) ||
-            (doc.rightToWorkDaysLeft !== null && doc.rightToWorkDaysLeft > 30 && doc.rightToWorkDaysLeft <= 90) ||
-            (doc.brpDaysLeft !== null && doc.brpDaysLeft > 30 && doc.brpDaysLeft <= 90) ||
-            (doc.otherDocumentDaysLeft !== null && doc.otherDocumentDaysLeft > 30 && doc.otherDocumentDaysLeft <= 90),
-        )
-      case "valid":
-        return docsToFilter.filter(
-          (doc) =>
-            (doc.passportDaysLeft === null || doc.passportDaysLeft > 90) &&
-            (doc.rightToWorkDaysLeft === null || doc.rightToWorkDaysLeft > 90) &&
-            (doc.brpDaysLeft === null || doc.brpDaysLeft > 90) &&
-            (doc.otherDocumentDaysLeft === null || doc.otherDocumentDaysLeft > 90),
-        )
-      default:
-        return docsToFilter
-    }
-  }
-
-  const handleExportDocuments = async (format: string) => {
->>>>>>> origin/claude/tender-gates-d8wf98
     setIsExporting(true)
     try {
       const formData = new FormData()
@@ -507,11 +336,7 @@ export function DocumentTrackerTable() {
       URL.revokeObjectURL(url)
       toast({
         title: "Export ready",
-<<<<<<< HEAD
         description: `Your ${format === "csv" ? "CSV" : "Excel"} file has been downloaded.`,
-=======
-        description: `Your ${format.toUpperCase()} file has been downloaded.`,
->>>>>>> origin/claude/tender-gates-d8wf98
       })
     } catch (err) {
       console.error("Export error:", err)
@@ -530,7 +355,6 @@ export function DocumentTrackerTable() {
   const toggleOne = (id: string) =>
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
 
-<<<<<<< HEAD
   // Pieces --------------------------------------------------------------
 
   const expiryCell = (doc: EmployeeDocument, k: DocKind) => {
@@ -651,157 +475,6 @@ export function DocumentTrackerTable() {
             description: "Good news. Try a wider window or another filter.",
           }
         : { title: "Nothing matches", description: "Try another filter or search." }
-=======
-  const expiryBadge = (daysLeft: number | null) => {
-    const status = getDocumentStatus(daysLeft)
-    const label =
-      daysLeft === null
-        ? "—"
-        : daysLeft < 0
-          ? `${Math.abs(daysLeft)}d overdue`
-          : daysLeft === 0
-            ? "Expires today"
-            : daysLeft > 365
-              ? `${Math.floor(daysLeft / 365)}y ${Math.round((daysLeft % 365) / 30)}m`
-              : `${daysLeft}d left`
-    const variant =
-      status === "expired" || status === "expiring7"
-        ? "destructive"
-        : status === "expiring30"
-          ? "warning"
-          : status === "expiring90"
-            ? "default"
-            : "success"
-    return (
-      <Badge variant={variant} dot={status !== "valid"} className="px-2 text-[11px] leading-[18px] tabular">
-        {label}
-      </Badge>
-    )
-  }
-
-  const formatExpiryDate = (expiryDate: string | null, daysLeft: number | null) => {
-    if (!expiryDate) return <span className="text-muted-foreground/50">—</span>
-    return (
-      <div className="flex flex-col items-start gap-1">
-        <span className="whitespace-nowrap text-sm font-medium tabular">{formatDisplayDate(expiryDate)}</span>
-        {expiryBadge(daysLeft)}
-      </div>
-    )
-  }
-
-  const handleSort = (column: string) => {
-    if (sortColumn === column) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc")
-    } else {
-      setSortColumn(column)
-      setSortDirection("asc")
-    }
-  }
-
-  const hasAnyDates = (documents: EmployeeDocument[], field: "passport" | "rightToWork" | "brp" | "otherDocument") => {
-    return documents.some((doc) => {
-      switch (field) {
-        case "passport":
-          return doc.passportExpiry !== null && doc.passportExpiry !== undefined
-        case "rightToWork":
-          return doc.rightToWorkExpiry !== null && doc.rightToWorkExpiry !== undefined
-        case "brp":
-          return doc.brpExpiry !== null && doc.brpExpiry !== undefined
-        case "otherDocument":
-          return doc.otherDocumentExpiry !== null && doc.otherDocumentExpiry !== undefined
-      }
-    })
-  }
-
-  const sectionDocs = activeSection === "sponsored" ? sponsoredDocuments : activeSection === "regular" ? regularDocuments : documents
-  const sectionStats = calculateStats(sectionDocs)
-  const statusTiles = [
-    { key: "expired", label: "Expired", short: "Expired", count: sectionStats.expired.length, tone: "danger" },
-    { key: "expiring7", label: "Within 7 days", short: "7 days", count: sectionStats.expiringIn7.length, tone: "danger" },
-    { key: "expiring30", label: "Within 30 days", short: "30 days", count: sectionStats.expiringIn30.length, tone: "warning" },
-    { key: "expiring90", label: "Within 90 days", short: "90 days", count: sectionStats.expiringIn90.length, tone: "info" },
-    { key: "valid", label: "Valid", short: "Valid", count: sectionStats.valid.length, tone: "success" },
-  ] as const
-  const toneStyles = {
-    danger: { dot: "bg-destructive", text: "text-destructive", ring: "ring-destructive/40 bg-destructive-soft" },
-    warning: { dot: "bg-warning", text: "text-warning", ring: "ring-warning/40 bg-warning-soft" },
-    info: { dot: "bg-primary", text: "text-primary", ring: "ring-primary/40 bg-primary-soft" },
-    success: { dot: "bg-success", text: "text-success", ring: "ring-success/40 bg-success-soft" },
-  }
-  const columnsShown = {
-    passport: hasAnyDates(documents, "passport"),
-    rightToWork: hasAnyDates(documents, "rightToWork"),
-    brp: hasAnyDates(documents, "brp"),
-    other: hasAnyDates(documents, "otherDocument"),
-  }
->>>>>>> origin/claude/tender-gates-d8wf98
-
-  const sortHeader = (label: string, column: string) => (
-    <TableHead>
-      <button
-        onClick={() => handleSort(column)}
-        className={cn("inline-flex items-center gap-1 transition-colors hover:text-foreground", sortColumn === column && "text-foreground")}
-      >
-        {label}
-        {sortColumn !== column ? (
-          <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />
-        ) : sortDirection === "asc" ? (
-          <ArrowUp className="h-3.5 w-3.5" />
-        ) : (
-          <ArrowDown className="h-3.5 w-3.5" />
-        )}
-      </button>
-    </TableHead>
-  )
-
-  const rowActions = (doc: EmployeeDocument) => (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8">
-          <span className="sr-only">Actions for {doc.employeeName}</span>
-          <MoreHorizontal />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => handleEditDocument(doc)}>
-          <Pencil />
-          Edit documents
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          className="text-destructive focus:text-destructive [&_svg]:!text-destructive"
-          onClick={() => handleDeleteDocument(doc)}
-        >
-          <Trash2 />
-          Delete record
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-
-  const employeeCell = (doc: EmployeeDocument) => (
-    <div className="flex items-center gap-3">
-      <Avatar name={doc.employeeName} />
-      <div className="min-w-0">
-        <p className="flex flex-wrap items-center gap-1.5">
-          <span className="truncate font-semibold text-foreground">{doc.employeeName || "—"}</span>
-          {doc.isSponsored && (
-            <Badge variant="default" className="px-2 text-[11px] leading-[18px]">
-              Sponsored
-            </Badge>
-          )}
-          {doc.is20Hours && (
-            <Badge variant="secondary" className="px-2 text-[11px] leading-[18px]">
-              20 hrs
-            </Badge>
-          )}
-        </p>
-        <p className="truncate text-xs text-muted-foreground">
-          {[doc.status, doc.country, doc.branch || "Unassigned"].filter(Boolean).join(" · ")}
-        </p>
-      </div>
-    </div>
-  )
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -821,7 +494,6 @@ export function DocumentTrackerTable() {
                   {isExporting ? "Exporting…" : "Export"}
                 </Button>
               </DropdownMenuTrigger>
-<<<<<<< HEAD
               <DropdownMenuContent align="end" className="w-64">
                 <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground">
                   This view · {plural(visible.length, "employee")}
@@ -839,14 +511,6 @@ export function DocumentTrackerTable() {
                   CSV file
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => exportRegister("excel")}>
-=======
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => handleExportDocuments("csv")}>
-                  <FileText />
-                  CSV file
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleExportDocuments("excel")}>
->>>>>>> origin/claude/tender-gates-d8wf98
                   <FileSpreadsheet />
                   Excel workbook
                 </DropdownMenuItem>
@@ -861,7 +525,6 @@ export function DocumentTrackerTable() {
         }
       />
 
-<<<<<<< HEAD
       {isError && (
         <ErrorState title="Couldn't load documents" message={handleApiError(error)} onRetry={() => refetch()} />
       )}
@@ -1120,67 +783,11 @@ export function DocumentTrackerTable() {
         {/* Search and refine */}
         <div className="grid grid-cols-2 gap-2 border-b border-border/70 p-3 sm:p-4 lg:flex lg:flex-wrap lg:items-center">
           <div className="relative col-span-2 lg:mr-auto lg:w-72">
-=======
-      {isError && <ErrorState title="Couldn't load documents" message={handleApiError(error)} onRetry={() => refetch()} />}
-
-      {/* Expiry summary: each tile filters the list */}
-      <div className="grid grid-cols-3 gap-2 min-[400px]:grid-cols-5 sm:gap-3">
-        {statusTiles.map((tile) => {
-          const active = activeTab === tile.key
-          const tone = toneStyles[tile.tone]
-          return (
-            <button
-              key={tile.key}
-              onClick={() => setActiveTab(active ? "all" : tile.key)}
-              aria-pressed={active}
-              className={cn(
-                "surface flex min-w-0 flex-col items-start gap-1.5 px-2.5 py-3 text-left transition-[box-shadow,background-color,transform] duration-200 ease-smooth hover:-translate-y-px hover:shadow-raised focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30 sm:gap-2 sm:p-4",
-                active && cn("ring-2", tone.ring),
-              )}
-            >
-              <span className="flex min-w-0 items-center gap-1.5 text-[11px] font-semibold text-muted-foreground sm:gap-2 sm:text-[13px]">
-                <span className={cn("h-2 w-2 shrink-0 rounded-full", tone.dot)} aria-hidden />
-                <span className="truncate lg:hidden">{tile.short}</span>
-                <span className="hidden truncate lg:inline">{tile.label}</span>
-              </span>
-              {isLoading ? (
-                <Skeleton className="h-7 w-10" />
-              ) : (
-                <span className={cn("font-display text-[22px] font-semibold sm:text-[26px] leading-none tracking-[-0.03em] tabular", tile.count > 0 && tile.tone !== "success" ? tone.text : "text-foreground")}>
-                  {tile.count}
-                </span>
-              )}
-            </button>
-          )
-        })}
-      </div>
-
-      <div className="surface overflow-hidden">
-        <Toolbar className="border-b border-border/70 p-3 sm:p-4">
-          <Tabs value={activeSection} onValueChange={setActiveSection}>
-            <TabsList className="w-full sm:w-auto">
-              <TabsTrigger value="all" className="flex-1 px-2 sm:flex-none sm:px-3">
-                All <span className="text-muted-foreground tabular">{documents.length}</span>
-              </TabsTrigger>
-              <TabsTrigger value="regular" className="flex-1 px-2 sm:flex-none sm:px-3">
-                Regular <span className="text-muted-foreground tabular">{regularDocuments.length}</span>
-              </TabsTrigger>
-              <TabsTrigger value="sponsored" className="flex-1 px-2 sm:flex-none sm:px-3">
-                Sponsored <span className="text-muted-foreground tabular">{sponsoredDocuments.length}</span>
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-          <div className="relative flex-1 sm:max-w-xs lg:ml-auto">
->>>>>>> origin/claude/tender-gates-d8wf98
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search name or country"
               aria-label="Search employee or country"
-<<<<<<< HEAD
               className="pl-10 pr-9"
-=======
-              className="pl-10"
->>>>>>> origin/claude/tender-gates-d8wf98
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -1194,7 +801,6 @@ export function DocumentTrackerTable() {
               </button>
             )}
           </div>
-<<<<<<< HEAD
           <Select value={kind} onValueChange={(v) => setParam({ type: v })}>
             <SelectTrigger className="lg:w-[170px]" aria-label="Document type">
               <SelectValue />
@@ -1204,22 +810,10 @@ export function DocumentTrackerTable() {
               {DOC_KINDS.map((k) => (
                 <SelectItem key={k.id} value={k.id}>
                   {k.label}
-=======
-          <Select value={selectedBranch} onValueChange={setSelectedBranch} disabled={isLoadingBranches}>
-            <SelectTrigger className="sm:w-[180px]" aria-label="Branch">
-              <SelectValue placeholder="All branches" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All branches</SelectItem>
-              {branches.map((branch) => (
-                <SelectItem key={branch.id} value={branch.name}>
-                  {branch.name}
->>>>>>> origin/claude/tender-gates-d8wf98
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-<<<<<<< HEAD
           <Select value={branch} onValueChange={setBranch} disabled={isLoadingBranches}>
             <SelectTrigger className="lg:w-[170px]" aria-label="Branch">
               <SelectValue placeholder="All branches" />
@@ -1318,28 +912,11 @@ export function DocumentTrackerTable() {
           )}
         </div>
 
-=======
-        </Toolbar>
-
-        {activeTab !== "all" && (
-          <div className="flex items-center justify-between gap-3 border-b border-border/70 bg-muted/40 px-4 py-2.5 text-sm sm:px-5">
-            <span className="text-muted-foreground">
-              Showing <span className="font-semibold text-foreground">{statusTiles.find((t) => t.key === activeTab)?.label.toLowerCase()}</span>
-            </span>
-            <Button variant="ghost" size="sm" onClick={() => setActiveTab("all")}>
-              <X />
-              Show all
-            </Button>
-          </div>
-        )}
-
->>>>>>> origin/claude/tender-gates-d8wf98
         {/* Large screens: table */}
         <div className="hidden lg:block">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-<<<<<<< HEAD
                 <TableHead className="w-12 pl-5">
                   <Checkbox
                     checked={allSelected}
@@ -1371,36 +948,13 @@ export function DocumentTrackerTable() {
                 <TableHead className="w-12">
                   <span className="sr-only">Actions</span>
                 </TableHead>
-=======
-                <TableHead>
-                  <Checkbox
-                    checked={selectedDocuments.length === filteredDocuments.length && filteredDocuments.length > 0}
-                    onCheckedChange={() => toggleAllDocuments(filteredDocuments)}
-                    aria-label="Select all documents"
-                  />
-                </TableHead>
-                {sortHeader("Employee", "employeeName")}
-                {columnsShown.passport && sortHeader("Passport", "passportDaysLeft")}
-                {columnsShown.rightToWork && sortHeader("Right to work", "rightToWorkDaysLeft")}
-                {columnsShown.brp && sortHeader("BRP", "brpDaysLeft")}
-                {columnsShown.other && sortHeader("Other", "otherDocumentDaysLeft")}
-                <TableHead className="w-12">
-                  <span className="sr-only">Actions</span>
-                </TableHead>
->>>>>>> origin/claude/tender-gates-d8wf98
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-<<<<<<< HEAD
                 Array.from({ length: 6 }).map((_, i) => (
                   <TableRow key={i} className="hover:bg-transparent">
                     <TableCell colSpan={columns.length + 4} className="py-3.5">
-=======
-                Array.from({ length: 5 }).map((_, index) => (
-                  <TableRow key={index} className="hover:bg-transparent">
-                    <TableCell colSpan={7} className="py-3.5">
->>>>>>> origin/claude/tender-gates-d8wf98
                       <div className="flex items-center gap-3">
                         <Skeleton className="h-9 w-9 rounded-full" />
                         <Skeleton className="h-4 w-1/5" />
@@ -1409,7 +963,6 @@ export function DocumentTrackerTable() {
                     </TableCell>
                   </TableRow>
                 ))
-<<<<<<< HEAD
               ) : visible.length > 0 ? (
                 visible.map((doc) => (
                   <TableRow key={doc.id} data-state={selected.includes(doc.id) ? "selected" : undefined}>
@@ -1417,57 +970,21 @@ export function DocumentTrackerTable() {
                       <Checkbox
                         checked={selected.includes(doc.id)}
                         onCheckedChange={() => toggleOne(doc.id)}
-=======
-              ) : filteredDocuments.length > 0 ? (
-                filteredDocuments.map((doc) => (
-                  <TableRow key={doc.id} data-state={selectedDocuments.includes(doc.id) ? "selected" : undefined}>
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedDocuments.includes(doc.id)}
-                        onCheckedChange={() => toggleDocumentSelection(doc.id)}
->>>>>>> origin/claude/tender-gates-d8wf98
                         aria-label={`Select ${doc.employeeName}`}
                       />
                     </TableCell>
                     <TableCell className="min-w-[240px]">{employeeCell(doc)}</TableCell>
-<<<<<<< HEAD
                     <TableCell className="min-w-[130px]">{nextCell(doc)}</TableCell>
                     {columns.map((c) => (
                       <TableCell key={c.id}>{expiryCell(doc, c.id)}</TableCell>
                     ))}
-=======
-                    {columnsShown.passport && <TableCell>{formatExpiryDate(doc.passportExpiry, doc.passportDaysLeft)}</TableCell>}
-                    {columnsShown.rightToWork && <TableCell>{formatExpiryDate(doc.rightToWorkExpiry, doc.rightToWorkDaysLeft)}</TableCell>}
-                    {columnsShown.brp && <TableCell>{formatExpiryDate(doc.brpExpiry, doc.brpDaysLeft)}</TableCell>}
-                    {columnsShown.other && (
-                      <TableCell>
-                        {doc.otherDocumentType && doc.otherDocumentExpiry ? (
-                          <div className="space-y-0.5">
-                            <p className="text-xs font-semibold text-muted-foreground">{doc.otherDocumentType}</p>
-                            {formatExpiryDate(doc.otherDocumentExpiry, doc.otherDocumentDaysLeft)}
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground/50">—</span>
-                        )}
-                      </TableCell>
-                    )}
->>>>>>> origin/claude/tender-gates-d8wf98
                     <TableCell className="text-right">{rowActions(doc)}</TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow className="hover:bg-transparent">
-<<<<<<< HEAD
                   <TableCell colSpan={columns.length + 4}>
                     <EmptyState icon={FileText} title={emptyCopy.title} description={emptyCopy.description} />
-=======
-                  <TableCell colSpan={7}>
-                    <EmptyState
-                      icon={FileText}
-                      title={documents.length === 0 ? "No documents yet" : "Nothing matches"}
-                      description={documents.length === 0 ? "Add documents or import a spreadsheet." : "Try another filter or search."}
-                    />
->>>>>>> origin/claude/tender-gates-d8wf98
                   </TableCell>
                 </TableRow>
               )}
@@ -1479,7 +996,6 @@ export function DocumentTrackerTable() {
         <div className="lg:hidden">
           {isLoading ? (
             <ListSkeleton rows={5} />
-<<<<<<< HEAD
           ) : visible.length > 0 ? (
             <ul className="divide-y divide-border/70">
               {visible.map((doc) => {
@@ -1500,26 +1016,11 @@ export function DocumentTrackerTable() {
                         aria-label={`Select ${doc.employeeName}`}
                         className="mt-2.5"
                       />
-=======
-          ) : filteredDocuments.length > 0 ? (
-            <ul className="divide-y divide-border/70">
-              {filteredDocuments.map((doc) => {
-                const items = [
-                  { label: "Passport", date: doc.passportExpiry, days: doc.passportDaysLeft },
-                  { label: "Right to work", date: doc.rightToWorkExpiry, days: doc.rightToWorkDaysLeft },
-                  { label: "BRP", date: doc.brpExpiry, days: doc.brpDaysLeft },
-                  { label: doc.otherDocumentType || "Other", date: doc.otherDocumentExpiry, days: doc.otherDocumentDaysLeft },
-                ].filter((item) => item.date)
-                return (
-                  <li key={doc.id} className="space-y-3 px-4 py-4 sm:px-5">
-                    <div className="flex items-start gap-2">
->>>>>>> origin/claude/tender-gates-d8wf98
                       <div className="min-w-0 flex-1">{employeeCell(doc)}</div>
                       {rowActions(doc)}
                     </div>
                     {items.length > 0 ? (
                       <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-<<<<<<< HEAD
                         {items.map((item) => {
                           const u = urgencyOf(item.days)
                           const dim = expiry !== "all" && expiry !== "none" && !entryMatches(expiry, item.days)
@@ -1549,17 +1050,6 @@ export function DocumentTrackerTable() {
                             </div>
                           )
                         })}
-=======
-                        {items.map((item) => (
-                          <div key={item.label} className="space-y-1 rounded-lg bg-muted/50 px-3 py-2.5">
-                            <dt className="truncate text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{item.label}</dt>
-                            <dd className="space-y-1">
-                              <span className="block text-sm font-medium tabular">{formatDisplayDate(item.date as string)}</span>
-                              {expiryBadge(item.days)}
-                            </dd>
-                          </div>
-                        ))}
->>>>>>> origin/claude/tender-gates-d8wf98
                       </dl>
                     ) : (
                       <p className="text-sm text-muted-foreground">No expiry dates recorded.</p>
@@ -1569,22 +1059,9 @@ export function DocumentTrackerTable() {
               })}
             </ul>
           ) : (
-<<<<<<< HEAD
             <EmptyState icon={FileText} title={emptyCopy.title} description={emptyCopy.description} />
           )}
         </div>
-=======
-            <EmptyState icon={FileText} title={documents.length === 0 ? "No documents yet" : "Nothing matches"} />
-          )}
-        </div>
-
-        {!isLoading && filteredDocuments.length > 0 && (
-          <div className="border-t border-border/70 px-4 py-3 text-sm text-muted-foreground sm:px-5">
-            {plural(filteredDocuments.length, "employee")}
-            {selectedDocuments.length > 0 && ` · ${selectedDocuments.length} selected`}
-          </div>
-        )}
->>>>>>> origin/claude/tender-gates-d8wf98
       </div>
 
       <AddDocumentModal open={isAddModalOpen} onOpenChange={setIsAddModalOpen} />
@@ -1594,11 +1071,7 @@ export function DocumentTrackerTable() {
       <DeleteConfirmationDialog
         isOpen={isDeleteDialogOpen}
         onClose={() => setIsDeleteDialogOpen(false)}
-<<<<<<< HEAD
         onConfirm={confirmDelete}
-=======
-        onConfirm={confirmDeleteDocument}
->>>>>>> origin/claude/tender-gates-d8wf98
         title="Delete document record"
         description={`Delete the document record for ${selectedDocument?.employeeName}? This can't be undone.`}
         confirmLabel="Delete"

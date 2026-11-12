@@ -2,7 +2,6 @@
 
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
-<<<<<<< HEAD
 import { useEffect, useState } from "react"
 import { LogOut, Menu } from "lucide-react"
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet"
@@ -22,19 +21,6 @@ export function MobileTabBar() {
   const activeHref = findNavItem(pathname)?.href
   // Close the sheet once a page is chosen
   useEffect(() => setMoreOpen(false), [pathname, view])
-=======
-import { Menu } from "lucide-react"
-import { useSidebar } from "@/components/ui/sidebar"
-import { TAB_BAR } from "@/lib/navigation"
-import { cn } from "@/lib/utils"
-
-// iOS-style tab bar for phones: the four most-used places, plus "More",
-// which opens the full navigation drawer.
-export function MobileTabBar() {
-  const pathname = usePathname()
-  const view = useSearchParams().get("view")
-  const { setOpenMobile, openMobile } = useSidebar()
->>>>>>> origin/claude/tender-gates-d8wf98
   const anyTabActive = TAB_BAR.some((tab) => tab.isActive(pathname, view))
 
   return (
@@ -63,13 +49,8 @@ export function MobileTabBar() {
         })}
         <li>
           <button
-<<<<<<< HEAD
             onClick={() => setMoreOpen(true)}
             aria-expanded={moreOpen}
-=======
-            onClick={() => setOpenMobile(true)}
-            aria-expanded={openMobile}
->>>>>>> origin/claude/tender-gates-d8wf98
             className={cn(
               "flex h-full w-full flex-col items-center justify-center gap-1 text-[11px] font-semibold transition-colors",
               !anyTabActive ? "text-primary" : "text-muted-foreground active:text-foreground",
@@ -80,7 +61,6 @@ export function MobileTabBar() {
           </button>
         </li>
       </ul>
-<<<<<<< HEAD
 
       <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
         <SheetContent side="bottom" className="rounded-t-2xl px-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-5">
@@ -126,8 +106,6 @@ export function MobileTabBar() {
           </div>
         </SheetContent>
       </Sheet>
-=======
->>>>>>> origin/claude/tender-gates-d8wf98
     </nav>
   )
 }

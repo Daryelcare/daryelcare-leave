@@ -2,15 +2,8 @@
 
 import Image from "next/image"
 import type React from "react"
-<<<<<<< HEAD
 import { TopNav } from "@/components/top-nav"
 import { MobileTabBar } from "@/components/mobile-tab-bar"
-=======
-import { DashboardSidebar } from "@/components/dashboard-sidebar"
-import { DashboardHeader } from "@/components/dashboard-header"
-import { MobileTabBar } from "@/components/mobile-tab-bar"
-import { SidebarProvider } from "@/components/ui/sidebar"
->>>>>>> origin/claude/tender-gates-d8wf98
 import { Toaster } from "@/components/ui/toaster"
 import { useApp } from "@/components/app-provider"
 import { usePathname, useRouter } from "next/navigation"
@@ -18,31 +11,14 @@ import { Suspense, useEffect, useState } from "react"
 import { getCurrentUser } from "@/lib/auth"
 import { supabase } from "@/lib/supabase"
 
-<<<<<<< HEAD
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-=======
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
->>>>>>> origin/claude/tender-gates-d8wf98
   const pathname = usePathname()
   return (
     <>
       <AuthCheck>
-<<<<<<< HEAD
         {/* min-w-0 lets wide tables scroll inside their card instead of stretching the page */}
         <div className="flex min-h-svh min-w-0 flex-col bg-background">
           <TopNav />
-=======
-        <DashboardSidebar />
-        {/* min-w-0 lets wide tables scroll inside their card instead of stretching the page */}
-        <div className="flex min-h-svh min-w-0 flex-1 flex-col bg-background">
-          <Suspense fallback={<div className="h-14 border-b border-border/70" />}>
-            <DashboardHeader />
-          </Suspense>
->>>>>>> origin/claude/tender-gates-d8wf98
           <main className="flex-1">
             <div
               key={pathname}
@@ -121,7 +97,6 @@ function AuthCheck({ children }: { children: React.ReactNode }) {
   if (!user) {
     return (
       <div className="flex min-h-svh w-full flex-col items-center justify-center gap-5 bg-background">
-<<<<<<< HEAD
         <Image
           src="/images/daryelcare-mark.png"
           alt="DaryelCare"
@@ -130,9 +105,6 @@ function AuthCheck({ children }: { children: React.ReactNode }) {
           priority
           className="animate-pulse"
         />
-=======
-        <Image src="/images/daryelcare-mark.png" alt="DaryelCare" width={48} height={48} priority className="animate-pulse" />
->>>>>>> origin/claude/tender-gates-d8wf98
         <div className="h-1 w-24 overflow-hidden rounded-full bg-secondary">
           <div className="h-full w-1/2 animate-shimmer rounded-full bg-[linear-gradient(90deg,transparent,hsl(var(--primary)),transparent)] bg-[length:200%_100%]" />
         </div>

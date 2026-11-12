@@ -8,10 +8,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Loader2 } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
-<<<<<<< HEAD
-=======
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger } from "@/components/ui/select"
->>>>>>> origin/claude/tender-gates-d8wf98
 import { settingsHref, visibleSettingsSections } from "@/lib/navigation"
 import { cn } from "@/lib/utils"
 import { UserManagementTable } from "./user-management-table"
@@ -92,20 +88,12 @@ export function SettingsForm() {
     }
   }
 
-<<<<<<< HEAD
   const passwordFields: { name: "currentPassword" | "newPassword" | "confirmPassword"; label: string; auto: string }[] =
     [
       { name: "currentPassword", label: "Current password", auto: "current-password" },
       { name: "newPassword", label: "New password", auto: "new-password" },
       { name: "confirmPassword", label: "Confirm new password", auto: "new-password" },
     ]
-=======
-  const passwordFields: { name: "currentPassword" | "newPassword" | "confirmPassword"; label: string; auto: string }[] = [
-    { name: "currentPassword", label: "Current password", auto: "current-password" },
-    { name: "newPassword", label: "New password", auto: "new-password" },
-    { name: "confirmPassword", label: "Confirm new password", auto: "new-password" },
-  ]
->>>>>>> origin/claude/tender-gates-d8wf98
 
   // Which section is open lives in the address (?section=), so links and back work
   const router = useRouter()
@@ -114,7 +102,6 @@ export function SettingsForm() {
   const requested = searchParams.get("section")
   const current = sections.find((s) => s.id === requested) || sections[0]
   const openSection = (id: string) => router.replace(settingsHref(id), { scroll: false })
-<<<<<<< HEAD
   // Keep the open tab visible when the row scrolls sideways on small screens
   const activeTabRef = useRef<HTMLButtonElement>(null)
   const tabRowRef = useRef<HTMLDivElement>(null)
@@ -160,8 +147,6 @@ export function SettingsForm() {
     openSection(target.id)
     requestAnimationFrame(() => document.getElementById(`settings-tab-${target.id}`)?.focus())
   }
-=======
->>>>>>> origin/claude/tender-gates-d8wf98
   const groups = (["Personal", "Organisation"] as const)
     .map((group) => ({ group, items: sections.filter((s) => s.group === group) }))
     .filter((g) => g.items.length > 0)
@@ -176,13 +161,9 @@ export function SettingsForm() {
               <div className="flex items-center gap-4 p-5 sm:p-6">
                 <Avatar name={user?.name} className="h-14 w-14 text-lg" />
                 <div className="min-w-0">
-<<<<<<< HEAD
                   <p className="truncate font-display text-lg font-semibold tracking-[-0.02em]">
                     {user?.name || "Your account"}
                   </p>
-=======
-                  <p className="truncate font-display text-lg font-semibold tracking-[-0.02em]">{user?.name || "Your account"}</p>
->>>>>>> origin/claude/tender-gates-d8wf98
                   <p className="truncate text-sm text-muted-foreground">{user?.email}</p>
                 </div>
               </div>
@@ -278,7 +259,6 @@ export function SettingsForm() {
         description={isAdmin ? "Your account, and how your organisation is set up." : "Your account and password."}
       />
 
-<<<<<<< HEAD
       <div className="space-y-6 sm:space-y-8">
         {/* Section tabs, grouped Personal / Organisation. Scrolls sideways on small screens. */}
         <div className="relative -mx-4 border-b border-border sm:mx-0">
@@ -353,64 +333,6 @@ export function SettingsForm() {
           aria-labelledby={`settings-tab-${current.id}`}
           className="page-enter min-w-0 max-w-5xl"
         >
-=======
-      <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-10">
-        {/* Large screens: grouped section menu */}
-        <nav aria-label="Settings sections" className="hidden lg:block">
-          <div className="sticky top-20 space-y-5">
-            {groups.map(({ group, items }) => (
-              <div key={group} className="space-y-1">
-                <p className="eyebrow px-3 pb-1">{group}</p>
-                {items.map((section) => {
-                  const active = section.id === current.id
-                  return (
-                    <button
-                      key={section.id}
-                      onClick={() => openSection(section.id)}
-                      aria-current={active ? "page" : undefined}
-                      className={cn(
-                        "flex h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30",
-                        active
-                          ? "bg-primary-soft font-semibold text-primary"
-                          : "text-foreground/80 hover:bg-secondary hover:text-foreground",
-                      )}
-                    >
-                      <section.icon className={cn("h-[18px] w-[18px] shrink-0", active ? "text-primary" : "text-muted-foreground")} />
-                      {section.title}
-                    </button>
-                  )
-                })}
-              </div>
-            ))}
-          </div>
-        </nav>
-
-        {/* Phones and tablets: a section picker */}
-        <div className="lg:hidden">
-          <Select value={current.id} onValueChange={openSection}>
-            <SelectTrigger aria-label="Settings section" className="h-11">
-              <div className="flex min-w-0 items-center gap-2.5">
-                <current.icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="truncate font-semibold">{current.title}</span>
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              {groups.map(({ group, items }) => (
-                <SelectGroup key={group}>
-                  <SelectLabel>{group}</SelectLabel>
-                  {items.map((section) => (
-                    <SelectItem key={section.id} value={section.id}>
-                      {section.title}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div key={current.id} className="page-enter min-w-0 max-w-4xl">
->>>>>>> origin/claude/tender-gates-d8wf98
           {content()}
         </div>
       </div>
