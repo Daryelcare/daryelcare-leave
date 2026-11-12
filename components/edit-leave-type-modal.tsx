@@ -103,7 +103,7 @@ export function EditLeaveTypeModal({ leaveType, isOpen, onClose, onSuccess }: Ed
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{leaveType ? "Edit" : "Add"} Leave Type</DialogTitle>
+          <DialogTitle>{leaveType ? "Edit" : "Add"} leave type</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -138,10 +138,17 @@ export function EditLeaveTypeModal({ leaveType, isOpen, onClose, onSuccess }: Ed
               name="color"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Color</FormLabel>
-                  <FormControl>
-                    <Input {...field} type="color" />
-                  </FormControl>
+                  <FormLabel>Colour</FormLabel>
+                  <div className="flex items-center gap-3">
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="color"
+                        className="h-10 w-14 cursor-pointer p-1 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-md [&::-webkit-color-swatch]:border-0"
+                      />
+                    </FormControl>
+                    <span className="font-mono text-sm uppercase text-muted-foreground">{field.value}</span>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
@@ -151,7 +158,7 @@ export function EditLeaveTypeModal({ leaveType, isOpen, onClose, onSuccess }: Ed
               name="defaultDays"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Default Days</FormLabel>
+                  <FormLabel>Default days</FormLabel>
                   <FormControl>
                     <Input {...field} type="number" min="0" />
                   </FormControl>
@@ -165,7 +172,7 @@ export function EditLeaveTypeModal({ leaveType, isOpen, onClose, onSuccess }: Ed
               render={({ field }) => (
                 <FormItem className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
                   <div className="space-y-0.5">
-                    <FormLabel>Paid Leave</FormLabel>
+                    <FormLabel>Paid leave</FormLabel>
                   </div>
                   <FormControl>
                     <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -179,7 +186,7 @@ export function EditLeaveTypeModal({ leaveType, isOpen, onClose, onSuccess }: Ed
               render={({ field }) => (
                 <FormItem className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
                   <div className="space-y-0.5">
-                    <FormLabel>Requires Approval</FormLabel>
+                    <FormLabel>Requires approval</FormLabel>
                   </div>
                   <FormControl>
                     <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -193,7 +200,7 @@ export function EditLeaveTypeModal({ leaveType, isOpen, onClose, onSuccess }: Ed
               render={({ field }) => (
                 <FormItem className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
                   <div className="space-y-0.5">
-                    <FormLabel>Allow Negative Balance</FormLabel>
+                    <FormLabel>Allow negative balance</FormLabel>
                   </div>
                   <FormControl>
                     <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -220,7 +227,7 @@ export function EditLeaveTypeModal({ leaveType, isOpen, onClose, onSuccess }: Ed
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : leaveType ? "Save Changes" : "Add Leave Type"}
+                {isSubmitting ? "Saving…" : leaveType ? "Save changes" : "Add leave type"}
               </Button>
             </DialogFooter>
           </form>

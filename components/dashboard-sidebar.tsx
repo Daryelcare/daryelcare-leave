@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -37,6 +38,14 @@ export function DashboardSidebar() {
   const isAdmin = user?.role === "admin"
   const activeHref = findNavItem(pathname)?.href
   const collapsed = state === "collapsed" && !isMobile
+
+  // Tablets and small laptops: start with the icon-only sidebar to give pages room
+  const { setOpen } = useSidebar()
+  useEffect(() => {
+    if (window.innerWidth >= 768 && window.innerWidth < 1200) setOpen(false)
+    // Only when the app first opens
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Close the drawer after choosing a page on phones
   const closeOnMobile = () => {

@@ -343,10 +343,10 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
     <Dialog open={open} onOpenChange={handleCloseModal}>
       <DialogContent className={showPreview ? "sm:max-w-[900px]" : "sm:max-w-[550px]"}>
         <DialogHeader>
-          <DialogTitle>Import Documents</DialogTitle>
+          <DialogTitle>Import documents</DialogTitle>
           <DialogDescription>
             {showPreview
-              ? "Review the data before importing. Click 'Import Documents' to confirm."
+              ? "Review the data before importing. Click 'Import documents' to confirm."
               : "Upload a CSV or Excel file to import documents. Download a template to get started."}
           </DialogDescription>
         </DialogHeader>
@@ -390,7 +390,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                           <TableHead>Document Status</TableHead>
                           <TableHead>Country</TableHead>
                           <TableHead>Passport Expiry</TableHead>
-                          <TableHead>Right to Work</TableHead>
+                          <TableHead>Right to work</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -464,7 +464,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                         <TableHead>Country</TableHead>
                         <TableHead>Passport Expiry</TableHead>
                         <TableHead>BRP Expiry</TableHead>
-                        <TableHead>Right to Work</TableHead>
+                        <TableHead>Right to work</TableHead>
                         <TableHead>Sponsored</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -528,7 +528,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                                       doc.isSponsored ? "bg-primary-soft text-primary" : "bg-secondary text-muted-foreground"
                                     }
                                   >
-                                    {doc.isSponsored ? "Sponsored" : "Not Sponsored"}
+                                    {doc.isSponsored ? "Sponsored" : "Not sponsored"}
                                   </Badge>
                                   {doc.isSponsored && (
                                     <Badge
@@ -706,7 +706,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                   Importing...
                 </>
               ) : (
-                "Import Documents"
+                "Import documents"
               )}
             </Button>
           ) : (
@@ -720,7 +720,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                   Generating Preview...
                 </>
               ) : (
-                "Preview Data"
+                "Preview data"
               )}
             </Button>
           )}

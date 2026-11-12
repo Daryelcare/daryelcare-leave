@@ -73,7 +73,7 @@ export function ResetLeaveBalancesModal({ isOpen, onClose }: ResetLeaveBalancesM
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="text-xl">Reset All Leave Balances</DialogTitle>
+          <DialogTitle className="text-xl">Reset all leave balances</DialogTitle>
           <DialogDescription>This will reset the leave balances for ALL employees in the system.</DialogDescription>
         </DialogHeader>
 

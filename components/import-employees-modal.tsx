@@ -304,10 +304,10 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
     <Dialog open={open} onOpenChange={handleCloseModal}>
       <DialogContent className={showPreview ? "sm:max-w-[800px]" : "sm:max-w-[550px]"}>
         <DialogHeader>
-          <DialogTitle>Import Employees</DialogTitle>
+          <DialogTitle>Import employees</DialogTitle>
           <DialogDescription>
             {showPreview
-              ? "Review the data before importing. Click 'Import Employees' to confirm."
+              ? "Review the data before importing. Click 'Import employees' to confirm."
               : "Upload a CSV or Excel file to import employees. Download a template to get started."}
           </DialogDescription>
         </DialogHeader>
@@ -329,12 +329,12 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Full Name</TableHead>
-                      <TableHead>Employee Code</TableHead>
-                      <TableHead>Job Title</TableHead>
+                      <TableHead>Full name</TableHead>
+                      <TableHead>Employee code</TableHead>
+                      <TableHead>Job title</TableHead>
                       <TableHead>Branch</TableHead>
-                      <TableHead>Days Taken</TableHead>
-                      <TableHead>Days Remaining</TableHead>
+                      <TableHead>Days taken</TableHead>
+                      <TableHead>Days remaining</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -502,14 +502,14 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
               onClick={handleUpload}
               disabled={isUploading || previewData.length === 0}
             >
-              {isUploading ? "Importing..." : "Import Employees"}
+              {isUploading ? "Importing…" : "Import employees"}
             </Button>
           ) : (
             <Button
               onClick={handlePreview}
               disabled={!selectedFile || previewLoading}
             >
-              {previewLoading ? "Generating Preview..." : "Preview Data"}
+              {previewLoading ? "Generating Preview..." : "Preview data"}
             </Button>
           )}
         </DialogFooter>

@@ -317,12 +317,12 @@ export function DocumentTrackerTable() {
       document.body.removeChild(a)
 
       toast({
-        title: "Export Successful",
+        title: "Export ready",
         description: `Your ${format.toUpperCase()} file has been downloaded.`,
       })
     } catch (error) {
       toast({
-        title: "Export Failed",
+        title: "Export failed",
         description: "There was an error exporting the data. Please try again.",
         variant: "destructive",
       })
@@ -557,8 +557,8 @@ export function DocumentTrackerTable() {
             >
               <span className="flex min-w-0 items-center gap-1.5 text-[11px] font-semibold text-muted-foreground sm:gap-2 sm:text-[13px]">
                 <span className={cn("h-2 w-2 shrink-0 rounded-full", tone.dot)} aria-hidden />
-                <span className="truncate sm:hidden">{tile.short}</span>
-                <span className="hidden truncate sm:inline">{tile.label}</span>
+                <span className="truncate lg:hidden">{tile.short}</span>
+                <span className="hidden truncate lg:inline">{tile.label}</span>
               </span>
               {isLoading ? (
                 <Skeleton className="h-7 w-10" />

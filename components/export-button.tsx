@@ -97,12 +97,12 @@ export function ExportButton({
       document.body.removeChild(a)
 
       toast({
-        title: "Export Successful",
+        title: "Export ready",
         description: `Your ${format.toUpperCase()} file has been downloaded.`,
       })
     } catch (error) {
       toast({
-        title: "Export Failed",
+        title: "Export failed",
         description: "There was an error exporting the data. Please try again.",
         variant: "destructive",
       })

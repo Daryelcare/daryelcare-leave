@@ -477,7 +477,7 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Add Document</DialogTitle>
+          <DialogTitle>Add document</DialogTitle>
           <DialogDescription>
             Add documents for an employee. You can add multiple document types at once.
           </DialogDescription>
@@ -576,10 +576,10 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
               />
             </div>
 
-            <div className="border rounded-md p-4">
-              <h3 className="text-sm font-medium mb-3">Document Expiry Dates</h3>
+            <div className="rounded-xl border border-border/80 bg-muted/30 p-4">
+              <h3 className="mb-3 text-sm font-semibold">Expiry dates</h3>
 
-              <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+              <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
                 {/* Passport */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
@@ -609,7 +609,7 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
                 {/* Right to Work */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <h4 className="text-sm font-medium">Right to Work</h4>
+                    <h4 className="text-sm font-medium">Right to work</h4>
                     {existingDocument?.rightToWorkExpiry && (
                       <span className="text-xs text-muted-foreground">
                         Current: {existingDocument.rightToWorkExpiry}
@@ -661,23 +661,23 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
                 </div>
 
                 {/* Other Document */}
-                <div className="space-y-1">
+                <div className="space-y-1 sm:col-span-2">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-medium">Other Document</h4>
+                    <h4 className="text-sm font-medium">Other document</h4>
                     {existingDocument?.otherDocumentExpiry && (
                       <span className="text-xs text-muted-foreground">
                         Current: {existingDocument.otherDocumentType}
                       </span>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid gap-2 sm:grid-cols-2">
                     <FormField
                       control={form.control}
                       name="otherDocumentType"
                       render={({ field }) => (
                         <FormItem className="space-y-0">
                           <FormControl>
-                            <Input placeholder="Document name" className="h-9 text-sm" {...field} />
+                            <Input placeholder="Document name, e.g. DBS" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -707,7 +707,7 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center space-x-2 rounded-lg border p-2 shadow-sm h-full">
                     <div className="flex-1">
-                      <FormLabel className="text-sm">Sponsored Employee</FormLabel>
+                      <FormLabel className="text-sm">Sponsored employee</FormLabel>
                     </div>
                     <FormControl>
                       <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -739,7 +739,7 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : "Save All Documents"}
+                {isSubmitting ? "Saving…" : "Save documents"}
               </Button>
             </DialogFooter>
           </form>

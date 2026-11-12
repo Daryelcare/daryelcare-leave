@@ -342,8 +342,8 @@ export function EmployeeTable() {
   const firstRow = employees.length > 0 ? pageIndex * pageSize + 1 : 0
   const lastRow = Math.min((pageIndex + 1) * pageSize, totalEmployees)
 
-  const sortHeader = (label: string, column: string, align: "left" | "right" = "left") => (
-    <TableHead className={cn(align === "right" && "text-right")}>
+  const sortHeader = (label: string, column: string, align: "left" | "right" = "left", className?: string) => (
+    <TableHead className={cn(align === "right" && "text-right", className)}>
       <button
         onClick={() => handleServerSort(column)}
         className={cn(
@@ -511,7 +511,7 @@ export function EmployeeTable() {
                   </TableHead>
                 )}
                 {sortHeader("Name", "name")}
-                {sortHeader("Code", "employee_code")}
+                {sortHeader("Code", "employee_code", "left", "hidden lg:table-cell")}
                 {sortHeader("Branch", "branch")}
                 {sortHeader("Hours", "hours", "right")}
                 {sortHeader("Taken", "days_taken", "right")}
@@ -561,7 +561,7 @@ export function EmployeeTable() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="tabular text-muted-foreground">{employee.employeeCode}</TableCell>
+                    <TableCell className="hidden tabular text-muted-foreground lg:table-cell">{employee.employeeCode}</TableCell>
                     <TableCell>{employee.branch}</TableCell>
                     <TableCell className="text-right tabular">{employee.hours ?? "—"}</TableCell>
                     <TableCell className="text-right tabular">{employee.daysTaken}</TableCell>
@@ -724,7 +724,7 @@ export function EmployeeTable() {
       <Dialog open={isBatchDeleteDialogOpen} onOpenChange={setIsBatchDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Delete Multiple Employees</DialogTitle>
+            <DialogTitle>Delete selected employees</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete {selectedEmployeeIds.length} selected employees? This action cannot be
               undone.
@@ -746,7 +746,7 @@ export function EmployeeTable() {
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleBatchDelete} disabled={isBatchDeleting}>
-              {isBatchDeleting ? "Deleting..." : "Delete Employees"}
+              {isBatchDeleting ? "Deleting..." : "Delete employees"}
             </Button>
           </DialogFooter>
         </DialogContent>

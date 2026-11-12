@@ -140,7 +140,7 @@ export function AddUserModal({ open, onOpenChange }: AddUserModalProps) {
     >
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Add New User</DialogTitle>
+          <DialogTitle>Add user</DialogTitle>
           <DialogDescription>Create a new user account. Fill in all fields below.</DialogDescription>
         </DialogHeader>
 
@@ -170,7 +170,7 @@ export function AddUserModal({ open, onOpenChange }: AddUserModalProps) {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Full Name</FormLabel>
+                  <FormLabel>Full name</FormLabel>
                   <FormControl>
                     <Input placeholder="John Doe" {...field} />
                   </FormControl>
@@ -204,8 +204,8 @@ export function AddUserModal({ open, onOpenChange }: AddUserModalProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="normal">Normal User</SelectItem>
+                      <SelectItem value="admin">Administrator</SelectItem>
+                      <SelectItem value="normal">Branch manager</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -220,7 +220,7 @@ export function AddUserModal({ open, onOpenChange }: AddUserModalProps) {
                 render={() => (
                   <FormItem>
                     <div className="mb-4">
-                      <FormLabel className="text-base">Assigned Branches</FormLabel>
+                      <FormLabel className="text-base">Assigned branches</FormLabel>
                     </div>
                     <div className="space-y-2">
                       {branches.map((branch) => (
@@ -264,7 +264,7 @@ export function AddUserModal({ open, onOpenChange }: AddUserModalProps) {
                 type="submit"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Adding..." : "Add User"}
+                {isSubmitting ? "Adding…" : "Add User"}
               </Button>
             </DialogFooter>
           </form>

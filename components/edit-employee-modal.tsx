@@ -142,7 +142,7 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Edit Employee</DialogTitle>
+            <DialogTitle>Edit employee</DialogTitle>
             <DialogDescription>Loading employee data...</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -161,7 +161,7 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Edit Employee</DialogTitle>
+            <DialogTitle>Edit employee</DialogTitle>
             <DialogDescription>Error loading employee data</DialogDescription>
           </DialogHeader>
           <div className="text-destructive">Failed to load employee data: {handleApiError(error)}</div>
@@ -179,7 +179,7 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Edit Employee</DialogTitle>
+          <DialogTitle>Edit employee</DialogTitle>
           <DialogDescription>Update the employee details. Click save when you&apos;re done.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -189,7 +189,7 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Full Name</FormLabel>
+                  <FormLabel>Full name</FormLabel>
                   <FormControl>
                     <Input placeholder="John Doe" {...field} />
                   </FormControl>
@@ -202,7 +202,7 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
               name="employeeCode"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Employee Code</FormLabel>
+                  <FormLabel>Employee code</FormLabel>
                   <FormControl>
                     <Input placeholder="EMP001" {...field} />
                   </FormControl>
@@ -215,7 +215,7 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
               name="jobTitle"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Job Title</FormLabel>
+                  <FormLabel>Job title</FormLabel>
                   <FormControl>
                     <Input placeholder="Software Engineer" {...field} />
                   </FormControl>
@@ -258,7 +258,7 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
                 name="daysTaken"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Days Taken</FormLabel>
+                    <FormLabel>Days taken</FormLabel>
                     <FormControl>
                       <Input type="number" {...field} />
                     </FormControl>
@@ -271,7 +271,7 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
                 name="daysRemaining"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Days Remaining</FormLabel>
+                    <FormLabel>Days remaining</FormLabel>
                     <FormControl>
                       <Input type="number" {...field} />
                     </FormControl>
@@ -307,7 +307,7 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email (Optional)</FormLabel>
+                  <FormLabel>Email <span className="font-normal text-muted-foreground">(optional)</span></FormLabel>
                   <FormControl>
                     <Input type="email" placeholder="john.doe@example.com" {...field} value={field.value || ""} />
                   </FormControl>
@@ -320,7 +320,7 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Phone (Optional)</FormLabel>
+                  <FormLabel>Phone <span className="font-normal text-muted-foreground">(optional)</span></FormLabel>
                   <FormControl>
                     <Input placeholder="+1234567890" {...field} value={field.value || ""} />
                   </FormControl>
@@ -357,7 +357,7 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
                 type="submit"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Saving..." : "Save Changes"}
+                {isSubmitting ? "Saving…" : "Save changes"}
               </Button>
             </DialogFooter>
           </form>

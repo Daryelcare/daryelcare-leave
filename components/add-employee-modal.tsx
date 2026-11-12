@@ -105,7 +105,7 @@ export function AddEmployeeModal({ open, onOpenChange }: AddEmployeeModalProps) 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Add New Employee</DialogTitle>
+          <DialogTitle>Add employee</DialogTitle>
           <DialogDescription>Enter the details of the new employee. Click save when you&apos;re done.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -115,7 +115,7 @@ export function AddEmployeeModal({ open, onOpenChange }: AddEmployeeModalProps) 
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Full Name</FormLabel>
+                  <FormLabel>Full name</FormLabel>
                   <FormControl>
                     <Input placeholder="John Doe" {...field} />
                   </FormControl>
@@ -128,7 +128,7 @@ export function AddEmployeeModal({ open, onOpenChange }: AddEmployeeModalProps) 
               name="employeeCode"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Employee Code</FormLabel>
+                  <FormLabel>Employee code</FormLabel>
                   <FormControl>
                     <Input placeholder="EMP001" {...field} />
                   </FormControl>
@@ -141,7 +141,7 @@ export function AddEmployeeModal({ open, onOpenChange }: AddEmployeeModalProps) 
               name="jobTitle"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Job Title</FormLabel>
+                  <FormLabel>Job title</FormLabel>
                   <FormControl>
                     <Input placeholder="Software Engineer" {...field} />
                   </FormControl>
@@ -184,7 +184,7 @@ export function AddEmployeeModal({ open, onOpenChange }: AddEmployeeModalProps) 
                 name="totalLeaveDays"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Total Leave Days</FormLabel>
+                    <FormLabel>Total leave days</FormLabel>
                     <FormControl>
                       <Input type="number" {...field} />
                     </FormControl>
@@ -220,7 +220,7 @@ export function AddEmployeeModal({ open, onOpenChange }: AddEmployeeModalProps) 
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email (Optional)</FormLabel>
+                  <FormLabel>Email <span className="font-normal text-muted-foreground">(optional)</span></FormLabel>
                   <FormControl>
                     <Input type="email" placeholder="john.doe@example.com" {...field} />
                   </FormControl>
@@ -233,7 +233,7 @@ export function AddEmployeeModal({ open, onOpenChange }: AddEmployeeModalProps) 
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Phone (Optional)</FormLabel>
+                  <FormLabel>Phone <span className="font-normal text-muted-foreground">(optional)</span></FormLabel>
                   <FormControl>
                     <Input placeholder="+1234567890" {...field} />
                   </FormControl>
@@ -249,7 +249,7 @@ export function AddEmployeeModal({ open, onOpenChange }: AddEmployeeModalProps) 
                 type="submit"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Adding..." : "Add Employee"}
+                {isSubmitting ? "Adding…" : "Add employee"}
               </Button>
             </DialogFooter>
           </form>

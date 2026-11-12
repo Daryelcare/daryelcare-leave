@@ -143,7 +143,7 @@ export function EditDocumentModal({ document, open, onOpenChange }: EditDocument
         updateData.brpExpiry = format(data.expiryDate, "dd/MM/yyyy")
         updateData.brpDaysLeft = daysLeft
       } else if (activeTab === "other" && data.expiryDate) {
-        updateData.otherDocumentType = data.customDocumentType || "Other Document"
+        updateData.otherDocumentType = data.customDocumentType || "Other document"
         updateData.otherDocumentExpiry = format(data.expiryDate, "dd/MM/yyyy")
         updateData.otherDocumentDaysLeft = daysLeft
       }
@@ -178,7 +178,7 @@ export function EditDocumentModal({ document, open, onOpenChange }: EditDocument
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
-          <DialogTitle>Edit Document</DialogTitle>
+          <DialogTitle>Edit document</DialogTitle>
           <DialogDescription>Edit document details for {document.employeeName}.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -186,7 +186,7 @@ export function EditDocumentModal({ document, open, onOpenChange }: EditDocument
             <Tabs value={activeTab} onValueChange={handleDocumentTypeSelect} className="w-full">
               <TabsList className="grid grid-cols-4 mb-4">
                 <TabsTrigger value="passport">Passport</TabsTrigger>
-                <TabsTrigger value="rightToWork">Right to Work</TabsTrigger>
+                <TabsTrigger value="rightToWork">Right to work</TabsTrigger>
                 <TabsTrigger value="brp">BRP</TabsTrigger>
                 <TabsTrigger value="other">Other</TabsTrigger>
               </TabsList>
@@ -211,7 +211,7 @@ export function EditDocumentModal({ document, open, onOpenChange }: EditDocument
                 name="customDocumentType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Document Name</FormLabel>
+                    <FormLabel>Document name</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter document name" {...field} />
                     </FormControl>
@@ -265,7 +265,7 @@ export function EditDocumentModal({ document, open, onOpenChange }: EditDocument
               name="expiryDate"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>Expiry Date</FormLabel>
+                  <FormLabel>Expiry date</FormLabel>
                   <FormControl>
                     <DatePicker
                       value={field.value || undefined}
@@ -284,7 +284,7 @@ export function EditDocumentModal({ document, open, onOpenChange }: EditDocument
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                   <div className="space-y-0.5">
-                    <FormLabel>Sponsored Employee</FormLabel>
+                    <FormLabel>Sponsored employee</FormLabel>
                     <div className="text-sm text-muted-foreground">
                       Mark if this employee is sponsored and requires additional tracking
                     </div>
@@ -303,7 +303,7 @@ export function EditDocumentModal({ document, open, onOpenChange }: EditDocument
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                     <div className="space-y-0.5">
-                      <FormLabel>20 Hours Restriction</FormLabel>
+                      <FormLabel>20-hour restriction</FormLabel>
                       <div className="text-sm text-muted-foreground">
                         Mark if this sponsored employee is restricted to 20 hours per week
                       </div>
@@ -321,7 +321,7 @@ export function EditDocumentModal({ document, open, onOpenChange }: EditDocument
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : "Save Changes"}
+                {isSubmitting ? "Saving…" : "Save changes"}
               </Button>
             </DialogFooter>
           </form>

@@ -94,7 +94,7 @@ export function EditBranchesModal({ user, open, onOpenChange }: EditBranchesModa
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Edit Branch Assignments</DialogTitle>
+          <DialogTitle>Edit branches</DialogTitle>
           <DialogDescription>Update branch assignments for {user.name}.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -105,7 +105,7 @@ export function EditBranchesModal({ user, open, onOpenChange }: EditBranchesModa
               render={() => (
                 <FormItem>
                   <div className="mb-4">
-                    <FormLabel className="text-base">Assigned Branches</FormLabel>
+                    <FormLabel className="text-base">Assigned branches</FormLabel>
                   </div>
                   <div className="space-y-2">
                     {branches.map((branch) => (
@@ -147,7 +147,7 @@ export function EditBranchesModal({ user, open, onOpenChange }: EditBranchesModa
                 type="submit"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Saving..." : "Save Changes"}
+                {isSubmitting ? "Saving…" : "Save changes"}
               </Button>
             </DialogFooter>
           </form>
