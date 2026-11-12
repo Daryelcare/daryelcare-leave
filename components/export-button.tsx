@@ -116,15 +116,15 @@ export function ExportButton({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant={variant} size={size ?? "sm"} className={`gap-1 ${className ?? ""}`} disabled={disabled || isExporting}>
+        <Button variant={variant} size={size ?? "sm"} className={className} disabled={disabled || isExporting}>
           {isExporting ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Exporting...
+              <Loader2 className="animate-spin" />
+              Exporting…
             </>
           ) : (
             <>
-              <Download className="h-4 w-4" />
+              <Download />
               Export
             </>
           )}
@@ -132,12 +132,12 @@ export function ExportButton({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={() => handleExport("csv")}>
-          <FileText className="h-4 w-4 mr-2" />
-          Export as CSV
+          <FileText />
+          CSV file
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => handleExport("excel")}>
-          <FileSpreadsheet className="h-4 w-4 mr-2" />
-          Export as Excel
+          <FileSpreadsheet />
+          Excel workbook
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

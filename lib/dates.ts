@@ -86,3 +86,35 @@ export function utcToLocalDate(time: number): Date {
   const d = new Date(time)
   return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
 }
+
+// "10 Nov 2026", from DD/MM/YYYY or YYYY-MM-DD; returns the input if it can't be parsed
+export function formatDisplayDate(value: string, options: { year?: boolean; weekday?: boolean } = {}): string {
+  const time = parseDateToUtc(value)
+  if (time === null) return value
+  return new Date(time).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    ...(options.year === false ? {} : { year: "numeric" }),
+    ...(options.weekday ? { weekday: "short" } : {}),
+    timeZone: "UTC",
+  })
+}
+
+// "10 – 14 Nov 2026", "28 Nov – 2 Dec 2026", or a single day
+export function formatDisplayRange(start: string, end: string): string {
+  const s = parseDateToUtc(start)
+  const e = parseDateToUtc(end)
+  if (s === null || e === null) return `${start} – ${end}`
+  if (s === e) return formatDisplayDate(start)
+  const sd = new Date(s)
+  const ed = new Date(e)
+  const sameYear = sd.getUTCFullYear() === ed.getUTCFullYear()
+  const sameMonth = sameYear && sd.getUTCMonth() === ed.getUTCMonth()
+  const left = sd.toLocaleDateString("en-GB", {
+    day: "numeric",
+    ...(sameMonth ? {} : { month: "short" }),
+    ...(sameYear ? {} : { year: "numeric" }),
+    timeZone: "UTC",
+  })
+  return `${left} – ${formatDisplayDate(end)}`
+}

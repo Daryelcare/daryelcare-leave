@@ -178,7 +178,7 @@ export function AddEmployeeModal({ open, onOpenChange }: AddEmployeeModalProps) 
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="totalLeaveDays"
@@ -248,7 +248,6 @@ export function AddEmployeeModal({ open, onOpenChange }: AddEmployeeModalProps) 
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600"
               >
                 {isSubmitting ? "Adding..." : "Add Employee"}
               </Button>

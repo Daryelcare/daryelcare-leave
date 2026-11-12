@@ -5,9 +5,10 @@ import { useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { AlertTriangle, CalendarIcon, AlertCircle } from "lucide-react"
+import { AlertTriangle, AlertCircle } from "lucide-react"
 import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
+import { DatePicker } from "@/components/ui/date-picker"
 import {
   Dialog,
   DialogContent,
@@ -23,8 +24,6 @@ import { useToast } from "@/components/ui/use-toast"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
 import { useBranches } from "@/hooks/use-branches"
 import { useLeaveTypes } from "@/hooks/use-leave-types"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
 import { useQuery } from "@tanstack/react-query"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -105,7 +104,10 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
   const { data: branches = [], isLoading: isLoadingBranches } = useBranches()
 
   // Fetch ALL employees without pagination, filtered by user's branches for normal users
-  const { data: employeesResponse = { data: [], total: 0 }, isLoading: isLoadingEmployees } = useQuery<{ data: Employee[]; total: number }>({
+  const { data: employeesResponse = { data: [], total: 0 }, isLoading: isLoadingEmployees } = useQuery<{
+    data: Employee[]
+    total: number
+  }>({
     queryKey: ["employees", "all", user?.role, user?.branches],
     queryFn: async () => {
       try {
@@ -400,27 +402,27 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
 
   // Get the submit button text based on warnings and confirm counts
   const getSubmitButtonText = () => {
-    if (isSubmitting) return "Submitting..."
+    if (isSubmitting) return "Saving…"
 
     if (overlapWarning) {
       if (overlapConfirmCount === 0) {
-        return "Confirm Overlap (1/3)"
+        return "Confirm overlap (1/3)"
       } else if (overlapConfirmCount === 1) {
-        return "Confirm Overlap (2/3)"
+        return "Confirm overlap (2/3)"
       } else {
-        return "Confirm Overlap (3/3)"
+        return "Confirm overlap (3/3)"
       }
     }
 
     if (isExceedingBalance) {
       if (exceedingBalanceConfirmCount === 0) {
-        return "Confirm Negative Balance"
+        return "Confirm negative balance"
       } else {
-        return "Submit Request"
+        return "Add leave"
       }
     }
 
-    return "Submit Request"
+    return "Add leave"
   }
 
   // Add the leave types query
@@ -443,8 +445,8 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
     >
       <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
-          <DialogTitle>Add Leave Request</DialogTitle>
-          <DialogDescription>Create a new leave request for an employee.</DialogDescription>
+          <DialogTitle>Add leave</DialogTitle>
+          <DialogDescription>Record approved leave for an employee.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -478,7 +480,7 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
               name="type"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Leave Type</FormLabel>
+                  <FormLabel>Leave type</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingLeaveTypes}>
                     <FormControl>
                       <SelectTrigger>
@@ -498,38 +500,23 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="startDate"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Start Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
-                          >
-                            {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          key="start-date-calendar"
-                          mode="single"
-                          selected={field.value}
-                          onSelect={(date) => {
-                            // Add a small delay to prevent rapid DOM updates
-                            setTimeout(() => field.onChange(date), 0)
-                          }}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <FormLabel>Start date</FormLabel>
+                    <FormControl>
+                      <DatePicker
+                        value={field.value}
+                        onChange={(date) => {
+                          // Add a small delay to prevent rapid DOM updates
+                          setTimeout(() => field.onChange(date), 0)
+                        }}
+                        placeholder="Pick a date"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -540,112 +527,70 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
                 name="endDate"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>End Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
-                          >
-                            {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          key="end-date-calendar"
-                          mode="single"
-                          selected={field.value}
-                          onSelect={(date) => {
-                            // Add a small delay to prevent rapid DOM updates
-                            setTimeout(() => field.onChange(date), 0)
-                          }}
-                          disabled={(date) => (startDate ? date < startDate : false)} // Only restrict dates before start date
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <FormLabel>End date</FormLabel>
+                    <FormControl>
+                      <DatePicker
+                        value={field.value}
+                        onChange={(date) => {
+                          // Add a small delay to prevent rapid DOM updates
+                          setTimeout(() => field.onChange(date), 0)
+                        }}
+                        placeholder="Pick a date"
+                        disabledDays={(date) => (startDate ? date < startDate : false)}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
 
-            {startDate && endDate && (
-              <div className="rounded-md bg-muted p-3">
-                <p className="text-sm font-medium">Duration: {duration} days</p>
+            {selectedEmployee && (
+              <div className="overflow-hidden rounded-xl border border-border/80 bg-muted/40 text-sm">
+                <div className="grid grid-cols-3 divide-x divide-border/70">
+                  {[
+                    { label: "Duration", value: startDate && endDate ? duration : "—" },
+                    { label: "Available", value: selectedEmployee.availableDays },
+                    {
+                      label: "After this",
+                      value: startDate && endDate && duration > 0 ? selectedEmployee.availableDays - duration : "—",
+                      danger: startDate && endDate && duration > 0 && selectedEmployee.availableDays - duration < 0,
+                    },
+                  ].map((stat) => (
+                    <div key={stat.label} className="px-3 py-3 text-center">
+                      <p className={cn("font-display text-xl font-semibold tracking-[-0.02em] tabular", stat.danger && "text-destructive")}>
+                        {stat.value}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{stat.label}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="border-t border-border/70 px-3.5 py-2.5 text-xs text-muted-foreground">
+                  {selectedEmployee.name} has used {selectedEmployee.daysTaken} and has {selectedEmployee.daysRemaining} days remaining
+                  {selectedEmployee.pendingDays > 0 && ` (${selectedEmployee.pendingDays} pending)`}. Only Annual Leave and Working
+                  Holiday use the balance.
+                </p>
               </div>
             )}
 
-            {selectedEmployee && (
-              <div className="rounded-md bg-muted p-3">
-                <p className="text-sm font-medium">Employee: {selectedEmployee.name}</p>
-                <p className="text-sm font-medium">
-                  Total Leave Balance: {selectedEmployee.daysTaken} used, {selectedEmployee.daysRemaining} remaining
-                </p>
-                {selectedEmployee.pendingDays > 0 && (
-                  <p className="text-sm font-medium mt-1">
-                    Pending requests: {selectedEmployee.pendingDays} days ({selectedEmployee.availableDays} days
-                    available)
-                  </p>
-                )}
-                {startDate && endDate && duration > 0 ? (
-                  <p className="text-sm font-medium mt-1">
-                    After this request: {selectedEmployee.availableDays - duration} days remaining
-                    {selectedEmployee.availableDays - duration < 0 && (
-                      <span className="text-amber-600"> (negative balance)</span>
-                    )}
-                  </p>
-                ) : (
-                  <p className="text-sm font-medium mt-1">Currently available: {selectedEmployee.availableDays} days</p>
-                )}
-              </div>
+            {!selectedEmployee && startDate && endDate && (
+              <p className="rounded-xl bg-muted/60 px-3.5 py-2.5 text-sm font-medium">{duration} {duration === 1 ? "day" : "days"}</p>
             )}
 
             {selectedEmployee && isExceedingBalance && (
-              <Alert variant={exceedingBalanceConfirmCount === 0 ? "destructive" : "warning"}>
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Exceeding Leave Balance</AlertTitle>
-                <AlertDescription>{getExceedingBalanceMessage()}</AlertDescription>
+              <Alert variant={exceedingBalanceConfirmCount === 0 ? "warning" : "destructive"}>
+                <AlertCircle />
+                <AlertTitle>More than the available balance</AlertTitle>
+                <AlertDescription>{(getExceedingBalanceMessage() || "").replace(/^⚠️ Warning: /, "")}</AlertDescription>
               </Alert>
             )}
 
             {overlapWarning && (
-              <div
-                className={cn(
-                  "rounded-md p-3 border flex items-start gap-2",
-                  overlapConfirmCount === 0
-                    ? "bg-yellow-50 border-yellow-200"
-                    : overlapConfirmCount === 1
-                      ? "bg-orange-50 border-orange-200"
-                      : "bg-red-50 border-red-200",
-                )}
-              >
-                <AlertTriangle
-                  className={cn(
-                    "h-5 w-5 mt-0.5",
-                    overlapConfirmCount === 0
-                      ? "text-yellow-600"
-                      : overlapConfirmCount === 1
-                        ? "text-orange-600"
-                        : "text-red-600",
-                  )}
-                />
-                <p
-                  className={cn(
-                    "text-sm font-medium",
-                    overlapConfirmCount === 0
-                      ? "text-yellow-800"
-                      : overlapConfirmCount === 1
-                        ? "text-orange-800"
-                        : "text-red-800",
-                  )}
-                >
-                  {getOverlapMessage()}
-                </p>
-              </div>
+              <Alert variant={overlapConfirmCount >= 2 ? "destructive" : "warning"}>
+                <AlertTriangle />
+                <AlertTitle>Overlaps existing leave</AlertTitle>
+                <AlertDescription>{(getOverlapMessage() || "").replace(/^⚠️ Warning: /, "")}</AlertDescription>
+              </Alert>
             )}
 
             <FormField
@@ -653,7 +598,7 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
               name="reason"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Reason (Optional)</FormLabel>
+                  <FormLabel>Reason <span className="font-normal text-muted-foreground">(optional)</span></FormLabel>
                   <FormControl>
                     <Textarea
                       placeholder="Provide details about the leave request"
@@ -673,17 +618,10 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
               <Button
                 type="submit"
                 disabled={isSubmitting}
+                variant={overlapWarning && overlapConfirmCount >= 2 ? "destructive" : "default"}
                 className={cn(
-                  "bg-gradient-to-r",
-                  overlapWarning
-                    ? overlapConfirmCount === 0
-                      ? "from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600"
-                      : overlapConfirmCount === 1
-                        ? "from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
-                        : "from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600"
-                    : isExceedingBalance && exceedingBalanceConfirmCount === 0
-                      ? "from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600"
-                      : "from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600",
+                  ((overlapWarning && overlapConfirmCount < 2) || (isExceedingBalance && exceedingBalanceConfirmCount === 0)) &&
+                    "bg-warning text-white hover:bg-warning/90",
                 )}
               >
                 {getSubmitButtonText()}

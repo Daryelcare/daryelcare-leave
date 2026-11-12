@@ -356,7 +356,6 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600"
               >
                 {isSubmitting ? "Saving..." : "Save Changes"}
               </Button>

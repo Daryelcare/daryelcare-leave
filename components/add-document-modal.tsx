@@ -5,9 +5,10 @@ import { useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { CalendarIcon, CheckCircle2 } from "lucide-react"
+import { CheckCircle2 } from "lucide-react"
 import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
+import { DatePicker } from "@/components/ui/date-picker"
 import {
   Dialog,
   DialogContent,
@@ -19,8 +20,6 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
 import { useToast } from "@/components/ui/use-toast"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
 import { cn } from "@/lib/utils"
@@ -296,7 +295,10 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
   }, [status, form])
 
   // Fetch ALL employees without pagination
-  const { data: employeesResponse = { data: [], total: 0 }, isLoading: isLoadingEmployees } = useQuery<{ data: Employee[]; total: number }>({
+  const { data: employeesResponse = { data: [], total: 0 }, isLoading: isLoadingEmployees } = useQuery<{
+    data: Employee[]
+    total: number
+  }>({
     queryKey: ["employees", "all"],
     queryFn: async () => {
       try {
@@ -518,13 +520,13 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
             )}
 
             {successMessage && (
-              <Alert className="bg-green-50 border-green-200 text-green-800">
+              <Alert variant="success">
                 <CheckCircle2 className="h-4 w-4" />
                 <AlertDescription>{successMessage}</AlertDescription>
               </Alert>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="status"
@@ -591,30 +593,13 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
                     name="passportExpiryDate"
                     render={({ field }) => (
                       <FormItem className="space-y-0">
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant={"outline"}
-                                className={cn(
-                                  "w-full pl-3 text-left font-normal text-sm h-9",
-                                  !field.value && "text-muted-foreground",
-                                )}
-                              >
-                                {field.value ? format(field.value, "dd/MM/yyyy") : <span>Select date</span>}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value || undefined}
-                              onSelect={field.onChange}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
+                        <FormControl>
+                          <DatePicker
+                            value={field.value || undefined}
+                            onChange={field.onChange}
+                            placeholder="Select date"
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -636,30 +621,13 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
                     name="rightToWorkExpiryDate"
                     render={({ field }) => (
                       <FormItem className="space-y-0">
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant={"outline"}
-                                className={cn(
-                                  "w-full pl-3 text-left font-normal text-sm h-9",
-                                  !field.value && "text-muted-foreground",
-                                )}
-                              >
-                                {field.value ? format(field.value, "dd/MM/yyyy") : <span>Select date</span>}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value || undefined}
-                              onSelect={field.onChange}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
+                        <FormControl>
+                          <DatePicker
+                            value={field.value || undefined}
+                            onChange={field.onChange}
+                            placeholder="Select date"
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -679,30 +647,13 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
                     name="brpExpiryDate"
                     render={({ field }) => (
                       <FormItem className="space-y-0">
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant={"outline"}
-                                className={cn(
-                                  "w-full pl-3 text-left font-normal text-sm h-9",
-                                  !field.value && "text-muted-foreground",
-                                )}
-                              >
-                                {field.value ? format(field.value, "dd/MM/yyyy") : <span>Select date</span>}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value || undefined}
-                              onSelect={field.onChange}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
+                        <FormControl>
+                          <DatePicker
+                            value={field.value || undefined}
+                            onChange={field.onChange}
+                            placeholder="Select date"
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -737,30 +688,9 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
                       name="otherExpiryDate"
                       render={({ field }) => (
                         <FormItem className="space-y-0">
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant={"outline"}
-                                  className={cn(
-                                    "w-full pl-3 text-left font-normal text-sm h-9",
-                                    !field.value && "text-muted-foreground",
-                                  )}
-                                >
-                                  {field.value ? format(field.value, "dd/MM/yyyy") : <span>Date</span>}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={field.value || undefined}
-                                onSelect={field.onChange}
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
+                          <FormControl>
+                            <DatePicker value={field.value || undefined} onChange={field.onChange} placeholder="Date" />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -770,7 +700,7 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="isSponsored"
@@ -808,11 +738,7 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600"
-              >
+              <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Saving..." : "Save All Documents"}
               </Button>
             </DialogFooter>

@@ -2,18 +2,15 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { DatePicker } from "@/components/ui/date-picker"
+import { PageHeader } from "./page-kit"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
-import { CalendarIcon, Download, FileSpreadsheet, FileText, HelpCircle } from "lucide-react"
+import { FileBarChart, FileSpreadsheet, FileText, Loader2 } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/use-toast"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useBranches } from "@/hooks/use-branches"
 import { useLeaveTypes } from "@/hooks/use-leave-types"
 
@@ -97,158 +94,138 @@ export function LeaveReportsForm() {
     }
   }
 
+  const matchOptions = [
+    { value: "overlap", title: "Overlapping", text: "Any leave that touches the period" },
+    { value: "restrictive", title: "Within period", text: "Only leave fully inside the dates" },
+  ]
+  const ready = !!startDate && !!endDate
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Report Filters</CardTitle>
-        <p className="text-sm text-muted-foreground">Select filters for your report</p>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Start Date</label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn("w-full justify-start text-left font-normal", !startDate && "text-muted-foreground")}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {startDate ? format(startDate, "PPP") : "Pick a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar mode="single" selected={startDate} onSelect={setStartDate} initialFocus />
-              </PopoverContent>
-            </Popover>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">End Date</label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn("w-full justify-start text-left font-normal", !endDate && "text-muted-foreground")}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {endDate ? format(endDate, "PPP") : "Pick a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={endDate}
-                  onSelect={setEndDate}
-                  initialFocus
-                  disabled={(date) => (startDate ? date < startDate : false)}
+    <div className="space-y-6 sm:space-y-8">
+      <PageHeader title="Reports" description="Export leave for a date range as a spreadsheet." />
+
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-[1fr_340px] lg:items-start">
+        <div className="surface divide-y divide-border/70 overflow-hidden">
+          <section className="space-y-4 p-5 sm:p-6">
+            <div>
+              <h2 className="text-[17px] font-semibold">Date range</h2>
+              <p className="text-sm text-muted-foreground">Choose the period the report covers.</p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="report-start">From</Label>
+                <DatePicker id="report-start" value={startDate} onChange={setStartDate} placeholder="Start date" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="report-end">To</Label>
+                <DatePicker
+                  id="report-end"
+                  value={endDate}
+                  onChange={setEndDate}
+                  placeholder="End date"
+                  disabledDays={startDate ? { before: startDate } : undefined}
                 />
-              </PopoverContent>
-            </Popover>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium">Date Filter Mode</label>
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full p-0">
-                    <HelpCircle className="h-4 w-4" />
-                    <span className="sr-only">Date filter mode help</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right" align="start" className="max-w-xs">
-                  <div className="space-y-2 text-sm">
-                    <p>
-                      <strong>Overlapping:</strong> Includes leaves that overlap with the selected period (e.g., a leave
-                      from 01/04 to 20/04 will be included when filtering for 03/04 to 30/04).
-                    </p>
-                    <p>
-                      <strong>Restrictive:</strong> Only includes leaves that fall completely within the selected
-                      period.
-                    </p>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          <RadioGroup
-            defaultValue="overlap"
-            value={dateFilterMode}
-            onValueChange={setDateFilterMode}
-            className="flex space-x-4"
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="overlap" id="overlap" />
-              <Label htmlFor="overlap">Overlapping</Label>
+              </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="restrictive" id="restrictive" />
-              <Label htmlFor="restrictive">Restrictive</Label>
+            <RadioGroup value={dateFilterMode} onValueChange={setDateFilterMode} className="grid gap-2.5 sm:grid-cols-2" aria-label="Which leave to include">
+              {matchOptions.map((option) => (
+                <Label
+                  key={option.value}
+                  htmlFor={option.value}
+                  className={cn(
+                    "flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-card p-3.5 transition-colors hover:border-foreground/20",
+                    dateFilterMode === option.value && "border-primary/50 bg-primary-soft/50 ring-1 ring-primary/30",
+                  )}
+                >
+                  <RadioGroupItem value={option.value} id={option.value} className="mt-0.5" />
+                  <span className="space-y-0.5">
+                    <span className="block text-sm font-semibold">{option.title}</span>
+                    <span className="block text-xs font-normal text-muted-foreground">{option.text}</span>
+                  </span>
+                </Label>
+              ))}
+            </RadioGroup>
+          </section>
+
+          <section className="space-y-4 p-5 sm:p-6">
+            <div>
+              <h2 className="text-[17px] font-semibold">Filters</h2>
+              <p className="text-sm text-muted-foreground">Optional. Narrow the report to one branch or leave type.</p>
             </div>
-          </RadioGroup>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="report-branch">Branch</Label>
+                <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+                  <SelectTrigger id="report-branch">
+                    <SelectValue placeholder="All branches" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All branches</SelectItem>
+                    {branches.map((branch) => (
+                      <SelectItem key={branch.id} value={branch.name}>
+                        {branch.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="report-type">Leave type</Label>
+                <Select value={selectedLeaveType} onValueChange={setSelectedLeaveType} disabled={isLoadingLeaveTypes}>
+                  <SelectTrigger id="report-type">
+                    <SelectValue placeholder="All leave types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All leave types</SelectItem>
+                    {leaveTypes.map((leaveType) => (
+                      <SelectItem key={leaveType.id} value={leaveType.name}>
+                        {leaveType.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </section>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Branch</label>
-          <Select value={selectedBranch} onValueChange={setSelectedBranch}>
-            <SelectTrigger>
-              <SelectValue placeholder="All Branches" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Branches</SelectItem>
-              {branches.map((branch) => (
-                <SelectItem key={branch.id} value={branch.name}>
-                  {branch.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Leave Type</label>
-          <Select value={selectedLeaveType} onValueChange={setSelectedLeaveType} disabled={isLoadingLeaveTypes}>
-            <SelectTrigger>
-              <SelectValue placeholder="All Leave Types" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Leave Types</SelectItem>
-              {leaveTypes.map((leaveType) => (
-                <SelectItem key={leaveType.id} value={leaveType.name}>
-                  {leaveType.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Export Format</label>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                className="w-full gap-2 bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600"
-                disabled={isExporting || !startDate || !endDate}
-              >
-                <Download className="h-4 w-4" />
-                Export Report
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleExport("csv")} disabled={isExporting}>
-                <FileText className="h-4 w-4 mr-2" />
-                Export as CSV
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport("excel")} disabled={isExporting}>
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
-                Export as Excel
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </CardContent>
-    </Card>
+        {/* Summary and export */}
+        <aside className="surface space-y-5 p-5 sm:p-6 lg:sticky lg:top-20">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary">
+              <FileBarChart className="h-5 w-5" />
+            </span>
+            <div>
+              <h2 className="text-[17px] font-semibold">Leave report</h2>
+              <p className="text-xs text-muted-foreground">CSV or Excel</p>
+            </div>
+          </div>
+          <dl className="space-y-2.5 text-sm">
+            {[
+              ["Period", ready ? `${format(startDate!, "d MMM yyyy")} – ${format(endDate!, "d MMM yyyy")}` : "Not set"],
+              ["Includes", dateFilterMode === "overlap" ? "Overlapping leave" : "Leave within the dates"],
+              ["Branch", selectedBranch === "all" ? "All branches" : selectedBranch],
+              ["Leave type", selectedLeaveType === "all" ? "All types" : selectedLeaveType],
+            ].map(([label, value]) => (
+              <div key={label} className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">{label}</dt>
+                <dd className={cn("text-right font-medium", value === "Not set" && "text-muted-foreground")}>{value}</dd>
+              </div>
+            ))}
+          </dl>
+          <div className="grid grid-cols-2 gap-2">
+            <Button onClick={() => handleExport("excel")} disabled={isExporting || !ready}>
+              {isExporting ? <Loader2 className="animate-spin" /> : <FileSpreadsheet />}
+              Excel
+            </Button>
+            <Button variant="outline" onClick={() => handleExport("csv")} disabled={isExporting || !ready}>
+              <FileText />
+              CSV
+            </Button>
+          </div>
+          {!ready && <p className="text-center text-xs text-muted-foreground">Choose a start and end date to export.</p>}
+        </aside>
+      </div>
+    </div>
   )
 }

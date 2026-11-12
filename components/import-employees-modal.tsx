@@ -375,7 +375,7 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
             {/* Import results */}
             {importResults && (
               <div className="space-y-2">
-                <Alert variant="default" className="bg-green-50 border-green-200 text-green-800">
+                <Alert variant="success">
                   <CheckCircle className="h-4 w-4" />
                   <AlertTitle>Import completed</AlertTitle>
                   <AlertDescription>Successfully imported {importResults.success} employees.</AlertDescription>
@@ -414,11 +414,11 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => handleDownloadTemplate("csv")}>
-                    <FileText className="h-4 w-4 mr-2" />
+                    <FileText />
                     CSV Template
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleDownloadTemplate("excel")}>
-                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    <FileSpreadsheet />
                     Excel Template
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -427,8 +427,8 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
 
             {/* File upload area */}
             <div
-              className={`border-2 border-dashed rounded-lg p-6 text-center ${
-                dragActive ? "border-primary bg-primary/5" : "border-border"
+              className={`rounded-xl border-2 border-dashed p-8 text-center transition-colors duration-200 ${
+                dragActive ? "border-primary bg-primary-soft/60" : "border-border bg-muted/30 hover:border-foreground/20"
               }`}
               onDragEnter={handleDrag}
               onDragOver={handleDrag}
@@ -445,7 +445,7 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
 
               {selectedFile ? (
                 <div className="flex flex-col items-center gap-2">
-                  <FileSpreadsheet className="h-10 w-10 text-muted-foreground" />
+                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-success-soft text-success"><FileSpreadsheet className="h-6 w-6" /></span>
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{selectedFile.name}</span>
                     <Button
@@ -462,7 +462,7 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-2">
-                  <Upload className="h-10 w-10 text-muted-foreground" />
+                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-card text-muted-foreground shadow-card"><Upload className="h-5 w-5" /></span>
                   <p className="text-sm font-medium">
                     Drag and drop your file here, or{" "}
                     <button
@@ -501,7 +501,6 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
             <Button
               onClick={handleUpload}
               disabled={isUploading || previewData.length === 0}
-              className="bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600"
             >
               {isUploading ? "Importing..." : "Import Employees"}
             </Button>
@@ -509,7 +508,6 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
             <Button
               onClick={handlePreview}
               disabled={!selectedFile || previewLoading}
-              className="bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600"
             >
               {previewLoading ? "Generating Preview..." : "Preview Data"}
             </Button>

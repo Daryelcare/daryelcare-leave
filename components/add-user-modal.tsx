@@ -224,13 +224,13 @@ export function AddUserModal({ open, onOpenChange }: AddUserModalProps) {
                     </div>
                     <div className="space-y-2">
                       {branches.map((branch) => (
-                        <div key={branch.id} className="flex items-center space-x-2">
+                        <div key={branch.id} className="flex items-center gap-2.5">
                           <FormField
                             control={form.control}
                             name="branches"
                             render={({ field }) => {
                               return (
-                                <FormItem key={branch.id} className="flex flex-row items-start space-x-3 space-y-0">
+                                <FormItem key={branch.id} className="flex flex-row items-center gap-3 space-y-0">
                                   <FormControl>
                                     <Checkbox
                                       checked={field.value?.includes(branch.name)}
@@ -263,7 +263,6 @@ export function AddUserModal({ open, onOpenChange }: AddUserModalProps) {
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600"
               >
                 {isSubmitting ? "Adding..." : "Add User"}
               </Button>

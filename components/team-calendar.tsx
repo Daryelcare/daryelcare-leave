@@ -2,8 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { AlertTriangle, CalendarCheck, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -11,6 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useApp } from "./app-provider"
+import { Avatar, EmptyState, ErrorState, PageHeader, plural } from "./page-kit"
 import { useBranches } from "@/hooks/use-branches"
 import { useLeaveTypes } from "@/hooks/use-leave-types"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
@@ -170,35 +170,37 @@ export function TeamCalendar() {
   const selectedBusy = busyBranches(selectedDay)
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Team Calendar</h1>
-        <p className="text-muted-foreground">Who is off, by branch, with a warning when too many are off at once</p>
-      </div>
+    <div className="space-y-6 sm:space-y-8">
+      <PageHeader
+        title="Team Calendar"
+        description="Who is off, by branch, with a warning when too many people are away at once."
+      />
 
       {/* Controls */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => goToMonth(-1)} aria-label="Previous month">
-            <ChevronLeft className="h-4 w-4" />
+      <div className="surface flex flex-col gap-4 p-3 sm:p-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex items-center gap-1.5">
+          <Button variant="ghost" size="icon" onClick={() => goToMonth(-1)} aria-label="Previous month">
+            <ChevronLeft />
           </Button>
-          <h2 className="min-w-[132px] text-center text-lg font-semibold sm:min-w-[170px] sm:text-xl">
+          <h2 className="min-w-[150px] flex-1 text-center text-lg font-semibold sm:min-w-[180px] sm:flex-none sm:text-xl">
             {monthLabel(view.year, view.month)}
           </h2>
-          <Button variant="outline" size="icon" onClick={() => goToMonth(1)} aria-label="Next month">
-            <ChevronRight className="h-4 w-4" />
+          <Button variant="ghost" size="icon" onClick={() => goToMonth(1)} aria-label="Next month">
+            <ChevronRight />
           </Button>
-          <Button variant="outline" onClick={goToToday}>
+          <Button variant="outline" size="sm" onClick={goToToday} className="ml-1">
             Today
           </Button>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="grid grid-cols-2 gap-3 sm:flex sm:items-end">
           {branchOptions.length > 1 && (
-            <div className="space-y-1">
-              <Label htmlFor="calendar-branch">Branch</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="calendar-branch" className="text-xs text-muted-foreground">
+                Branch
+              </Label>
               <Select value={branch} onValueChange={setBranch}>
-                <SelectTrigger id="calendar-branch" className="w-full sm:w-[200px]">
+                <SelectTrigger id="calendar-branch" className="w-full sm:w-[190px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -212,44 +214,43 @@ export function TeamCalendar() {
               </Select>
             </div>
           )}
-          <div className="space-y-1">
-            <Label htmlFor="calendar-threshold">Warn at (people off in one branch)</Label>
+          <div className={cn("space-y-1.5", branchOptions.length <= 1 && "col-span-2")}>
+            <Label htmlFor="calendar-threshold" className="text-xs text-muted-foreground">
+              Warning level
+            </Label>
             <Input
               id="calendar-threshold"
               type="number"
+              inputMode="numeric"
               min={2}
               max={50}
               value={threshold}
               onChange={(e) => updateThreshold(Number(e.target.value))}
-              className="w-full sm:w-[120px]"
+              title="Flag a day when this many people in one branch are off"
+              className="w-full sm:w-[110px]"
             />
           </div>
         </div>
       </div>
 
-      {isError && (
-        <div className="rounded-md bg-destructive/15 p-4 text-destructive">
-          <p className="font-medium">Couldn&apos;t load the calendar</p>
-          <p className="text-sm">{handleApiError(error)}</p>
-          <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-2">
-            Try again
-          </Button>
-        </div>
-      )}
+      {isError && <ErrorState title="Couldn't load the calendar" message={handleApiError(error)} onRetry={() => refetch()} />}
 
       {warningDays.length > 0 && (
-        <Alert className="border-amber-300 bg-amber-50 text-amber-900 [&>svg]:text-amber-600">
-          <AlertTriangle className="h-4 w-4" />
+        <Alert variant="warning" className="page-enter">
+          <AlertTriangle />
           <AlertTitle>
-            {warningDays.length} {warningDays.length === 1 ? "day" : "days"} this month with {threshold} or more
-            people off in one branch
+            {warningDays.length} {warningDays.length === 1 ? "day" : "days"} this month with {threshold} or more people off in one
+            branch
           </AlertTitle>
           <AlertDescription>
-            <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
+            <ul className="mt-1 flex flex-wrap gap-1.5">
               {warningDays.map((d) => (
                 <li key={d.iso}>
-                  <button className="underline-offset-2 hover:underline" onClick={() => setSelectedDay(d.iso)}>
-                    {shortDate(d.iso)}: {d.busy.map((b) => `${b.branch} (${b.count})`).join(", ")}
+                  <button
+                    className="rounded-full border border-warning/25 bg-card px-2.5 py-0.5 text-xs font-semibold text-foreground transition-colors hover:border-warning/50"
+                    onClick={() => setSelectedDay(d.iso)}
+                  >
+                    {shortDate(d.iso)} · {d.busy.map((b) => `${b.branch} (${b.count})`).join(", ")}
                   </button>
                 </li>
               ))}
@@ -258,13 +259,17 @@ export function TeamCalendar() {
         </Alert>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
+      <div className="grid gap-4 sm:gap-6 xl:grid-cols-[1fr_340px]">
         {/* Month grid */}
-        <Card className="overflow-hidden">
-          <div className="grid grid-cols-7 border-b bg-muted/50 text-center text-xs font-medium text-muted-foreground">
-            {WEEKDAYS.map((d) => (
-              <div key={d} className="py-2">
-                {d}
+        <div className="surface overflow-hidden">
+          <div className="grid grid-cols-7 border-b border-border/70 bg-muted/50">
+            {WEEKDAYS.map((d, i) => (
+              <div
+                key={d}
+                className={cn("py-2.5 text-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground", i >= 5 && "text-muted-foreground/60")}
+              >
+                <span className="sm:hidden">{d.charAt(0)}</span>
+                <span className="hidden sm:inline">{d}</span>
               </div>
             ))}
           </div>
@@ -275,42 +280,48 @@ export function TeamCalendar() {
               const leave = byDay.get(iso) || []
               const busy = busyBranches(iso)
               const isWeekend = index % 7 >= 5
+              const selected = selectedDay === iso
               return (
                 <button
                   key={iso}
                   type="button"
                   onClick={() => setSelectedDay(iso)}
                   aria-label={`${dayLabel(iso)}: ${leave.length} off${busy.length ? ", too many off" : ""}`}
-                  aria-pressed={selectedDay === iso}
+                  aria-pressed={selected}
                   className={cn(
-                    "relative flex min-h-[64px] flex-col gap-1 border-b border-r p-1 text-left align-top transition-colors hover:bg-muted/60 sm:min-h-[112px] sm:p-1.5",
+                    "group relative flex min-h-[60px] flex-col gap-1 border-b border-r border-border/60 p-1 text-left transition-colors duration-150 hover:bg-muted/50 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-ring/30 sm:min-h-[104px] sm:p-2",
                     index % 7 === 6 && "border-r-0",
-                    !inMonth && "bg-muted/30 text-muted-foreground",
-                    isWeekend && inMonth && "bg-muted/20",
-                    busy.length > 0 && "bg-amber-50 ring-2 ring-inset ring-amber-400 hover:bg-amber-100",
-                    selectedDay === iso && "ring-2 ring-inset ring-primary",
+                    index >= days.length - 7 && "border-b-0",
+                    isWeekend && "bg-muted/30",
+                    !inMonth && "bg-muted/40 text-muted-foreground/60",
+                    busy.length > 0 && "bg-warning-soft hover:bg-warning-soft",
+                    selected && "bg-primary-soft/70 hover:bg-primary-soft/70",
                   )}
                 >
+                  {selected && <span className="pointer-events-none absolute inset-0 ring-2 ring-inset ring-primary" aria-hidden />}
                   <div className="flex items-center justify-between">
                     <span
                       className={cn(
-                        "flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium",
+                        "flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold tabular",
                         iso === todayIso && "bg-primary text-primary-foreground",
                       )}
                     >
                       {new Date(t).getUTCDate()}
                     </span>
-                    {busy.length > 0 && <AlertTriangle className="h-3.5 w-3.5 text-amber-600" aria-hidden />}
+                    {busy.length > 0 && <AlertTriangle className="h-3.5 w-3.5 text-warning" aria-hidden />}
                   </div>
 
                   {isLoading ? (
                     inMonth && <Skeleton className="hidden h-4 w-full sm:block" />
                   ) : (
                     <>
-                      {/* Phones: just a count */}
+                      {/* Phones: coloured dots, one per person (up to 4) */}
                       {leave.length > 0 && (
-                        <span className="rounded bg-primary/10 px-1 text-center text-[11px] font-medium text-primary sm:hidden">
-                          {leave.length} off
+                        <span className="flex flex-wrap items-center gap-0.5 px-0.5 sm:hidden">
+                          {leave.slice(0, 4).map((l) => (
+                            <span key={l.id} className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: typeColor(l.type) }} />
+                          ))}
+                          {leave.length > 4 && <span className="text-[9px] font-semibold text-muted-foreground">+{leave.length - 4}</span>}
                         </span>
                       )}
                       {/* Larger screens: names */}
@@ -318,15 +329,15 @@ export function TeamCalendar() {
                         {leave.slice(0, CHIPS_PER_DAY).map((l) => (
                           <span
                             key={l.id}
-                            className="truncate rounded px-1 py-0.5 text-[11px] font-medium text-white"
-                            style={{ backgroundColor: typeColor(l.type) }}
+                            className="truncate rounded-md px-1.5 py-0.5 text-[11px] font-semibold leading-4"
+                            style={{ backgroundColor: `${typeColor(l.type)}1a`, color: typeColor(l.type) }}
                             title={`${l.employeeName} – ${l.type} (${l.branch})`}
                           >
                             {l.employeeName}
                           </span>
                         ))}
                         {leave.length > CHIPS_PER_DAY && (
-                          <span className="px-1 text-[11px] text-muted-foreground">
+                          <span className="px-1.5 text-[11px] font-medium text-muted-foreground">
                             +{leave.length - CHIPS_PER_DAY} more
                           </span>
                         )}
@@ -337,59 +348,57 @@ export function TeamCalendar() {
               )
             })}
           </div>
-        </Card>
+        </div>
 
         {/* Selected day */}
-        <Card className="h-fit">
-          <CardHeader>
-            <CardTitle className="text-lg">{dayLabel(selectedDay)}</CardTitle>
-            <CardDescription>
-              {selectedLeave.length === 0
-                ? "Nobody off"
-                : `${selectedLeave.length} ${selectedLeave.length === 1 ? "person" : "people"} off`}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {selectedBusy.length > 0 && (
-              <div className="flex gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-                <span>
-                  Too many off:{" "}
-                  {selectedBusy.map((b) => `${b.count} in ${b.branch}`).join(", ")} (warning level {threshold})
-                </span>
-              </div>
-            )}
-            {selectedLeave.length > 0 && (
-              <ul className="space-y-3">
-                {selectedLeave.map((l) => (
-                  <li key={l.id} className="flex gap-3">
-                    <span
-                      className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full"
-                      style={{ backgroundColor: typeColor(l.type) }}
-                      aria-hidden
-                    />
-                    <div className="min-w-0">
-                      <p className="font-medium">{l.employeeName}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {l.type} · {l.branch}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {l.start === l.end ? shortDate(l.start) : `${shortDate(l.start)} – ${shortDate(l.end)}`} ·{" "}
-                        {l.duration} {l.duration === 1 ? "day" : "days"}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
+        <div className="surface h-fit overflow-hidden">
+          <div className="p-5 pb-4">
+            <p className="eyebrow">{selectedDay === todayIso ? "Today" : "Selected day"}</p>
+            <h3 className="mt-1 text-lg font-semibold">{dayLabel(selectedDay)}</h3>
+            <p className="text-sm text-muted-foreground">
+              {selectedLeave.length === 0 ? "Nobody off" : `${plural(selectedLeave.length, "person", "people")} off`}
+            </p>
+          </div>
+          {selectedBusy.length > 0 && (
+            <div className="mx-5 mb-4 flex gap-2.5 rounded-lg border border-warning/25 bg-warning-soft p-3 text-sm">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+              <span>
+                Too many off: {selectedBusy.map((b) => `${b.count} in ${b.branch}`).join(", ")}{" "}
+                <span className="text-muted-foreground">(warning level {threshold})</span>
+              </span>
+            </div>
+          )}
+          {selectedLeave.length > 0 ? (
+            <ul className="divide-y divide-border/70 border-t border-border/70">
+              {selectedLeave.map((l) => (
+                <li key={l.id} className="flex items-center gap-3 px-5 py-3">
+                  <Avatar name={l.employeeName} className="h-8 w-8 text-xs" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold">{l.employeeName}</p>
+                    <p className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
+                      <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: typeColor(l.type) }} aria-hidden />
+                      {l.type} · {l.branch}
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right text-xs text-muted-foreground">
+                    <p className="font-medium text-foreground tabular">
+                      {l.start === l.end ? shortDate(l.start) : `${shortDate(l.start)} – ${shortDate(l.end)}`}
+                    </p>
+                    <p>{plural(l.duration, "day")}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EmptyState icon={CalendarCheck} title="Nobody is off" description="Pick another day to see who's away." compact className="border-t border-border/70" />
+          )}
+        </div>
       </div>
 
       {typesInView.length > 0 && (
-        <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground">
+        <div className="flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-muted-foreground">
           {typesInView.map((type) => (
-            <span key={type} className="flex items-center gap-1.5">
+            <span key={type} className="flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: typeColor(type) }} aria-hidden />
               {type}
             </span>

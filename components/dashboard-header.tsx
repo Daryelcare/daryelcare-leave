@@ -1,64 +1,57 @@
 "use client"
 
-import { Bell, User, LogOut, Settings } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { useApp } from "./app-provider"
+import Image from "next/image"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { useEffect, useState } from "react"
+import { ChevronRight } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import { useRouter } from "next/navigation"
-import { useLogout } from "@/hooks/use-logout"
+import { NAV_GROUPS, findNavItem, pageTitle } from "@/lib/navigation"
 
+// Slim top bar. Desktop: sidebar toggle and a breadcrumb.
+// Phone: the DaryelCare mark and the current page name.
 export function DashboardHeader() {
-  const { user } = useApp()
-  const router = useRouter()
-  const handleLogout = useLogout()
+  const pathname = usePathname()
+  const item = findNavItem(pathname)
+  const group = NAV_GROUPS.find((g) => g.items.some((i) => i.href === item?.href))
+  const title = pageTitle(pathname)
+
+  // Phones: the page already shows a large title, so the bar only shows it
+  // once you've scrolled past it (like iOS large titles)
+  const [scrolled, setScrolled] = useState(false)
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 56)
+    onScroll()
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [pathname])
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
-      <SidebarTrigger />
-      <div className="flex flex-1 items-center justify-end gap-4">
-        <Button variant="outline" size="icon" className="rounded-full">
-          <Bell className="h-4 w-4" />
-          <span className="sr-only">Notifications</span>
-        </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon" className="rounded-full">
-              {user?.avatar ? (
-                <img src={user.avatar} alt={user.name} className="h-8 w-8 rounded-full" />
-              ) : (
-                <User className="h-4 w-4" />
-              )}
-              <span className="sr-only">User menu</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>
-              <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{user?.name || "User"}</p>
-                <p className="text-xs leading-none text-muted-foreground">{user?.email || "user@example.com"}</p>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
-              <Settings className="mr-2 h-4 w-4" />
-              Settings
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Log out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+    <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b border-border/70 transition-colors bg-background/80 px-3 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70 sm:px-5">
+      <SidebarTrigger className="hidden md:inline-flex" />
+      <div className="mx-1 hidden h-5 w-px bg-border md:block" aria-hidden />
+
+      {/* Phone: brand mark + page title */}
+      <Link href="/dashboard" className="flex items-center gap-2.5 md:hidden" aria-label="DaryelCare home">
+        <Image src="/images/daryelcare-mark.png" alt="" width={28} height={28} priority />
+      </Link>
+      <p
+        className={cn(
+          "truncate font-display text-[15px] font-semibold tracking-[-0.01em] transition-[opacity,transform] duration-200 ease-smooth md:hidden",
+          scrolled ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0",
+        )}
+        aria-hidden={!scrolled}
+      >
+        {title}
+      </p>
+
+      {/* Desktop: breadcrumb */}
+      <nav aria-label="Breadcrumb" className="hidden items-center gap-1.5 text-sm md:flex">
+        {group && <span className="text-muted-foreground">{group.label}</span>}
+        {group && <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" aria-hidden />}
+        <span className="font-semibold text-foreground">{title}</span>
+      </nav>
     </header>
   )
 }

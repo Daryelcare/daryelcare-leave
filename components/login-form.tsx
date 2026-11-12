@@ -5,9 +5,9 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, Mail, Lock } from "lucide-react"
+import { AlertCircle, Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react"
 import { useApp } from "./app-provider"
 import { signIn } from "@/lib/auth"
 import Image from "next/image"
@@ -17,6 +17,7 @@ export function LoginForm() {
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const router = useRouter()
   const { setUser } = useApp()
 
@@ -72,75 +73,85 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-lg overflow-hidden bg-white/95 shadow-xl">
-      <CardHeader className="space-y-8 text-center pb-8">
-        <div className="flex flex-col items-center">
-          <div className="mx-auto w-48 mb-4">
-            <Image
-              src="/images/daryelcare-logo.jpeg"
-              alt="Daryel Care Logo"
-              width={200}
-              height={200}
-              priority
-              className="w-full h-auto"
+    <div className="w-full max-w-[380px]">
+      <div className="mb-8 space-y-2">
+        <Image
+          src="/images/daryelcare-wordmark.png"
+          alt="DaryelCare"
+          width={180}
+          height={31}
+          priority
+          className="mb-10 h-[30px] w-auto lg:hidden"
+        />
+        <h1 className="text-[28px] font-semibold leading-tight tracking-[-0.03em]">Welcome back</h1>
+        <p className="text-[15px] text-muted-foreground">Sign in to manage leave, staff and documents.</p>
+      </div>
+
+      {error && (
+        <Alert variant="destructive" className="mb-5">
+          <AlertCircle />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <div className="relative">
+            <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              id="email"
+              className="h-11 pl-10"
+              type="email"
+              autoComplete="email"
+              placeholder="you@company.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={isLoading}
             />
           </div>
-          <h2 className="text-3xl font-bold text-gray-800">Leave Management System</h2>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-6 px-8 pb-8">
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="space-y-3">
-            <div className="relative">
-              <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
-              <Input
-                className="pl-12 py-6 rounded-xl text-base"
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={isLoading}
-                style={{ borderRadius: "1rem" }}
-              />
-            </div>
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <div className="relative">
+            <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              id="password"
+              className="h-11 pl-10 pr-11"
+              type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
+              placeholder="Your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={isLoading}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
           </div>
-          <div className="space-y-3">
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
-              <Input
-                className="pl-12 py-6 rounded-xl text-base"
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={isLoading}
-                style={{ borderRadius: "1rem" }}
-              />
-            </div>
-          </div>
-          <Button
-            type="submit"
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-6 rounded-xl text-lg"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Signing in...
-              </>
-            ) : (
-              "LOGIN"
-            )}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+        </div>
+        <Button type="submit" size="lg" className="mt-2 h-11 w-full" disabled={isLoading}>
+          {isLoading ? (
+            <>
+              <Loader2 className="animate-spin" />
+              Signing in…
+            </>
+          ) : (
+            "Sign in"
+          )}
+        </Button>
+      </form>
+
+      <p className="mt-8 text-center text-xs leading-relaxed text-muted-foreground">
+        Forgotten your password? Ask an administrator to reset it.
+      </p>
+    </div>
   )
 }

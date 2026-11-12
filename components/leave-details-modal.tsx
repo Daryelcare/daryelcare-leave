@@ -6,7 +6,9 @@ import { useQuery } from "@tanstack/react-query"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
+import { useLeaveTypes } from "@/hooks/use-leave-types"
+import { formatDisplayDate, formatDisplayRange } from "@/lib/dates"
+import { Avatar, EmptyState, ErrorState, Field, plural } from "./page-kit"
 import type { LeaveRequest } from "@/lib/types"
 
 interface LeaveDetailsModalProps {
@@ -29,98 +31,73 @@ export function LeaveDetailsModal({ leaveId, isOpen, onClose }: LeaveDetailsModa
     enabled: isOpen && !!leaveId,
   })
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Approved":
-        return "bg-green-500 hover:bg-green-600"
-      case "Pending":
-        return "bg-yellow-500 hover:bg-yellow-600"
-      case "Rejected":
-        return "bg-red-500 hover:bg-red-600"
-      default:
-        return "bg-gray-500 hover:bg-gray-600"
-    }
-  }
+  const { data: leaveTypes = [] } = useLeaveTypes()
+  const color = leaveTypes.find((t) => t.name === leave?.type)?.color || "#64748b"
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[550px]">
+      <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
-          <DialogTitle>Leave Request Details</DialogTitle>
+          <DialogTitle>Leave details</DialogTitle>
         </DialogHeader>
 
         {isLoading ? (
           <div className="space-y-4">
-            <Skeleton className="h-8 w-3/4" />
-            <Skeleton className="h-6 w-1/2" />
-            <Skeleton className="h-6 w-2/3" />
-            <Skeleton className="h-6 w-1/2" />
-            <Skeleton className="h-6 w-3/4" />
+            <Skeleton className="h-14 w-full rounded-xl" />
+            <Skeleton className="h-20 w-full rounded-xl" />
+            <Skeleton className="h-24 w-full" />
           </div>
         ) : isError ? (
-          <div className="text-destructive">Error loading leave details: {handleApiError(error)}</div>
+          <ErrorState title="Couldn't load this leave entry" message={handleApiError(error)} />
         ) : leave ? (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Employee</p>
-                <p className="font-medium">{leave.employee}</p>
+          <div className="space-y-5">
+            <div className="flex items-center gap-3">
+              <Avatar name={leave.employee} className="h-11 w-11" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-semibold">{leave.employee}</p>
+                <p className="truncate text-sm text-muted-foreground">
+                  {leave.branch}
+                  {leave.employeeCode && leave.employeeCode !== leave.employeeId ? ` · ${leave.employeeCode}` : ""}
+                </p>
               </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Employee Code</p>
-                <p>{leave.employeeCode}</p>
+              <Badge dot variant={leave.status === "Approved" ? "success" : leave.status === "Pending" ? "warning" : "destructive"}>
+                {leave.status}
+              </Badge>
+            </div>
+
+            <div className="flex items-center gap-4 rounded-xl border border-border/80 bg-muted/40 p-4">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: `${color}1f` }}>
+                <span className="h-3 w-3 rounded-full" style={{ backgroundColor: color }} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold">{leave.type}</p>
+                <p className="text-sm text-muted-foreground tabular">{formatDisplayRange(leave.startDate, leave.endDate)}</p>
               </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Employee ID</p>
-                <p>{leave.employeeId}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Branch</p>
-                <p>{leave.branch}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Type</p>
-                <p>{leave.type}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Start Date</p>
-                <p>{leave.startDate}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">End Date</p>
-                <p>{leave.endDate}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Duration</p>
-                <p>{leave.duration} days</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Remaining</p>
-                <p>{leave.remaining} days</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Status</p>
-                <Badge className={cn("text-white", getStatusColor(leave.status))}>{leave.status}</Badge>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Submitted Date</p>
-                <p>{leave.submittedDate}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Added By</p>
-                <p>{leave.addedBy || "System"}</p>
+              <div className="text-right">
+                <p className="font-display text-2xl font-semibold leading-none tracking-[-0.03em] tabular">{leave.duration}</p>
+                <p className="text-xs text-muted-foreground">{leave.duration === 1 ? "day" : "days"}</p>
               </div>
             </div>
 
+            <dl className="grid gap-4 sm:grid-cols-2">
+              <Field label="Start">{formatDisplayDate(leave.startDate, { weekday: true })}</Field>
+              <Field label="End">{formatDisplayDate(leave.endDate, { weekday: true })}</Field>
+              <Field label="Recorded">{leave.submittedDate ? formatDisplayDate(leave.submittedDate) : "—"}</Field>
+              <Field label="Added by">{leave.addedBy || "System"}</Field>
+              {leave.remaining !== undefined && leave.remaining !== null && (
+                <Field label="Balance after">{plural(leave.remaining, "day")}</Field>
+              )}
+            </dl>
+
             {leave.reason && (
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Reason</p>
-                <p className="text-sm">{leave.reason}</p>
+              <div className="space-y-1.5">
+                <p className="text-xs font-semibold text-muted-foreground">Reason</p>
+                <p className="rounded-xl bg-muted/50 px-4 py-3 text-sm leading-relaxed">{leave.reason}</p>
               </div>
             )}
           </div>
         ) : (
-          <div className="text-muted-foreground">No leave request data found</div>
+          <EmptyState title="Leave entry not found" compact />
         )}
 
         <DialogFooter>

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { format } from "date-fns"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { AlertTriangle, CalendarIcon, Loader2 } from "lucide-react"
+import { AlertTriangle, Loader2 } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -15,14 +15,13 @@ import {
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { DatePicker } from "@/components/ui/date-picker"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { useLeaveTypes } from "@/hooks/use-leave-types"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
 import { inclusiveDays, localDateToUtc, parseDateToUtc, utcToLocalDate } from "@/lib/dates"
-import { cn, shouldDeductFromBalance } from "@/lib/utils"
+import { shouldDeductFromBalance } from "@/lib/utils"
 import type { LeaveRequest } from "@/lib/types"
 
 interface EditLeaveModalProps {
@@ -161,8 +160,14 @@ export function EditLeaveModal({ leave, open, onOpenChange }: EditLeaveModalProp
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <DateField label="Start date" value={startDate} onChange={setStartDate} />
-            <DateField label="End date" value={endDate} onChange={setEndDate} />
+            <div className="space-y-2">
+              <Label htmlFor="edit-leave-start">Start date</Label>
+              <DatePicker id="edit-leave-start" value={startDate} onChange={(d) => d && setStartDate(d)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-leave-end">End date</Label>
+              <DatePicker id="edit-leave-end" value={endDate} onChange={(d) => d && setEndDate(d)} />
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -177,7 +182,7 @@ export function EditLeaveModal({ leave, open, onOpenChange }: EditLeaveModalProp
           </div>
 
           {/* What will change */}
-          <div className="rounded-md border bg-muted/40 p-3 text-sm">
+          <div className="rounded-xl border border-border/80 bg-muted/40 p-3.5 text-sm">
             {!datesValid ? (
               <p className="text-destructive">The end date can&apos;t be before the start date.</p>
             ) : (
@@ -200,8 +205,8 @@ export function EditLeaveModal({ leave, open, onOpenChange }: EditLeaveModalProp
           </div>
 
           {overlaps.length > 0 && (
-            <div className="flex gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+            <div className="flex gap-2.5 rounded-xl border border-warning/25 bg-warning-soft p-3 text-sm">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
               <span>
                 Overlaps with other leave for {leave.employee}:{" "}
                 {overlaps.map((o) => `${o.type} ${o.startDate}–${o.endDate}`).join("; ")}
@@ -223,46 +228,5 @@ export function EditLeaveModal({ leave, open, onOpenChange }: EditLeaveModalProp
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
-}
-
-function DateField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string
-  value: Date | undefined
-  onChange: (date: Date | undefined) => void
-}) {
-  const [isOpen, setIsOpen] = useState(false)
-  return (
-    <div className="flex flex-col space-y-2">
-      <Label>{label}</Label>
-      <Popover open={isOpen} onOpenChange={setIsOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            aria-label={label}
-            className={cn("w-full pl-3 text-left font-normal", !value && "text-muted-foreground")}
-          >
-            {value ? format(value, "PPP") : <span>Pick a date</span>}
-            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
-            mode="single"
-            selected={value}
-            defaultMonth={value}
-            onSelect={(date) => {
-              if (date) onChange(date)
-              setIsOpen(false)
-            }}
-            initialFocus
-          />
-        </PopoverContent>
-      </Popover>
-    </div>
   )
 }

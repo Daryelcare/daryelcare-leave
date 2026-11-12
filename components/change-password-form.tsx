@@ -5,7 +5,7 @@ import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { KeyRound, Loader2 } from "lucide-react"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/components/ui/use-toast"
@@ -75,66 +75,51 @@ export function ChangePasswordForm() {
     }
   }
 
+  const fields: { name: "currentPassword" | "newPassword" | "confirmPassword"; label: string; auto: string }[] = [
+    { name: "currentPassword", label: "Current password", auto: "current-password" },
+    { name: "newPassword", label: "New password", auto: "new-password" },
+    { name: "confirmPassword", label: "Confirm new password", auto: "new-password" },
+  ]
+
   return (
-    <Card className="max-w-md">
-      <CardHeader>
-        <CardTitle>Change Password</CardTitle>
-        <CardDescription>Update your account password</CardDescription>
-      </CardHeader>
+    <div className="surface max-w-xl overflow-hidden">
+      <div className="flex items-center gap-3 p-5 pb-0 sm:p-6 sm:pb-0">
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary">
+          <KeyRound className="h-[18px] w-[18px]" />
+        </span>
+        <div>
+          <h2 className="text-[17px] font-semibold">Your password</h2>
+          <p className="text-sm text-muted-foreground">Use at least 6 characters.</p>
+        </div>
+      </div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
-          <CardContent className="space-y-4">
-            <FormField
-              control={form.control}
-              name="currentPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Current Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="newPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>New Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="confirmPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Confirm New Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-          <CardFooter>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600"
-            >
-              {isSubmitting ? "Changing Password..." : "Change Password"}
+          <div className="space-y-4 p-5 sm:p-6">
+            {fields.map((item) => (
+              <FormField
+                key={item.name}
+                control={form.control}
+                name={item.name}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{item.label}</FormLabel>
+                    <FormControl>
+                      <Input type="password" autoComplete={item.auto} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ))}
+          </div>
+          <div className="flex justify-end border-t border-border/70 bg-muted/40 px-5 py-3 sm:px-6">
+            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+              {isSubmitting && <Loader2 className="animate-spin" />}
+              {isSubmitting ? "Changing password…" : "Change password"}
             </Button>
-          </CardFooter>
+          </div>
         </form>
       </Form>
-    </Card>
+    </div>
   )
 }
