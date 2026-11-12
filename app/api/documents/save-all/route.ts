@@ -33,20 +33,20 @@ export async function POST(request: Request) {
 
       // Passport
       passport_expiry: data.passportExpiry || null,
-      passport_days_left: data.passportDaysLeft || null,
+      passport_days_left: data.passportDaysLeft ?? null,
 
       // Right to Work
       right_to_work_expiry: data.rightToWorkExpiry || null,
-      right_to_work_days_left: data.rightToWorkDaysLeft || null,
+      right_to_work_days_left: data.rightToWorkDaysLeft ?? null,
 
       // BRP
       brp_expiry: data.brpExpiry || null,
-      brp_days_left: data.brpDaysLeft || null,
+      brp_days_left: data.brpDaysLeft ?? null,
 
       // Other Document
       other_document_type: data.otherDocumentType || null,
       other_document_expiry: data.otherDocumentExpiry || null,
-      other_document_days_left: data.otherDocumentDaysLeft || null,
+      other_document_days_left: data.otherDocumentDaysLeft ?? null,
     }
 
     let result
@@ -90,17 +90,17 @@ export async function POST(request: Request) {
       country: result.country,
 
       passportExpiry: result.passport_expiry || null,
-      passportDaysLeft: result.passport_days_left || null,
+      passportDaysLeft: result.passport_days_left ?? null,
 
       rightToWorkExpiry: result.right_to_work_expiry || null,
-      rightToWorkDaysLeft: result.right_to_work_days_left || null,
+      rightToWorkDaysLeft: result.right_to_work_days_left ?? null,
 
       brpExpiry: result.brp_expiry || null,
-      brpDaysLeft: result.brp_days_left || null,
+      brpDaysLeft: result.brp_days_left ?? null,
 
       otherDocumentType: result.other_document_type || null,
       otherDocumentExpiry: result.other_document_expiry || null,
-      otherDocumentDaysLeft: result.other_document_days_left || null,
+      otherDocumentDaysLeft: result.other_document_days_left ?? null,
 
       isSponsored: result.is_sponsored || false,
       is20Hours: result.is_20_hours || false,

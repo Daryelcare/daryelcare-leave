@@ -1,20 +1,24 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
+import { withLiveDaysLeft } from "@/lib/document-status"
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
     const id = params.id
 
     // Fetch the document from Supabase
-    const { data, error } = await supabase.from("documents").select("*").eq("id", id).single()
+    const { data: stored, error } = await supabase.from("documents").select("*").eq("id", id).single()
 
     if (error) {
       throw error
     }
 
-    if (!data) {
+    if (!stored) {
       return NextResponse.json({ error: "Document not found" }, { status: 404 })
     }
+
+    // Recalculate days left from the expiry dates (the stored values go stale)
+    const data = withLiveDaysLeft(stored)
 
     // Transform the data to match our frontend types
     const document = {
@@ -26,17 +30,17 @@ export async function GET(request: Request, { params }: { params: { id: string }
       country: data.country,
 
       passportExpiry: data.passport_expiry || null,
-      passportDaysLeft: data.passport_days_left || null,
+      passportDaysLeft: data.passport_days_left ?? null,
 
       rightToWorkExpiry: data.right_to_work_expiry || null,
-      rightToWorkDaysLeft: data.right_to_work_days_left || null,
+      rightToWorkDaysLeft: data.right_to_work_days_left ?? null,
 
       brpExpiry: data.brp_expiry || null,
-      brpDaysLeft: data.brp_days_left || null,
+      brpDaysLeft: data.brp_days_left ?? null,
 
       otherDocumentType: data.other_document_type || null,
       otherDocumentExpiry: data.other_document_expiry || null,
-      otherDocumentDaysLeft: data.other_document_days_left || null,
+      otherDocumentDaysLeft: data.other_document_days_left ?? null,
 
       isSponsored: data.is_sponsored || false,
       is20Hours: data.is_20_hours || false,
@@ -118,17 +122,17 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       country: updatedDocument.country,
 
       passportExpiry: updatedDocument.passport_expiry || null,
-      passportDaysLeft: updatedDocument.passport_days_left || null,
+      passportDaysLeft: updatedDocument.passport_days_left ?? null,
 
       rightToWorkExpiry: updatedDocument.right_to_work_expiry || null,
-      rightToWorkDaysLeft: updatedDocument.right_to_work_days_left || null,
+      rightToWorkDaysLeft: updatedDocument.right_to_work_days_left ?? null,
 
       brpExpiry: updatedDocument.brp_expiry || null,
-      brpDaysLeft: updatedDocument.brp_days_left || null,
+      brpDaysLeft: updatedDocument.brp_days_left ?? null,
 
       otherDocumentType: updatedDocument.other_document_type || null,
       otherDocumentExpiry: updatedDocument.other_document_expiry || null,
-      otherDocumentDaysLeft: updatedDocument.other_document_days_left || null,
+      otherDocumentDaysLeft: updatedDocument.other_document_days_left ?? null,
 
       isSponsored: updatedDocument.is_sponsored || false,
       is20Hours: updatedDocument.is_20_hours || false,
