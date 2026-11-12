@@ -1,11 +1,17 @@
+import { Suspense } from "react"
 import type { Metadata } from "next"
 import { SettingsForm } from "@/components/settings-form"
 
 export const metadata: Metadata = {
   title: "Settings",
-  description: "Manage your account settings",
+  description: "Your account, users, branches, leave types and leave periods",
 }
 
 export default function SettingsPage() {
-  return <SettingsForm />
+  // Suspense: the page reads ?section= from the address
+  return (
+    <Suspense fallback={null}>
+      <SettingsForm />
+    </Suspense>
+  )
 }

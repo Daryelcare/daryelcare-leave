@@ -6,9 +6,13 @@ import {
   CalendarRange,
   FileText,
   LayoutGrid,
+  KeyRound,
   type LucideIcon,
+  Palette,
   Settings,
   ShieldCheck,
+  SlidersHorizontal,
+  UserRound,
   Users,
 } from "lucide-react"
 
@@ -43,13 +47,8 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: "Administration",
-    items: [
-      { title: "Users & Access", href: "/dashboard/user-management", icon: ShieldCheck, adminOnly: true },
-      { title: "Branches", href: "/dashboard/admin/branches", icon: Building2, adminOnly: true },
-      { title: "Leave Periods", href: "/dashboard/admin/leave-periods", icon: CalendarCheck2, adminOnly: true },
-      { title: "Settings", href: "/dashboard/settings", icon: Settings },
-    ],
+    label: "Workspace",
+    items: [{ title: "Settings", href: "/dashboard/settings", icon: Settings }],
   },
 ]
 
@@ -74,9 +73,71 @@ export function visibleGroups(isAdmin: boolean): NavGroup[] {
   )
 }
 
-const EXTRA_TITLES: Record<string, string> = {
-  "/dashboard/change-password": "Change Password",
+/**
+ * Settings sections. Users, branches, leave types, leave periods and
+ * maintenance all live here (admins only), picked with ?section=.
+ */
+export type SettingsSection = {
+  id: string
+  title: string
+  description: string
+  icon: LucideIcon
+  group: "Personal" | "Organisation"
+  adminOnly?: boolean
 }
+
+export const SETTINGS_SECTIONS: SettingsSection[] = [
+  { id: "account", title: "Account", description: "Your profile, role and branches.", icon: UserRound, group: "Personal" },
+  { id: "password", title: "Password", description: "Change the password you sign in with.", icon: KeyRound, group: "Personal" },
+  {
+    id: "users",
+    title: "Users & access",
+    description: "Who can sign in, their role, and which branches they manage.",
+    icon: ShieldCheck,
+    group: "Organisation",
+    adminOnly: true,
+  },
+  {
+    id: "branches",
+    title: "Branches",
+    description: "The branches your staff work in, used to group people and manager access.",
+    icon: Building2,
+    group: "Organisation",
+    adminOnly: true,
+  },
+  {
+    id: "leave-types",
+    title: "Leave types",
+    description: "The kinds of leave that can be recorded, and their colour on the calendar.",
+    icon: Palette,
+    group: "Organisation",
+    adminOnly: true,
+  },
+  {
+    id: "leave-periods",
+    title: "Leave periods",
+    description: "Each leave year runs between two dates. Starting a new one resets active employees to 28 days.",
+    icon: CalendarCheck2,
+    group: "Organisation",
+    adminOnly: true,
+  },
+  {
+    id: "advanced",
+    title: "Advanced",
+    description: "Organisation-wide maintenance actions.",
+    icon: SlidersHorizontal,
+    group: "Organisation",
+    adminOnly: true,
+  },
+]
+
+export const settingsHref = (section: string) => `/dashboard/settings?section=${section}`
+
+export function visibleSettingsSections(isAdmin: boolean): SettingsSection[] {
+  return SETTINGS_SECTIONS.filter((s) => isAdmin || !s.adminOnly)
+}
+
+const EXTRA_TITLES: Record<string, string> = {}
 
 /** The nav item a path belongs to (longest matching prefix). */
 export function findNavItem(pathname: string): NavItem | undefined {

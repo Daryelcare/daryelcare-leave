@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { EmptyState, ErrorState, ListSkeleton, PageHeader } from "./page-kit"
+import { EmptyState, ErrorState, ListSkeleton, SectionHeader } from "./page-kit"
 import {
   Dialog,
   DialogContent,
@@ -107,9 +107,9 @@ export function LeavePeriodManager() {
   const formatDate = (value: string) => format(new Date(value), "d MMM yyyy")
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      <PageHeader
-        title="Leave Periods"
+    <div className="space-y-4">
+      <SectionHeader
+        title="Leave periods"
         description="Each leave year runs between two dates. Starting a new one resets active employees to 28 days."
         actions={
           <Button onClick={() => setIsDialogOpen(true)}>
@@ -119,7 +119,7 @@ export function LeavePeriodManager() {
         }
       />
 
-      <div className="surface max-w-3xl overflow-hidden">
+      <div className="surface overflow-hidden">
         {isLoading ? (
           <ListSkeleton rows={3} />
         ) : isError ? (

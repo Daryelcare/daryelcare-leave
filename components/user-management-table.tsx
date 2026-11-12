@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { AlertCircle, Building2, KeyRound, MoreHorizontal, ShieldCheck, Trash2, UserPlus, UserRound } from "lucide-react"
-import { Avatar, EmptyState, ErrorState, ListSkeleton, PageHeader } from "./page-kit"
+import { Avatar, EmptyState, ErrorState, ListSkeleton, SectionHeader } from "./page-kit"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/components/ui/use-toast"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
@@ -245,9 +245,9 @@ export function UserManagementTable() {
   const admins = users.filter((u) => u.role === "admin").length
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      <PageHeader
-        title="Users & Access"
+    <div className="space-y-4">
+      <SectionHeader
+        title="Users & access"
         description="Who can sign in, their role, and which branches they manage."
         actions={
           <Button onClick={() => setIsAddModalOpen(true)}>

@@ -1,11 +1,6 @@
-import type { Metadata } from "next"
-import { LeavePeriodManager } from "@/components/leave-period-manager"
+import { redirect } from "next/navigation"
 
-export const metadata: Metadata = {
-  title: "Leave Periods",
-  description: "Manage annual leave periods",
-}
-
-export default function LeavePeriodPage() {
-  return <LeavePeriodManager />
+// Managed in Settings now
+export default function RedirectToSettings() {
+  redirect("/dashboard/settings?section=leave-periods")
 }

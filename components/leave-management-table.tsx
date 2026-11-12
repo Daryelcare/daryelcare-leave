@@ -400,7 +400,7 @@ export function LeaveManagementTable() {
 
       <div key={view} className="page-enter space-y-6 sm:space-y-8">
         {view === "calendar" ? (
-          <TeamCalendar embedded />
+          <TeamCalendar />
         ) : (
           <>
             {isMockData && (

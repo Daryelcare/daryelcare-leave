@@ -16,7 +16,7 @@ export function AdminSettings() {
   }
 
   return (
-    <div className="max-w-3xl space-y-4">
+    <div className="space-y-4">
       <div className="surface overflow-hidden border-destructive/20">
         <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <div className="space-y-1">

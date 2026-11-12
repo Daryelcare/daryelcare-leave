@@ -2,12 +2,12 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import { NAV_GROUPS, findNavItem, pageTitle } from "@/lib/navigation"
+import { NAV_GROUPS, SETTINGS_SECTIONS, findNavItem, pageTitle } from "@/lib/navigation"
 
 // Slim top bar. Desktop: sidebar toggle and a breadcrumb.
 // Phone: the DaryelCare mark and the current page name.
@@ -16,6 +16,13 @@ export function DashboardHeader() {
   const item = findNavItem(pathname)
   const group = NAV_GROUPS.find((g) => g.items.some((i) => i.href === item?.href))
   const title = pageTitle(pathname)
+  const searchParams = useSearchParams()
+  const subtitle =
+    pathname === "/dashboard/settings"
+      ? SETTINGS_SECTIONS.find((s) => s.id === searchParams.get("section"))?.title
+      : pathname === "/dashboard/leave-management" && searchParams.get("view") === "calendar"
+        ? "Calendar"
+        : undefined
 
   // Phones: the page already shows a large title, so the bar only shows it
   // once you've scrolled past it (like iOS large titles)
@@ -50,7 +57,9 @@ export function DashboardHeader() {
       <nav aria-label="Breadcrumb" className="hidden items-center gap-1.5 text-sm md:flex">
         {group && <span className="text-muted-foreground">{group.label}</span>}
         {group && <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" aria-hidden />}
-        <span className="font-semibold text-foreground">{title}</span>
+        <span className={subtitle ? "text-muted-foreground" : "font-semibold text-foreground"}>{title}</span>
+        {subtitle && <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" aria-hidden />}
+        {subtitle && <span className="font-semibold text-foreground">{subtitle}</span>}
       </nav>
     </header>
   )

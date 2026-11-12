@@ -10,7 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useApp } from "./app-provider"
-import { Avatar, EmptyState, ErrorState, PageHeader, plural } from "./page-kit"
+import { Avatar, EmptyState, ErrorState, plural } from "./page-kit"
 import { useBranches } from "@/hooks/use-branches"
 import { useLeaveTypes } from "@/hooks/use-leave-types"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
@@ -67,7 +67,7 @@ function shortDate(iso: string) {
   return new Date(time).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" })
 }
 
-export function TeamCalendar({ embedded = false }: { embedded?: boolean } = {}) {
+export function TeamCalendar() {
   const { user } = useApp()
   const isAdmin = user?.role === "admin"
   const myBranches = user?.branches || []
@@ -171,12 +171,6 @@ export function TeamCalendar({ embedded = false }: { embedded?: boolean } = {}) 
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      {!embedded && (
-        <PageHeader
-          title="Team Calendar"
-          description="Who is off, by branch, with a warning when too many people are away at once."
-        />
-      )}
 
       {/* Controls */}
       <div className="surface flex flex-col gap-4 p-3 sm:p-4 lg:flex-row lg:items-end lg:justify-between">

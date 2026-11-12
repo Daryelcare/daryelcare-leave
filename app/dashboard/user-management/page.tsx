@@ -1,11 +1,6 @@
-import type { Metadata } from "next"
-import { UserManagementTable } from "@/components/user-management-table"
+import { redirect } from "next/navigation"
 
-export const metadata: Metadata = {
-  title: "Users & Access",
-  description: "Manage who can sign in, their roles and branches",
-}
-
-export default function UserManagementPage() {
-  return <UserManagementTable />
+// Managed in Settings now
+export default function RedirectToSettings() {
+  redirect("/dashboard/settings?section=users")
 }

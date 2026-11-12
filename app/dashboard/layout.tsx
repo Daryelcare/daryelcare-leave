@@ -25,7 +25,9 @@ export default function DashboardLayout({
         <DashboardSidebar />
         {/* min-w-0 lets wide tables scroll inside their card instead of stretching the page */}
         <div className="flex min-h-svh min-w-0 flex-1 flex-col bg-background">
-          <DashboardHeader />
+          <Suspense fallback={<div className="h-14 border-b border-border/70" />}>
+            <DashboardHeader />
+          </Suspense>
           <main className="flex-1">
             <div
               key={pathname}

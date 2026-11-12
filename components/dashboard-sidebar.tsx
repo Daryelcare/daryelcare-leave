@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useApp } from "./app-provider"
 import { useLogout } from "@/hooks/use-logout"
-import { findNavItem, visibleGroups } from "@/lib/navigation"
+import { findNavItem, settingsHref, visibleGroups } from "@/lib/navigation"
 import { Avatar } from "./page-kit"
 
 export function DashboardSidebar() {
@@ -124,7 +124,7 @@ export function DashboardSidebar() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href="/dashboard/change-password" onClick={closeOnMobile}>
+              <Link href={settingsHref("password")} onClick={closeOnMobile}>
                 <KeyRound />
                 Change password
               </Link>

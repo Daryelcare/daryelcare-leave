@@ -36,6 +36,29 @@ export function PageHeader({
   )
 }
 
+/** Heading for a section within a page (e.g. a Settings section): title, description, actions. */
+export function SectionHeader({
+  title,
+  description,
+  actions,
+  className,
+}: {
+  title: ReactNode
+  description?: ReactNode
+  actions?: ReactNode
+  className?: string
+}) {
+  return (
+    <div className={cn("flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between", className)}>
+      <div className="min-w-0 space-y-1">
+        <h2 className="text-[19px] font-semibold leading-tight tracking-[-0.02em]">{title}</h2>
+        {description && <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">{description}</p>}
+      </div>
+      {actions && <div className="flex gap-2 [&>*]:flex-1 sm:shrink-0 sm:[&>*]:flex-none">{actions}</div>}
+    </div>
+  )
+}
+
 /** Horizontal bar of filters (search, selects) above a list. Wraps on small screens. */
 export function Toolbar({ children, className }: { children: ReactNode; className?: string }) {
   return (
