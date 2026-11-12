@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
@@ -22,7 +22,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/components/ui/use-toast"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
-import { useBranches } from "@/hooks/use-branches"
 import { useLeaveTypes } from "@/hooks/use-leave-types"
 import { cn } from "@/lib/utils"
 import { useQuery } from "@tanstack/react-query"
@@ -101,7 +100,6 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
   }, [])
 
   // Fetch branches
-  const { data: branches = [], isLoading: isLoadingBranches } = useBranches()
 
   // Fetch ALL employees without pagination, filtered by user's branches for normal users
   const { data: employeesResponse = { data: [], total: 0 }, isLoading: isLoadingEmployees } = useQuery<{
@@ -130,7 +128,8 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
     enabled: open,
   })
 
-  const employees = employeesResponse?.data || []
+  // Stable reference, so the effects below don't re-run on every render
+  const employees = useMemo(() => employeesResponse?.data || [], [employeesResponse])
 
   // Watch for employee ID changes to update selected employee
   const employeeId = form.watch("employeeId")
@@ -235,7 +234,6 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
   // Update the watch for employeeId, startDate, and endDate to check for overlap
   const startDate = form.watch("startDate")
   const endDate = form.watch("endDate")
-  const leaveType = form.watch("type")
 
   // Add useEffect to check for overlap when dates or employee changes
   useEffect(() => {

@@ -48,7 +48,7 @@ import { ImportDocumentsModal } from "./import-documents-modal"
 export function DocumentTrackerTable() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedBranch, setSelectedBranch] = useState<string>("all")
-  const [selectedStatus, setSelectedStatus] = useState<string>("all")
+  const selectedStatus = "all" // status is filtered with the tiles, on the page
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
@@ -59,8 +59,8 @@ export function DocumentTrackerTable() {
   const [activeSection, setActiveSection] = useState<string>("all")
   const [isExporting, setIsExporting] = useState(false)
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
-  const [serverSortColumn, setServerSortColumn] = useState<string>("employeeName")
-  const [serverSortOrder, setServerSortOrder] = useState<"asc" | "desc">("asc")
+  const serverSortColumn = "employeeName"
+  const serverSortOrder = "asc"
   const [sortColumn, setSortColumn] = useState<string | null>("employeeName")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
 
@@ -118,7 +118,7 @@ export function DocumentTrackerTable() {
       })
 
       queryClient.invalidateQueries({ queryKey: ["documents"] })
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to delete document. Please try again.",
@@ -215,8 +215,6 @@ export function DocumentTrackerTable() {
     }
   }
 
-  const regularStats = calculateStats(regularDocuments)
-  const sponsoredStats = calculateStats(sponsoredDocuments)
 
   const getFilteredDocuments = () => {
     const docsToFilter =
@@ -371,15 +369,6 @@ export function DocumentTrackerTable() {
     )
   }
 
-  const handleServerSort = (column: string) => {
-    if (column === serverSortColumn) {
-      setServerSortOrder(serverSortOrder === "asc" ? "desc" : "asc")
-    } else {
-      setServerSortColumn(column)
-      setServerSortOrder("asc")
-    }
-  }
-
   const handleSort = (column: string) => {
     if (sortColumn === column) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc")
@@ -387,13 +376,6 @@ export function DocumentTrackerTable() {
       setSortColumn(column)
       setSortDirection("asc")
     }
-  }
-
-  const renderSortIndicator = (column: string) => {
-    if (sortColumn !== column) {
-      return <ArrowUpDown className="ml-2 h-4 w-4" />
-    }
-    return sortDirection === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
   }
 
   const hasAnyDates = (documents: EmployeeDocument[], field: "passport" | "rightToWork" | "brp" | "otherDocument") => {
@@ -541,7 +523,7 @@ export function DocumentTrackerTable() {
       {isError && <ErrorState title="Couldn't load documents" message={handleApiError(error)} onRetry={() => refetch()} />}
 
       {/* Expiry summary: each tile filters the list */}
-      <div className="grid grid-cols-5 gap-2 sm:gap-3">
+      <div className="grid grid-cols-3 gap-2 min-[400px]:grid-cols-5 sm:gap-3">
         {statusTiles.map((tile) => {
           const active = activeTab === tile.key
           const tone = toneStyles[tile.tone]
@@ -576,13 +558,13 @@ export function DocumentTrackerTable() {
         <Toolbar className="border-b border-border/70 p-3 sm:p-4">
           <Tabs value={activeSection} onValueChange={setActiveSection}>
             <TabsList className="w-full sm:w-auto">
-              <TabsTrigger value="all" className="flex-1 sm:flex-none">
-                Everyone <span className="text-muted-foreground tabular">{documents.length}</span>
+              <TabsTrigger value="all" className="flex-1 px-2 sm:flex-none sm:px-3">
+                All <span className="text-muted-foreground tabular">{documents.length}</span>
               </TabsTrigger>
-              <TabsTrigger value="regular" className="flex-1 sm:flex-none">
+              <TabsTrigger value="regular" className="flex-1 px-2 sm:flex-none sm:px-3">
                 Regular <span className="text-muted-foreground tabular">{regularDocuments.length}</span>
               </TabsTrigger>
-              <TabsTrigger value="sponsored" className="flex-1 sm:flex-none">
+              <TabsTrigger value="sponsored" className="flex-1 px-2 sm:flex-none sm:px-3">
                 Sponsored <span className="text-muted-foreground tabular">{sponsoredDocuments.length}</span>
               </TabsTrigger>
             </TabsList>

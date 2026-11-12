@@ -48,7 +48,8 @@ export function LoginForm() {
       } else {
         setError("Invalid email or password")
       }
-    } catch (err: any) {
+    } catch (caught) {
+      const err = caught instanceof Error ? caught : new Error(String(caught))
       console.error("Sign in error:", err)
 
       // Provide more user-friendly error messages based on the error

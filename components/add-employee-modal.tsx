@@ -106,7 +106,7 @@ export function AddEmployeeModal({ open, onOpenChange }: AddEmployeeModalProps) 
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Add employee</DialogTitle>
-          <DialogDescription>Enter the details of the new employee. Click save when you&apos;re done.</DialogDescription>
+          <DialogDescription>Enter the details of the new employee.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -143,7 +143,7 @@ export function AddEmployeeModal({ open, onOpenChange }: AddEmployeeModalProps) 
                 <FormItem>
                   <FormLabel>Job title</FormLabel>
                   <FormControl>
-                    <Input placeholder="Software Engineer" {...field} />
+                    <Input placeholder="e.g. Care Assistant" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

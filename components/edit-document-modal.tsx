@@ -21,7 +21,6 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/components/ui/use-toast"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
-import { cn } from "@/lib/utils"
 import type { EmployeeDocument } from "@/lib/types"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -125,7 +124,7 @@ export function EditDocumentModal({ document, open, onOpenChange }: EditDocument
       const daysLeft = data.expiryDate ? calculateDaysLeft(data.expiryDate) : null
 
       // Prepare update data
-      const updateData: any = {
+      const updateData: Record<string, unknown> = {
         status: data.status,
         country: data.country,
         isSponsored: data.isSponsored,
@@ -282,7 +281,7 @@ export function EditDocumentModal({ document, open, onOpenChange }: EditDocument
               control={form.control}
               name="isSponsored"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                <FormItem className="flex flex-row items-center justify-between rounded-xl border border-border/80 bg-card px-3.5 py-3">
                   <div className="space-y-0.5">
                     <FormLabel>Sponsored employee</FormLabel>
                     <div className="text-sm text-muted-foreground">
@@ -301,7 +300,7 @@ export function EditDocumentModal({ document, open, onOpenChange }: EditDocument
                 control={form.control}
                 name="is20Hours"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <FormItem className="flex flex-row items-center justify-between rounded-xl border border-border/80 bg-card px-3.5 py-3">
                     <div className="space-y-0.5">
                       <FormLabel>20-hour restriction</FormLabel>
                       <div className="text-sm text-muted-foreground">

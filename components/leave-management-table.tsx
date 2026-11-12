@@ -166,7 +166,7 @@ export function LeaveManagementTable() {
       queryClient.invalidateQueries({ queryKey: ["employees"] })
       queryClient.invalidateQueries({ queryKey: ["dashboard"] })
       queryClient.invalidateQueries({ queryKey: ["leave-calendar"] })
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to delete leave request. Please try again.",
@@ -264,13 +264,6 @@ export function LeaveManagementTable() {
     setSelectedType("all")
     setSortColumn("submittedDate")
     setSortDirection("desc")
-  }
-
-  const renderSortIndicator = (column: string) => {
-    if (sortColumn !== column) {
-      return <ArrowUpDown className="ml-2 h-4 w-4" />
-    }
-    return sortDirection === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
   }
 
   const typeColor = (type: string) => leaveTypes.find((t) => t.name === type)?.color || "#64748b"

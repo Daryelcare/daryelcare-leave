@@ -226,7 +226,7 @@ function formatDateValue(value: any): string | null {
       if (!isNaN(date.getTime())) {
         return formatDate(date)
       }
-    } catch (e) {
+    } catch {
       // Not a valid date string
     }
   }

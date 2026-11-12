@@ -87,7 +87,6 @@ export async function GET(request: Request) {
     const employee = searchParams.get("employee")?.toLowerCase()
     const employeeId = searchParams.get("employeeId")
     const status = searchParams.get("status")
-    const exportAll = searchParams.get("exportAll") === "true"
 
     // Get sorting parameters
     const sortColumn = searchParams.get("sortColumn")

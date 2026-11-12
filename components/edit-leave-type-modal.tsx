@@ -73,7 +73,6 @@ export function EditLeaveTypeModal({ leaveType, isOpen, onClose, onSuccess }: Ed
   const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true)
     try {
-      console.log("Submitting leave type data:", data) // For debugging
       
       await fetchWithAuth(`/api/leave-types${leaveType ? `/${leaveType.id}` : ""}`, {
         method: leaveType ? "PUT" : "POST",
@@ -170,7 +169,7 @@ export function EditLeaveTypeModal({ leaveType, isOpen, onClose, onSuccess }: Ed
               control={form.control}
               name="isPaid"
               render={({ field }) => (
-                <FormItem className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
+                <FormItem className="flex items-center justify-between rounded-xl border border-border/80 bg-card px-3.5 py-3">
                   <div className="space-y-0.5">
                     <FormLabel>Paid leave</FormLabel>
                   </div>
@@ -184,7 +183,7 @@ export function EditLeaveTypeModal({ leaveType, isOpen, onClose, onSuccess }: Ed
               control={form.control}
               name="requiresApproval"
               render={({ field }) => (
-                <FormItem className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
+                <FormItem className="flex items-center justify-between rounded-xl border border-border/80 bg-card px-3.5 py-3">
                   <div className="space-y-0.5">
                     <FormLabel>Requires approval</FormLabel>
                   </div>
@@ -198,7 +197,7 @@ export function EditLeaveTypeModal({ leaveType, isOpen, onClose, onSuccess }: Ed
               control={form.control}
               name="allowNegativeBalance"
               render={({ field }) => (
-                <FormItem className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
+                <FormItem className="flex items-center justify-between rounded-xl border border-border/80 bg-card px-3.5 py-3">
                   <div className="space-y-0.5">
                     <FormLabel>Allow negative balance</FormLabel>
                   </div>
@@ -212,7 +211,7 @@ export function EditLeaveTypeModal({ leaveType, isOpen, onClose, onSuccess }: Ed
               control={form.control}
               name="isActive"
               render={({ field }) => (
-                <FormItem className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
+                <FormItem className="flex items-center justify-between rounded-xl border border-border/80 bg-card px-3.5 py-3">
                   <div className="space-y-0.5">
                     <FormLabel>Active</FormLabel>
                   </div>

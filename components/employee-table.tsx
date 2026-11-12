@@ -149,13 +149,8 @@ export function EmployeeTable() {
         const response = await fetchWithAuth(`/api/employees?${params.toString()}`)
 
         if (!response || !response.data) {
-          console.log("No data received from API, using empty array")
           return { data: [], total: 0 }
         }
-
-        console.log(
-          `Received ${response.data.length} employees out of ${response.total} total with page size ${pageSize}`,
-        )
 
         return response
       } catch (error) {
@@ -181,7 +176,7 @@ export function EmployeeTable() {
       })
 
       queryClient.invalidateQueries({ queryKey: ["employees"] })
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to delete employee. Please try again.",
@@ -607,7 +602,7 @@ export function EmployeeTable() {
                     className="flex min-w-0 flex-1 items-center gap-3 text-left"
                     onClick={() => handleViewDetails(employee)}
                   >
-                    <Avatar name={employee.name} />
+                    <Avatar name={employee.name} className="hidden min-[360px]:flex" />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[15px] font-semibold">{employee.name}</span>
                       <span className="block truncate text-xs text-muted-foreground">

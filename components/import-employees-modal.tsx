@@ -19,7 +19,6 @@ import { Download, Upload, FileSpreadsheet, FileText, X, AlertCircle, CheckCircl
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { useBranches } from "@/hooks/use-branches"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
 interface ImportEmployeesModalProps {
@@ -51,7 +50,6 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
   const queryClient = useQueryClient()
-  const { data: branches = [] } = useBranches()
 
   // Handle file selection
   const handleFileSelect = (files: FileList | null) => {
@@ -409,7 +407,7 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-2">
                     <Download className="h-4 w-4" />
-                    Download Template
+                    Download template
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">

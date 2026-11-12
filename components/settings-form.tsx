@@ -94,7 +94,7 @@ export function SettingsForm() {
       <PageHeader title="Settings" description="Your account, password and organisation preferences." />
 
       <Tabs defaultValue="account" className="w-full">
-        <TabsList>
+        <TabsList className={isAdmin ? "grid h-auto w-full grid-cols-2 gap-1 sm:inline-flex sm:h-10 sm:w-auto" : undefined}>
           <TabsTrigger value="account">
             <UserRound />
             Account
@@ -127,8 +127,8 @@ export function SettingsForm() {
               </div>
             </div>
             <dl className="grid gap-5 border-t border-border/70 p-5 sm:grid-cols-2 sm:p-6">
-              <Field label="Name">{user?.name || "Not available"}</Field>
-              <Field label="Email">{user?.email || "Not available"}</Field>
+              <Field label="Name">{user?.name || "—"}</Field>
+              <Field label="Email">{user?.email || "—"}</Field>
               <Field label="Role">{isAdmin ? "Administrator" : "Branch manager"}</Field>
               <Field label="Branches">
                 <span className="flex flex-wrap gap-1.5">

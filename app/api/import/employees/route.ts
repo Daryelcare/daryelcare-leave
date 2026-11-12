@@ -136,7 +136,7 @@ export async function POST(request: Request) {
 
     for (let i = 0; i < validRows.length; i += BATCH_SIZE) {
       const batch = validRows.slice(i, i + BATCH_SIZE)
-      const { data, error } = await supabase.from("employees").upsert(batch, {
+      const { error } = await supabase.from("employees").upsert(batch, {
         onConflict: "employee_code",
         ignoreDuplicates: false,
       })

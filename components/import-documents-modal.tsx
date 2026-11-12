@@ -419,7 +419,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                                     )}
                                   </div>
                                 ) : (
-                                  <span className="text-muted-foreground/60">N/A</span>
+                                  <span className="text-muted-foreground/50">—</span>
                                 )}
                               </TableCell>
                               <TableCell>
@@ -431,7 +431,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                                     )}
                                   </div>
                                 ) : (
-                                  <span className="text-muted-foreground/60">N/A</span>
+                                  <span className="text-muted-foreground/50">—</span>
                                 )}
                               </TableCell>
                             </TableRow>
@@ -494,7 +494,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                                     )}
                                   </div>
                                 ) : (
-                                  <span className="text-muted-foreground/60">N/A</span>
+                                  <span className="text-muted-foreground/50">—</span>
                                 )}
                               </TableCell>
                               <TableCell>
@@ -506,7 +506,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                                     )}
                                   </div>
                                 ) : (
-                                  <span className="text-muted-foreground/60">N/A</span>
+                                  <span className="text-muted-foreground/50">—</span>
                                 )}
                               </TableCell>
                               <TableCell>
@@ -518,7 +518,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                                     )}
                                   </div>
                                 ) : (
-                                  <span className="text-muted-foreground/60">N/A</span>
+                                  <span className="text-muted-foreground/50">—</span>
                                 )}
                               </TableCell>
                               <TableCell>
@@ -608,7 +608,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-2">
                     <Download className="h-4 w-4" />
-                    Download Template
+                    Download template
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">

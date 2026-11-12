@@ -13,7 +13,6 @@ export async function exportEmployees(formData: FormData) {
     const format = formData.get("format") as string
     const branch = formData.get("branch") as string
     const search = formData.get("search") as string
-    const exportAll = formData.get("exportAll") === "true"
 
     // Get sorting parameters
     const sortColumn = formData.get("sortColumn") as string
@@ -124,7 +123,6 @@ export async function exportLeaveRequests(formData: FormData) {
     const startDate = formData.get("startDate") as string
     const endDate = formData.get("endDate") as string
     const dateFilterMode = (formData.get("dateFilterMode") as string) || "overlap"
-    const exportAll = formData.get("exportAll") === "true"
 
     // Get sorting parameters
     const sortColumn = formData.get("sortColumn") as string
@@ -245,7 +243,6 @@ export async function exportLeaveRequests(formData: FormData) {
     let contentType = ""
 
     const currentDate = new Date().toISOString().split("T")[0]
-    const filterMode = dateFilterMode === "overlap" ? "overlapping" : "restrictive"
 
     if (format === "csv") {
       fileContent = convertToCSV(formattedData)

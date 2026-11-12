@@ -33,7 +33,7 @@ export function DashboardHeader() {
       <div className="mx-1 hidden h-5 w-px bg-border md:block" aria-hidden />
 
       {/* Phone: brand mark + page title */}
-      <Link href="/dashboard" className="flex items-center gap-2.5 md:hidden" aria-label="DaryelCare home">
+      <Link href="/dashboard" className="-ml-1.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg md:hidden" aria-label="DaryelCare home">
         <Image src="/images/daryelcare-mark.png" alt="" width={28} height={28} priority />
       </Link>
       <p

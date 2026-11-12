@@ -179,21 +179,24 @@ export function TeamCalendar() {
       {/* Controls */}
       <div className="surface flex flex-col gap-4 p-3 sm:p-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="flex items-center gap-1.5">
-          <Button variant="ghost" size="icon" onClick={() => goToMonth(-1)} aria-label="Previous month">
+          <Button variant="ghost" size="icon" className="shrink-0" onClick={() => goToMonth(-1)} aria-label="Previous month">
             <ChevronLeft />
           </Button>
-          <h2 className="min-w-[150px] flex-1 text-center text-lg font-semibold sm:min-w-[180px] sm:flex-none sm:text-xl">
-            {monthLabel(view.year, view.month)}
+          <h2 className="min-w-0 flex-1 truncate text-center text-lg font-semibold sm:min-w-[180px] sm:flex-none sm:text-xl">
+            <span className="min-[400px]:hidden">
+              {new Date(Date.UTC(view.year, view.month, 1)).toLocaleDateString("en-GB", { month: "short", year: "numeric", timeZone: "UTC" })}
+            </span>
+            <span className="hidden min-[400px]:inline">{monthLabel(view.year, view.month)}</span>
           </h2>
-          <Button variant="ghost" size="icon" onClick={() => goToMonth(1)} aria-label="Next month">
+          <Button variant="ghost" size="icon" className="shrink-0" onClick={() => goToMonth(1)} aria-label="Next month">
             <ChevronRight />
           </Button>
-          <Button variant="outline" size="sm" onClick={goToToday} className="ml-1">
+          <Button variant="outline" size="sm" onClick={goToToday} className="ml-1 shrink-0">
             Today
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:flex sm:items-end">
+        <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 sm:flex sm:items-end">
           {branchOptions.length > 1 && (
             <div className="space-y-1.5">
               <Label htmlFor="calendar-branch" className="text-xs text-muted-foreground">
@@ -214,7 +217,7 @@ export function TeamCalendar() {
               </Select>
             </div>
           )}
-          <div className={cn("space-y-1.5", branchOptions.length <= 1 && "col-span-2")}>
+          <div className={cn("space-y-1.5", branchOptions.length <= 1 && "min-[400px]:col-span-2")}>
             <Label htmlFor="calendar-threshold" className="text-xs text-muted-foreground">
               Warning level
             </Label>
@@ -247,7 +250,7 @@ export function TeamCalendar() {
               {warningDays.map((d) => (
                 <li key={d.iso}>
                   <button
-                    className="rounded-full border border-warning/25 bg-card px-2.5 py-0.5 text-xs font-semibold text-foreground transition-colors hover:border-warning/50"
+                    className="min-h-8 rounded-full border border-warning/25 bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-warning/50"
                     onClick={() => setSelectedDay(d.iso)}
                   >
                     {shortDate(d.iso)} · {d.busy.map((b) => `${b.branch} (${b.count})`).join(", ")}
@@ -360,7 +363,7 @@ export function TeamCalendar() {
             </p>
           </div>
           {selectedBusy.length > 0 && (
-            <div className="mx-5 mb-4 flex gap-2.5 rounded-lg border border-warning/25 bg-warning-soft p-3 text-sm">
+            <div className="mx-5 mb-4 flex gap-2.5 rounded-xl border border-warning/25 bg-warning-soft p-3 text-sm">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
               <span>
                 Too many off: {selectedBusy.map((b) => `${b.count} in ${b.branch}`).join(", ")}{" "}

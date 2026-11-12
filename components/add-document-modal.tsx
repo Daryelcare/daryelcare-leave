@@ -22,7 +22,6 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/components/ui/use-toast"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
-import { cn } from "@/lib/utils"
 import { useQuery } from "@tanstack/react-query"
 import { Switch } from "@/components/ui/switch"
 import type { EmployeeDocument, Employee } from "@/lib/types"
@@ -468,11 +467,6 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
   }
 
   // Format date for display
-  const formatExistingDate = (dateString: string | null | undefined, daysLeft: number | null | undefined) => {
-    if (!dateString) return "N/A"
-    return `${dateString} (${daysLeft} days left)`
-  }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
@@ -583,7 +577,7 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
                 {/* Passport */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <h4 className="text-sm font-medium">Passport</h4>
+                    <h4 className="text-[13px] font-semibold">Passport</h4>
                     {existingDocument?.passportExpiry && (
                       <span className="text-xs text-muted-foreground">Current: {existingDocument.passportExpiry}</span>
                     )}
@@ -609,7 +603,7 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
                 {/* Right to Work */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <h4 className="text-sm font-medium">Right to work</h4>
+                    <h4 className="text-[13px] font-semibold">Right to work</h4>
                     {existingDocument?.rightToWorkExpiry && (
                       <span className="text-xs text-muted-foreground">
                         Current: {existingDocument.rightToWorkExpiry}
@@ -637,7 +631,7 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
                 {/* BRP */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <h4 className="text-sm font-medium">BRP</h4>
+                    <h4 className="text-[13px] font-semibold">BRP</h4>
                     {existingDocument?.brpExpiry && (
                       <span className="text-xs text-muted-foreground">Current: {existingDocument.brpExpiry}</span>
                     )}
@@ -663,7 +657,7 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
                 {/* Other Document */}
                 <div className="space-y-1 sm:col-span-2">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-medium">Other document</h4>
+                    <h4 className="text-[13px] font-semibold">Other document</h4>
                     {existingDocument?.otherDocumentExpiry && (
                       <span className="text-xs text-muted-foreground">
                         Current: {existingDocument.otherDocumentType}
@@ -705,7 +699,7 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
                 control={form.control}
                 name="isSponsored"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center space-x-2 rounded-lg border p-2 shadow-sm h-full">
+                  <FormItem className="flex flex-row items-center space-x-2 h-full rounded-xl border border-border/80 bg-card px-3 py-2.5">
                     <div className="flex-1">
                       <FormLabel className="text-sm">Sponsored employee</FormLabel>
                     </div>
@@ -721,7 +715,7 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
                   control={form.control}
                   name="is20Hours"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-x-2 rounded-lg border p-2 shadow-sm h-full">
+                    <FormItem className="flex flex-row items-center space-x-2 h-full rounded-xl border border-border/80 bg-card px-3 py-2.5">
                       <div className="flex-1">
                         <FormLabel className="text-sm">20 Hours Restriction</FormLabel>
                       </div>

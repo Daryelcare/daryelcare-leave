@@ -1,13 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: ["class"],
-  content: [
-    "./pages/**/*.{ts,tsx}",
-    "./components/**/*.{ts,tsx}",
-    "./app/**/*.{ts,tsx}",
-    "./src/**/*.{ts,tsx}",
-    "*.{js,ts,jsx,tsx,mdx}",
-  ],
+  content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./lib/**/*.{ts,tsx}", "./hooks/**/*.{ts,tsx}"],
   theme: {
     container: {
       center: true,
@@ -21,9 +15,6 @@ module.exports = {
         // Manrope for interface text, Sora for headings and display numbers
         sans: ["var(--font-manrope)", "ui-sans-serif", "system-ui", "sans-serif"],
         display: ["var(--font-sora)", "var(--font-manrope)", "ui-sans-serif", "system-ui", "sans-serif"],
-      },
-      fontSize: {
-        "2xs": ["0.6875rem", { lineHeight: "1rem" }],
       },
       boxShadow: {
         // Elevation scale: hairline cards, raised controls, floating menus, dialogs
@@ -103,19 +94,9 @@ module.exports = {
           "0%": { backgroundPosition: "200% 0" },
           "100%": { backgroundPosition: "-200% 0" },
         },
-        "accordion-down": {
-          from: { height: 0 },
-          to: { height: "var(--radix-accordion-content-height)" },
-        },
-        "accordion-up": {
-          from: { height: "var(--radix-accordion-content-height)" },
-          to: { height: 0 },
-        },
       },
       animation: {
         shimmer: "shimmer 1.6s ease-in-out infinite",
-        "accordion-down": "accordion-down 0.2s ease-out",
-        "accordion-up": "accordion-up 0.2s ease-out",
       },
     },
   },

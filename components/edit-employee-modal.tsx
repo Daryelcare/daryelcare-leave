@@ -180,7 +180,7 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Edit employee</DialogTitle>
-          <DialogDescription>Update the employee details. Click save when you&apos;re done.</DialogDescription>
+          <DialogDescription>Update the employee details.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -217,7 +217,7 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
                 <FormItem>
                   <FormLabel>Job title</FormLabel>
                   <FormControl>
-                    <Input placeholder="Software Engineer" {...field} />
+                    <Input placeholder="e.g. Care Assistant" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

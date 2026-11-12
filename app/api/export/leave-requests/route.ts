@@ -8,7 +8,6 @@ export async function POST(request: Request) {
     // Add date range filtering if provided
     const startDate = formData.get("startDate") as string
     const endDate = formData.get("endDate") as string
-    const dateFilterMode = (formData.get("dateFilterMode") as string) || "overlap"
     const exportAll = formData.get("exportAll") === "true"
 
     if (startDate && endDate) {
