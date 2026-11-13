@@ -4,7 +4,8 @@ import { parseDateToUtc } from "@/lib/dates"
 import { getLeaveBetween, resolveBranchFilter } from "@/lib/leave-data"
 
 // GET /api/leave-calendar?from=YYYY-MM-DD&to=YYYY-MM-DD&branch=<name|all>
-// Approved leave overlapping the date range, for the team calendar.
+// Approved and pending leave overlapping the date range, for the team calendar
+// (pending is drawn dashed). Rejected leave is never shown.
 export async function GET(request: Request) {
   try {
     const auth = await requireUser(request)
@@ -21,7 +22,7 @@ export async function GET(request: Request) {
     }
 
     const branches = resolveBranchFilter(searchParams.get("branch"), allowedBranches(auth.user))
-    const leaves = await getLeaveBetween(from, to, branches)
+    const leaves = await getLeaveBetween(from, to, branches, ["Approved", "Pending"])
     return NextResponse.json({ leaves })
   } catch (error) {
     console.error("Error loading calendar:", error)
