@@ -291,11 +291,7 @@ export function EditDocumentModal({
                 <FormItem className="flex flex-col">
                   <FormLabel>Expiry date</FormLabel>
                   <FormControl>
-                    <DatePicker
-                      value={field.value || undefined}
-                      onChange={field.onChange}
-                      placeholder="Pick a date (optional)"
-                    />
+                    <DatePicker value={field.value || undefined} onChange={field.onChange} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

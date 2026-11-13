@@ -506,11 +506,7 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
                   <FormItem className="flex flex-col">
                     <FormLabel>Start date</FormLabel>
                     <FormControl>
-                      <DatePicker
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder="Pick a date"
-                      />
+                      <DatePicker value={field.value} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -524,12 +520,7 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
                   <FormItem className="flex flex-col">
                     <FormLabel>End date</FormLabel>
                     <FormControl>
-                      <DatePicker
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder="Pick a date"
-                        min={startDate}
-                      />
+                      <DatePicker value={field.value} onChange={field.onChange} min={startDate} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -550,7 +541,12 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
                     },
                   ].map((stat) => (
                     <div key={stat.label} className="px-3 py-3 text-center">
-                      <p className={cn("font-display text-xl font-semibold tracking-[-0.02em] tabular", stat.danger && "text-destructive")}>
+                      <p
+                        className={cn(
+                          "font-display text-xl font-semibold tracking-[-0.02em] tabular",
+                          stat.danger && "text-destructive",
+                        )}
+                      >
                         {stat.value}
                       </p>
                       <p className="text-xs text-muted-foreground">{stat.label}</p>
@@ -558,15 +554,18 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
                   ))}
                 </div>
                 <p className="border-t border-border/70 px-3.5 py-2.5 text-xs text-muted-foreground">
-                  {selectedEmployee.name} has used {selectedEmployee.daysTaken} and has {selectedEmployee.daysRemaining} days remaining
-                  {selectedEmployee.pendingDays > 0 && ` (${selectedEmployee.pendingDays} pending)`}. Only Annual Leave and Working
-                  Holiday use the balance.
+                  {selectedEmployee.name} has used {selectedEmployee.daysTaken} and has {selectedEmployee.daysRemaining}{" "}
+                  days remaining
+                  {selectedEmployee.pendingDays > 0 && ` (${selectedEmployee.pendingDays} pending)`}. Only Annual Leave
+                  and Working Holiday use the balance.
                 </p>
               </div>
             )}
 
             {!selectedEmployee && startDate && endDate && (
-              <p className="rounded-xl bg-muted/60 px-3.5 py-2.5 text-sm font-medium">{duration} {duration === 1 ? "day" : "days"}</p>
+              <p className="rounded-xl bg-muted/60 px-3.5 py-2.5 text-sm font-medium">
+                {duration} {duration === 1 ? "day" : "days"}
+              </p>
             )}
 
             {selectedEmployee && isExceedingBalance && (
@@ -590,7 +589,9 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
               name="reason"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Reason <span className="font-normal text-muted-foreground">(optional)</span></FormLabel>
+                  <FormLabel>
+                    Reason <span className="font-normal text-muted-foreground">(optional)</span>
+                  </FormLabel>
                   <FormControl>
                     <Textarea
                       placeholder="Provide details about the leave request"
@@ -612,7 +613,8 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
                 disabled={isSubmitting}
                 variant={overlapWarning && overlapConfirmCount >= 2 ? "destructive" : "default"}
                 className={cn(
-                  ((overlapWarning && overlapConfirmCount < 2) || (isExceedingBalance && exceedingBalanceConfirmCount === 0)) &&
+                  ((overlapWarning && overlapConfirmCount < 2) ||
+                    (isExceedingBalance && exceedingBalanceConfirmCount === 0)) &&
                     "bg-warning text-white hover:bg-warning/90",
                 )}
               >

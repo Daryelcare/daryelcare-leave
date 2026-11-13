@@ -769,8 +769,8 @@ export function DocumentTrackerTable() {
                           TONE[u].text,
                         )}
                       >
-                        <span className="text-[10px] font-semibold uppercase tracking-wide">{chip?.month}</span>
-                        <span className="font-display text-[17px] font-semibold tabular">{chip?.day}</span>
+                        <span className="font-display text-[13px] font-semibold tabular">{chip?.dayMonth}</span>
+                        <span className="text-[10px] font-semibold tabular opacity-80">{chip?.year}</span>
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-semibold">{e.record.employeeName}</span>

@@ -1,5 +1,6 @@
 "use client"
 
+import { formatLocalDate } from "@/lib/dates"
 import { useState } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Building2, Pencil, Plus, Trash2 } from "lucide-react"
@@ -176,14 +177,7 @@ export function BranchManagementTable() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold">{branch.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    Added{" "}
-                    {branch.created_at
-                      ? new Date(branch.created_at).toLocaleDateString("en-GB", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })
-                      : "—"}
+                    Added {branch.created_at ? formatLocalDate(branch.created_at) : "—"}
                   </p>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => handleEditClick(branch)}>

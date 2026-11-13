@@ -79,8 +79,7 @@ export function EditLeaveModal({ leave, open, onOpenChange }: EditLeaveModalProp
   const duration = datesValid ? inclusiveDays(start, end) : 0
 
   // Same rule as the server: only approved Annual Leave / Working Holiday use the balance
-  const counts = (t: string, days: number) =>
-    leave.status === "Approved" && shouldDeductFromBalance(t) ? days : 0
+  const counts = (t: string, days: number) => (leave.status === "Approved" && shouldDeductFromBalance(t) ? days : 0)
   const balanceChange = datesValid ? counts(leave.type, leave.duration) - counts(type, duration) : 0
 
   const overlaps = datesValid
