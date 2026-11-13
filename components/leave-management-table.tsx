@@ -430,6 +430,59 @@ export function LeaveManagementTable() {
         }
       : { title: "No leave recorded yet", description: "Add a leave entry to get started." }
 
+  // View switch and page actions sit in the filter row (list) or the calendar's
+  // controls (calendar), not in the page header
+  const pageActions = (
+    <>
+      <Tabs
+        value={view}
+        onValueChange={(v) => setView(v === "calendar" ? "calendar" : "list")}
+        className="w-full sm:w-auto"
+      >
+        <TabsList className="w-full sm:w-auto" aria-label="Leave view">
+          <TabsTrigger value="list" className="flex-1 sm:flex-none">
+            <List />
+            List
+          </TabsTrigger>
+          <TabsTrigger value="calendar" className="flex-1 sm:flex-none">
+            <CalendarRange />
+            Calendar
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+      <Button variant="outline" onClick={() => setOnLeaveOpen(true)}>
+        <Users />
+        Who&apos;s on leave
+      </Button>
+      {view === "list" && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" disabled={isExporting}>
+              {isExporting ? <Loader2 className="animate-spin" /> : <Download />}
+              {isExporting ? `Exporting ${exportFormat === "csv" ? "CSV" : "Excel"}…` : "Export"}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handleExport("csv")}>
+              <FileText />
+              CSV file
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport("excel")}>
+              <FileSpreadsheet />
+              Excel workbook
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+      {canAdd && (
+        <Button onClick={() => setIsAddModalOpen(true)}>
+          <Plus />
+          Add leave
+        </Button>
+      )}
+    </>
+  )
+
   const isMockData = branches.length > 0 && branches[0].id === "1" && branches[0].name === "London"
 
   return (
@@ -443,61 +496,11 @@ export function LeaveManagementTable() {
               ? "Every leave entry across your organisation."
               : "Leave for employees in your branches."
         }
-        actions={
-          <>
-            <Tabs
-              value={view}
-              onValueChange={(v) => setView(v === "calendar" ? "calendar" : "list")}
-              className="w-full sm:w-auto"
-            >
-              <TabsList className="w-full sm:w-auto" aria-label="Leave view">
-                <TabsTrigger value="list" className="flex-1 sm:flex-none">
-                  <List />
-                  List
-                </TabsTrigger>
-                <TabsTrigger value="calendar" className="flex-1 sm:flex-none">
-                  <CalendarRange />
-                  Calendar
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-            <Button variant="outline" onClick={() => setOnLeaveOpen(true)}>
-              <Users />
-              Who&apos;s on leave
-            </Button>
-            {view === "list" && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" disabled={isExporting}>
-                    {isExporting ? <Loader2 className="animate-spin" /> : <Download />}
-                    {isExporting ? `Exporting ${exportFormat === "csv" ? "CSV" : "Excel"}…` : "Export"}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => handleExport("csv")}>
-                    <FileText />
-                    CSV file
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleExport("excel")}>
-                    <FileSpreadsheet />
-                    Excel workbook
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            {canAdd && (
-              <Button onClick={() => setIsAddModalOpen(true)}>
-                <Plus />
-                Add leave
-              </Button>
-            )}
-          </>
-        }
       />
 
       <div key={view} className="page-enter space-y-6 sm:space-y-8">
         {view === "calendar" ? (
-          <TeamCalendar onOpen={handleViewDetails} />
+          <TeamCalendar onOpen={handleViewDetails} actions={pageActions} />
         ) : (
           <>
             {isMockData && (
@@ -543,7 +546,7 @@ export function LeaveManagementTable() {
                     <SelectItem value="all">All leave years</SelectItem>
                   </SelectContent>
                 </Select>
-                <div className="relative flex-1 sm:max-w-xs">
+                <div className="relative flex-1 sm:min-w-[220px] sm:max-w-xs">
                   <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     placeholder="Search employee"
@@ -586,11 +589,14 @@ export function LeaveManagementTable() {
                   </Select>
                 </div>
                 {filtersActive && (
-                  <Button variant="ghost" onClick={resetFilters} disabled={isLoading} className="sm:ml-auto">
+                  <Button variant="ghost" onClick={resetFilters} disabled={isLoading}>
                     <X />
                     Clear filters
                   </Button>
                 )}
+                <div className="flex flex-wrap items-center gap-2 sm:ml-auto [&>*]:flex-1 sm:[&>*]:flex-none">
+                  {pageActions}
+                </div>
               </Toolbar>
 
               {/* Which leave year is showing, and its figures */}

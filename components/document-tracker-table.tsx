@@ -496,54 +496,51 @@ export function DocumentTrackerTable() {
           }
         : { title: "Nothing matches", description: "Try another filter or search." }
 
+  // Page actions sit in the filter row, not the page header
+  const pageActions = (
+    <>
+      <Button variant="outline" onClick={() => setIsImportModalOpen(true)}>
+        <Upload />
+        Import
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" disabled={isLoading || isExporting || documents.length === 0}>
+            {isExporting ? <Loader2 className="animate-spin" /> : <Download />}
+            {isExporting ? "Exporting…" : "Export"}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-64">
+          <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground">
+            This view · {plural(visible.length, "employee")}
+          </DropdownMenuLabel>
+          <DropdownMenuItem disabled={visible.length === 0} onClick={() => downloadCsv(visible, viewName())}>
+            <FileText />
+            CSV of this view
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground">Full register</DropdownMenuLabel>
+          <DropdownMenuItem onClick={() => exportRegister("csv")}>
+            <FileText />
+            CSV file
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => exportRegister("excel")}>
+            <FileSpreadsheet />
+            Excel workbook
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <Button onClick={() => setIsAddModalOpen(true)}>
+        <Plus />
+        <span className="sm:hidden">Add</span>
+        <span className="hidden sm:inline">Add document</span>
+      </Button>
+    </>
+  )
+
   return (
     <div className="space-y-6 sm:space-y-8">
-      <PageHeader
-        title="Documents"
-        description="Right-to-work, passport and visa expiry for every employee."
-        actions={
-          <>
-            <Button variant="outline" onClick={() => setIsImportModalOpen(true)}>
-              <Upload />
-              Import
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" disabled={isLoading || isExporting || documents.length === 0}>
-                  {isExporting ? <Loader2 className="animate-spin" /> : <Download />}
-                  {isExporting ? "Exporting…" : "Export"}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64">
-                <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground">
-                  This view · {plural(visible.length, "employee")}
-                </DropdownMenuLabel>
-                <DropdownMenuItem disabled={visible.length === 0} onClick={() => downloadCsv(visible, viewName())}>
-                  <FileText />
-                  CSV of this view
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground">
-                  Full register
-                </DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => exportRegister("csv")}>
-                  <FileText />
-                  CSV file
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => exportRegister("excel")}>
-                  <FileSpreadsheet />
-                  Excel workbook
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button onClick={() => setIsAddModalOpen(true)}>
-              <Plus />
-              <span className="sm:hidden">Add</span>
-              <span className="hidden sm:inline">Add document</span>
-            </Button>
-          </>
-        }
-      />
+      <PageHeader title="Documents" description="Right-to-work, passport and visa expiry for every employee." />
 
       {isError && (
         <ErrorState title="Couldn't load documents" message={handleApiError(error)} onRetry={() => refetch()} />
@@ -911,6 +908,9 @@ export function DocumentTrackerTable() {
               <SelectItem value="name-desc">Name Z–A</SelectItem>
             </SelectContent>
           </Select>
+          <div className="col-span-2 flex flex-wrap items-center gap-2 lg:ml-auto [&>*]:flex-1 lg:[&>*]:flex-none">
+            {pageActions}
+          </div>
         </div>
 
         {/* What's showing, and bulk actions for ticked rows */}

@@ -6,7 +6,7 @@
 // by leave type. Approved leave is a solid bar; pending leave is a pale, dashed
 // version of the same colour. Rejected leave is never shown.
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { AlertTriangle, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react"
 import { Input } from "@/components/ui/input"
@@ -73,7 +73,14 @@ function textOn(hex: string) {
 }
 const tint = (hex: string, alpha = "1f") => (/^#[0-9a-f]{6}$/i.test(hex) ? `${hex}${alpha}` : hex)
 
-export function TeamCalendar({ onOpen }: { onOpen?: (id: string) => void }) {
+export function TeamCalendar({
+  onOpen,
+  actions,
+}: {
+  onOpen?: (id: string) => void
+  /** Page actions (view switch, Who's on leave, Add leave) shown in the controls row */
+  actions?: ReactNode
+}) {
   const { user } = useApp()
   const isAdmin = user?.role === "admin"
   const myBranches = user?.branches || []
@@ -238,6 +245,11 @@ export function TeamCalendar({ onOpen }: { onOpen?: (id: string) => void }) {
             </button>
           )}
         </div>
+        {actions && (
+          <div className="flex w-full flex-wrap items-center gap-2 lg:ml-2 lg:w-auto [&>*]:flex-1 lg:[&>*]:flex-none">
+            {actions}
+          </div>
+        )}
       </div>
 
       {/* Branch, warning level and legend */}

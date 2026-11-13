@@ -399,11 +399,7 @@ export function EmployeeTable() {
   )
 
   const balanceBadge = (days: number) => (
-    <Badge
-      variant={days < 0 ? "destructive" : days <= 5 ? "warning" : "secondary"}
-      className="tabular"
-      dot={days <= 5}
-    >
+    <Badge variant={days < 0 ? "destructive" : days <= 5 ? "warning" : "secondary"} className="tabular" dot={days <= 5}>
       {days}
     </Badge>
   )
@@ -413,34 +409,21 @@ export function EmployeeTable() {
       <PageHeader
         title="Employees"
         description={
-          isLoading ? "Staff across your branches." : `${plural(totalEmployees, "person", "people")} across ${selectedBranch === "all" ? (isAdmin ? "all branches" : "your branches") : selectedBranch}.`
-        }
-        actions={
-          isAdmin && (
-            <>
-              <Button variant="outline" onClick={() => setIsImportModalOpen(true)}>
-                <Upload />
-                Import
-              </Button>
-              <ExportButton
-                endpoint="employees"
-                filters={{ branch: selectedBranch, search: searchQuery, exportAll: "true" }}
-                sortColumn={serverSortColumn}
-                sortOrder={serverSortOrder}
-                size="default"
-              />
-              <Button onClick={() => setIsAddModalOpen(true)}>
-                <Plus />
-                Add employee
-              </Button>
-            </>
-          )
+          isLoading
+            ? "Staff across your branches."
+            : `${plural(totalEmployees, "person", "people")} across ${selectedBranch === "all" ? (isAdmin ? "all branches" : "your branches") : selectedBranch}.`
         }
       />
 
-      {isError && <ErrorState title="Couldn't load employees" message={handleApiError(error)} onRetry={() => refetch()} />}
+      {isError && (
+        <ErrorState title="Couldn't load employees" message={handleApiError(error)} onRetry={() => refetch()} />
+      )}
       {isBranchesError && (
-        <ErrorState title="Couldn't load branches" message={handleApiError(branchesError)} onRetry={() => window.location.reload()} />
+        <ErrorState
+          title="Couldn't load branches"
+          message={handleApiError(branchesError)}
+          onRetry={() => window.location.reload()}
+        />
       )}
 
       <div className="surface overflow-hidden">
@@ -470,6 +453,27 @@ export function EmployeeTable() {
             </SelectContent>
           </Select>
           {isLoadingBranches && <span className="sr-only">Loading branches</span>}
+          {isAdmin && (
+            <div className="flex flex-wrap items-center gap-2 sm:ml-auto [&>*]:flex-1 sm:[&>*]:flex-none">
+              <>
+                <Button variant="outline" onClick={() => setIsImportModalOpen(true)}>
+                  <Upload />
+                  Import
+                </Button>
+                <ExportButton
+                  endpoint="employees"
+                  filters={{ branch: selectedBranch, search: searchQuery, exportAll: "true" }}
+                  sortColumn={serverSortColumn}
+                  sortOrder={serverSortOrder}
+                  size="default"
+                />
+                <Button onClick={() => setIsAddModalOpen(true)}>
+                  <Plus />
+                  Add employee
+                </Button>
+              </>
+            </div>
+          )}
         </Toolbar>
 
         {/* Selection bar */}
@@ -511,7 +515,11 @@ export function EmployeeTable() {
                 {sortHeader("Hours", "hours", "right")}
                 {sortHeader("Taken", "days_taken", "right")}
                 {sortHeader("Remaining", "days_remaining", "right")}
-                {isAdmin && <TableHead className="w-12"><span className="sr-only">Actions</span></TableHead>}
+                {isAdmin && (
+                  <TableHead className="w-12">
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -556,7 +564,9 @@ export function EmployeeTable() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="hidden tabular text-muted-foreground lg:table-cell">{employee.employeeCode}</TableCell>
+                    <TableCell className="hidden tabular text-muted-foreground lg:table-cell">
+                      {employee.employeeCode}
+                    </TableCell>
                     <TableCell>{employee.branch}</TableCell>
                     <TableCell className="text-right tabular">{employee.hours ?? "—"}</TableCell>
                     <TableCell className="text-right tabular">{employee.daysTaken}</TableCell>
@@ -574,7 +584,9 @@ export function EmployeeTable() {
                     <EmptyState
                       icon={Users}
                       title={searchQuery ? "No matching employees" : "No employees yet"}
-                      description={searchQuery ? "Try a different name or code." : "Add employees or import a spreadsheet."}
+                      description={
+                        searchQuery ? "Try a different name or code." : "Add employees or import a spreadsheet."
+                      }
                     />
                   </TableCell>
                 </TableRow>
