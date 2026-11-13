@@ -22,7 +22,7 @@ import { useApp } from "./app-provider"
 import { useBranches } from "@/hooks/use-branches"
 import { useLeaveTypes } from "@/hooks/use-leave-types"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
-import { formatDisplayRange, parseDateToUtc } from "@/lib/dates"
+import { formatDisplayDate, formatDisplayRange } from "@/lib/dates"
 import { LEAVE_CALENDAR_HREF } from "@/lib/navigation"
 import { cn } from "@/lib/utils"
 
@@ -63,15 +63,9 @@ type DashboardData = {
 
 const LIST_LIMIT = 6
 
+// "Mon 09/11/2026"
 function formatDay(iso: string) {
-  const time = parseDateToUtc(iso)
-  if (time === null) return iso
-  return new Date(time).toLocaleDateString("en-GB", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    timeZone: "UTC",
-  })
+  return formatDisplayDate(iso, { weekday: true })
 }
 
 function formatRange(entry: LeaveEntry) {
@@ -117,14 +111,8 @@ export function DashboardHome() {
   const balanceItems = data ? [...data.balances.negative, ...data.balances.low] : []
   const offList = (range === "today" ? data?.offToday : data?.offThisWeek) || []
   const firstName = user?.name?.split(" ")[0]
-  const todayLabel = data
-    ? new Date(parseDateToUtc(data.today) ?? Date.now()).toLocaleDateString("en-GB", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        timeZone: "UTC",
-      })
-    : "\u00a0"
+  // "Friday 13/11/2026"
+  const todayLabel = data ? formatDisplayDate(data.today, { weekday: "long" }) : "\u00a0"
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -396,9 +384,7 @@ function LeaveRow({ leave, color }: { leave: LeaveEntry; color: string }) {
       </div>
       <div className="shrink-0 text-right">
         <p className="hidden text-sm font-medium tabular sm:block">{formatRange(leave)}</p>
-        <p className="text-sm font-medium tabular sm:hidden">
-          {formatDisplayRange(leave.startDate, leave.endDate).replace(/ \d{4}$/, "")}
-        </p>
+        <p className="text-sm font-medium tabular sm:hidden">{formatDisplayRange(leave.startDate, leave.endDate)}</p>
         <p className="text-xs text-muted-foreground">{plural(leave.duration, "day")}</p>
       </div>
     </li>

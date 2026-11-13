@@ -87,34 +87,34 @@ export function utcToLocalDate(time: number): Date {
   return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
 }
 
-// "10 Nov 2026", from DD/MM/YYYY or YYYY-MM-DD; returns the input if it can't be parsed
-export function formatDisplayDate(value: string, options: { year?: boolean; weekday?: boolean } = {}): string {
+// All dates on screen are DD/MM/YYYY (e.g. 12/09/2026).
+
+const WEEKDAYS_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+const WEEKDAYS_LONG = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+
+// "12/09/2026" (or "Sat 12/09/2026" with a weekday), from DD/MM/YYYY or
+// YYYY-MM-DD; returns the input if it can't be parsed
+export function formatDisplayDate(value: string, options: { weekday?: boolean | "long" } = {}): string {
   const time = parseDateToUtc(value)
   if (time === null) return value
-  return new Date(time).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    ...(options.year === false ? {} : { year: "numeric" }),
-    ...(options.weekday ? { weekday: "short" } : {}),
-    timeZone: "UTC",
-  })
+  if (!options.weekday) return toUkDate(time)
+  const day = new Date(time).getUTCDay()
+  return `${options.weekday === "long" ? WEEKDAYS_LONG[day] : WEEKDAYS_SHORT[day]} ${toUkDate(time)}`
 }
 
-// "10 – 14 Nov 2026", "28 Nov – 2 Dec 2026", or a single day
+// "10/11/2026 – 14/11/2026", or a single date when both ends are the same day
 export function formatDisplayRange(start: string, end: string): string {
   const s = parseDateToUtc(start)
   const e = parseDateToUtc(end)
   if (s === null || e === null) return `${start} – ${end}`
-  if (s === e) return formatDisplayDate(start)
-  const sd = new Date(s)
-  const ed = new Date(e)
-  const sameYear = sd.getUTCFullYear() === ed.getUTCFullYear()
-  const sameMonth = sameYear && sd.getUTCMonth() === ed.getUTCMonth()
-  const left = sd.toLocaleDateString("en-GB", {
-    day: "numeric",
-    ...(sameMonth ? {} : { month: "short" }),
-    ...(sameYear ? {} : { year: "numeric" }),
-    timeZone: "UTC",
-  })
-  return `${left} – ${formatDisplayDate(end)}`
+  if (s === e) return toUkDate(s)
+  return `${toUkDate(s)} – ${toUkDate(e)}`
+}
+
+// DD/MM/YYYY for a Date or a timestamp string (e.g. a created_at), in local time
+export function formatLocalDate(value: Date | string | null | undefined): string {
+  if (!value) return "—"
+  const d = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(d.getTime())) return typeof value === "string" ? value : "—"
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`
 }

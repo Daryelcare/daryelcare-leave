@@ -14,7 +14,7 @@ import { Avatar, EmptyState, ErrorState, plural } from "./page-kit"
 import { useBranches } from "@/hooks/use-branches"
 import { useLeaveTypes } from "@/hooks/use-leave-types"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
-import { addDays, parseDateToUtc, startOfWeek, toIsoDate, todayUtc } from "@/lib/dates"
+import { addDays, formatDisplayDate, parseDateToUtc, startOfWeek, toIsoDate, todayUtc } from "@/lib/dates"
 import { cn } from "@/lib/utils"
 
 type LeaveEntry = {
@@ -52,19 +52,14 @@ function monthLabel(year: number, month: number) {
   })
 }
 
+// "Friday 13/11/2026"
 function dayLabel(iso: string) {
-  const time = parseDateToUtc(iso) ?? 0
-  return new Date(time).toLocaleDateString("en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    timeZone: "UTC",
-  })
+  return formatDisplayDate(iso, { weekday: "long" })
 }
 
+// "13/11/2026"
 function shortDate(iso: string) {
-  const time = parseDateToUtc(iso) ?? 0
-  return new Date(time).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" })
+  return formatDisplayDate(iso)
 }
 
 export function TeamCalendar() {
@@ -108,8 +103,7 @@ export function TeamCalendar() {
 
   const { data, isLoading, isError, error, refetch } = useQuery<{ leaves: LeaveEntry[] }>({
     queryKey: ["leave-calendar", from, to, branch],
-    queryFn: () =>
-      fetchWithAuth(`/api/leave-calendar?from=${from}&to=${to}&branch=${encodeURIComponent(branch)}`),
+    queryFn: () => fetchWithAuth(`/api/leave-calendar?from=${from}&to=${to}&branch=${encodeURIComponent(branch)}`),
     enabled: !!user,
   })
 
@@ -164,23 +158,32 @@ export function TeamCalendar() {
     setSelectedDay(todayIso)
   }
 
-  const selectedLeave = (byDay.get(selectedDay) || []).slice().sort(
-    (a, b) => a.branch.localeCompare(b.branch) || a.employeeName.localeCompare(b.employeeName),
-  )
+  const selectedLeave = (byDay.get(selectedDay) || [])
+    .slice()
+    .sort((a, b) => a.branch.localeCompare(b.branch) || a.employeeName.localeCompare(b.employeeName))
   const selectedBusy = busyBranches(selectedDay)
 
   return (
     <div className="space-y-6 sm:space-y-8">
-
       {/* Controls */}
       <div className="surface flex flex-col gap-4 p-3 sm:p-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="flex items-center gap-1.5">
-          <Button variant="ghost" size="icon" className="shrink-0" onClick={() => goToMonth(-1)} aria-label="Previous month">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="shrink-0"
+            onClick={() => goToMonth(-1)}
+            aria-label="Previous month"
+          >
             <ChevronLeft />
           </Button>
           <h2 className="min-w-0 flex-1 truncate text-center text-lg font-semibold sm:min-w-[180px] sm:flex-none sm:text-xl">
             <span className="min-[360px]:hidden">
-              {new Date(Date.UTC(view.year, view.month, 1)).toLocaleDateString("en-GB", { month: "short", year: "numeric", timeZone: "UTC" })}
+              {new Date(Date.UTC(view.year, view.month, 1)).toLocaleDateString("en-GB", {
+                month: "short",
+                year: "numeric",
+                timeZone: "UTC",
+              })}
             </span>
             <span className="hidden min-[360px]:inline">{monthLabel(view.year, view.month)}</span>
           </h2>
@@ -232,14 +235,16 @@ export function TeamCalendar() {
         </div>
       </div>
 
-      {isError && <ErrorState title="Couldn't load the calendar" message={handleApiError(error)} onRetry={() => refetch()} />}
+      {isError && (
+        <ErrorState title="Couldn't load the calendar" message={handleApiError(error)} onRetry={() => refetch()} />
+      )}
 
       {warningDays.length > 0 && (
         <Alert variant="warning" className="page-enter">
           <AlertTriangle />
           <AlertTitle>
-            {warningDays.length} {warningDays.length === 1 ? "day" : "days"} this month with {threshold} or more people off in one
-            branch
+            {warningDays.length} {warningDays.length === 1 ? "day" : "days"} this month with {threshold} or more people
+            off in one branch
           </AlertTitle>
           <AlertDescription>
             <ul className="mt-1 flex flex-wrap gap-1.5">
@@ -265,7 +270,10 @@ export function TeamCalendar() {
             {WEEKDAYS.map((d, i) => (
               <div
                 key={d}
-                className={cn("py-2.5 text-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground", i >= 5 && "text-muted-foreground/60")}
+                className={cn(
+                  "py-2.5 text-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground",
+                  i >= 5 && "text-muted-foreground/60",
+                )}
               >
                 <span className="sm:hidden">{d.charAt(0)}</span>
                 <span className="hidden sm:inline">{d}</span>
@@ -297,7 +305,9 @@ export function TeamCalendar() {
                     selected && "bg-primary-soft/70 hover:bg-primary-soft/70",
                   )}
                 >
-                  {selected && <span className="pointer-events-none absolute inset-0 ring-2 ring-inset ring-primary" aria-hidden />}
+                  {selected && (
+                    <span className="pointer-events-none absolute inset-0 ring-2 ring-inset ring-primary" aria-hidden />
+                  )}
                   <div className="flex items-center justify-between">
                     <span
                       className={cn(
@@ -318,9 +328,15 @@ export function TeamCalendar() {
                       {leave.length > 0 && (
                         <span className="flex flex-wrap items-center gap-0.5 px-0.5 sm:hidden">
                           {leave.slice(0, 4).map((l) => (
-                            <span key={l.id} className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: typeColor(l.type) }} />
+                            <span
+                              key={l.id}
+                              className="h-1.5 w-1.5 rounded-full"
+                              style={{ backgroundColor: typeColor(l.type) }}
+                            />
                           ))}
-                          {leave.length > 4 && <span className="text-[9px] font-semibold text-muted-foreground">+{leave.length - 4}</span>}
+                          {leave.length > 4 && (
+                            <span className="text-[9px] font-semibold text-muted-foreground">+{leave.length - 4}</span>
+                          )}
                         </span>
                       )}
                       {/* Larger screens: names */}
@@ -375,7 +391,11 @@ export function TeamCalendar() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold">{l.employeeName}</p>
                     <p className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
-                      <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: typeColor(l.type) }} aria-hidden />
+                      <span
+                        className="h-2 w-2 shrink-0 rounded-full"
+                        style={{ backgroundColor: typeColor(l.type) }}
+                        aria-hidden
+                      />
                       {l.type} · {l.branch}
                     </p>
                   </div>
@@ -389,7 +409,13 @@ export function TeamCalendar() {
               ))}
             </ul>
           ) : (
-            <EmptyState icon={CalendarCheck} title="Nobody is off" description="Pick another day to see who's away." compact className="border-t border-border/70" />
+            <EmptyState
+              icon={CalendarCheck}
+              title="Nobody is off"
+              description="Pick another day to see who's away."
+              compact
+              className="border-t border-border/70"
+            />
           )}
         </div>
       </div>

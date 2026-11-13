@@ -1,11 +1,21 @@
 "use client"
 
+import { formatLocalDate } from "@/lib/dates"
 import { useState } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { AlertCircle, Building2, KeyRound, MoreHorizontal, ShieldCheck, Trash2, UserPlus, UserRound } from "lucide-react"
+import {
+  AlertCircle,
+  Building2,
+  KeyRound,
+  MoreHorizontal,
+  ShieldCheck,
+  Trash2,
+  UserPlus,
+  UserRound,
+} from "lucide-react"
 import { Avatar, EmptyState, ErrorState, ListSkeleton, SectionHeader } from "./page-kit"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/components/ui/use-toast"
@@ -168,8 +178,7 @@ export function UserManagementTable() {
     }
   }
 
-  const formatJoined = (value?: string) =>
-    value ? new Date(value).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—"
+  const formatJoined = (value?: string) => formatLocalDate(value)
 
   const roleBadge = (role: string) =>
     role === "admin" ? (
@@ -262,11 +271,13 @@ export function UserManagementTable() {
       <div className="surface overflow-hidden">
         <div className="flex items-center gap-4 border-b border-border/70 px-4 py-3 text-sm text-muted-foreground sm:px-5">
           <span>
-            <span className="font-semibold text-foreground tabular">{users.length}</span> {users.length === 1 ? "user" : "users"}
+            <span className="font-semibold text-foreground tabular">{users.length}</span>{" "}
+            {users.length === 1 ? "user" : "users"}
           </span>
           <span className="h-4 w-px bg-border" aria-hidden />
           <span>
-            <span className="font-semibold text-foreground tabular">{admins}</span> {admins === 1 ? "administrator" : "administrators"}
+            <span className="font-semibold text-foreground tabular">{admins}</span>{" "}
+            {admins === 1 ? "administrator" : "administrators"}
           </span>
         </div>
 
@@ -306,7 +317,9 @@ export function UserManagementTable() {
                         <div className="min-w-0">
                           <p className="truncate font-semibold text-foreground">
                             {user.name || "—"}
-                            {user.id === currentUser?.id && <span className="ml-2 text-xs font-medium text-muted-foreground">You</span>}
+                            {user.id === currentUser?.id && (
+                              <span className="ml-2 text-xs font-medium text-muted-foreground">You</span>
+                            )}
                           </p>
                           <p className="truncate text-xs text-muted-foreground">{user.email}</p>
                         </div>
@@ -314,14 +327,20 @@ export function UserManagementTable() {
                     </TableCell>
                     <TableCell>{roleBadge(user.role)}</TableCell>
                     <TableCell>{branchList(user)}</TableCell>
-                    <TableCell className="hidden whitespace-nowrap text-muted-foreground lg:table-cell">{formatJoined(user.createdAt)}</TableCell>
+                    <TableCell className="hidden whitespace-nowrap text-muted-foreground lg:table-cell">
+                      {formatJoined(user.createdAt)}
+                    </TableCell>
                     <TableCell className="text-right">{rowActions(user)}</TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow className="hover:bg-transparent">
                   <TableCell colSpan={5}>
-                    <EmptyState icon={UserRound} title="No users yet" description="Add the first person who should be able to sign in." />
+                    <EmptyState
+                      icon={UserRound}
+                      title="No users yet"
+                      description="Add the first person who should be able to sign in."
+                    />
                   </TableCell>
                 </TableRow>
               )}
@@ -342,7 +361,9 @@ export function UserManagementTable() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[15px] font-semibold">
                         {user.name || "—"}
-                        {user.id === currentUser?.id && <span className="ml-2 text-xs font-medium text-muted-foreground">You</span>}
+                        {user.id === currentUser?.id && (
+                          <span className="ml-2 text-xs font-medium text-muted-foreground">You</span>
+                        )}
                       </p>
                       <p className="truncate text-xs text-muted-foreground">{user.email}</p>
                     </div>

@@ -1,5 +1,6 @@
 "use client"
 
+import { formatLocalDate } from "@/lib/dates"
 import { useState } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
@@ -16,7 +17,7 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { DatePicker } from "@/components/ui/date-picker"
 import { CalendarCheck2, Plus } from "lucide-react"
-import { format } from "date-fns"
+import { addDays, format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
 import { useToast } from "@/components/ui/use-toast"
@@ -104,7 +105,7 @@ export function LeavePeriodManager() {
     }
   }
 
-  const formatDate = (value: string) => format(new Date(value), "d MMM yyyy")
+  const formatDate = (value: string) => formatLocalDate(value)
 
   return (
     <div className="space-y-4">
@@ -125,15 +126,24 @@ export function LeavePeriodManager() {
         ) : isError ? (
           <ErrorState title="Couldn't load leave periods" message={handleApiError(error)} className="m-5" />
         ) : periods.length === 0 ? (
-          <EmptyState icon={CalendarCheck2} title="No leave periods yet" description="Create your first period to start the leave year." />
+          <EmptyState
+            icon={CalendarCheck2}
+            title="No leave periods yet"
+            description="Create your first period to start the leave year."
+          />
         ) : (
           <ul className="divide-y divide-border/70">
             {periods.map((period) => (
-              <li key={period.id} className={cn("flex items-center gap-4 px-5 py-4 sm:px-6", period.isActive && "bg-primary-soft/40")}>
+              <li
+                key={period.id}
+                className={cn("flex items-center gap-4 px-5 py-4 sm:px-6", period.isActive && "bg-primary-soft/40")}
+              >
                 <span
                   className={cn(
                     "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
-                    period.isActive ? "bg-primary text-primary-foreground shadow-raised" : "bg-secondary text-muted-foreground",
+                    period.isActive
+                      ? "bg-primary text-primary-foreground shadow-raised"
+                      : "bg-secondary text-muted-foreground",
                   )}
                 >
                   <CalendarCheck2 className="h-[18px] w-[18px]" />
@@ -176,7 +186,7 @@ export function LeavePeriodManager() {
                     <FormItem>
                       <FormLabel>Start date</FormLabel>
                       <FormControl>
-                        <DatePicker value={field.value} onChange={field.onChange} placeholder="Start date" />
+                        <DatePicker value={field.value} onChange={field.onChange} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -192,8 +202,7 @@ export function LeavePeriodManager() {
                         <DatePicker
                           value={field.value}
                           onChange={field.onChange}
-                          placeholder="End date"
-                          disabledDays={(date) => date <= form.getValues("startDate")}
+                          min={form.watch("startDate") ? addDays(form.watch("startDate"), 1) : undefined}
                         />
                       </FormControl>
                       <FormMessage />

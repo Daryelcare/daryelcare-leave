@@ -50,6 +50,12 @@ interface EditDocumentModalProps {
   initialTab?: "rightToWork" | "passport" | "brp" | "other"
 }
 
+// Parse a DD/MM/YYYY date string to a Date
+const parseDate = (dateString: string | null) => {
+  if (!dateString) return null
+  return parse(dateString, "dd/MM/yyyy", new Date())
+}
+
 export function EditDocumentModal({
   document,
   open,
@@ -61,13 +67,6 @@ export function EditDocumentModal({
   const [activeTab, setActiveTab] = useState<string>(initialTab)
   const { toast } = useToast()
   const queryClient = useQueryClient()
-
-  // Parse date strings to Date objects
-  const parseDate = (dateString: string | null) => {
-    if (!dateString) return null
-    // Parse date in format DD/MM/YYYY
-    return parse(dateString, "dd/MM/yyyy", new Date())
-  }
 
   // Initialize form
   const form = useForm<FormInput, unknown, FormValues>({
@@ -91,23 +90,37 @@ export function EditDocumentModal({
     setShowCustomDocType(documentType === "other")
   }, [documentType])
 
+  // Stable function from react-hook-form, so the effect below can depend on it
+  const { setValue } = form
+
   // Update expiry date when tab changes
   useEffect(() => {
     // Clear the expiry date when changing tabs
-    form.setValue("expiryDate", null)
+    setValue("expiryDate", null)
 
     // Set the expiry date based on the active tab
     if (activeTab === "passport" && document.passportExpiry) {
-      form.setValue("expiryDate", parseDate(document.passportExpiry))
+      setValue("expiryDate", parseDate(document.passportExpiry))
     } else if (activeTab === "rightToWork" && document.rightToWorkExpiry) {
-      form.setValue("expiryDate", parseDate(document.rightToWorkExpiry))
+      setValue("expiryDate", parseDate(document.rightToWorkExpiry))
     } else if (activeTab === "brp" && document.brpExpiry) {
-      form.setValue("expiryDate", parseDate(document.brpExpiry))
+      setValue("expiryDate", parseDate(document.brpExpiry))
     } else if (activeTab === "other" && document.otherDocumentExpiry) {
-      form.setValue("expiryDate", parseDate(document.otherDocumentExpiry))
-      form.setValue("customDocumentType", document.otherDocumentType || "")
+      setValue("expiryDate", parseDate(document.otherDocumentExpiry))
+      setValue("customDocumentType", document.otherDocumentType || "")
     }
-  }, [activeTab, document, form])
+    // Only when the tab or the saved dates change. Depending on the whole form
+    // or document object re-ran this on every render, which overwrote a date
+    // while it was being typed.
+  }, [
+    activeTab,
+    document.passportExpiry,
+    document.rightToWorkExpiry,
+    document.brpExpiry,
+    document.otherDocumentExpiry,
+    document.otherDocumentType,
+    setValue,
+  ])
 
   // Calculate days left between today and a future date
   const calculateDaysLeft = (futureDate: Date | null) => {
@@ -278,11 +291,7 @@ export function EditDocumentModal({
                 <FormItem className="flex flex-col">
                   <FormLabel>Expiry date</FormLabel>
                   <FormControl>
-                    <DatePicker
-                      value={field.value || undefined}
-                      onChange={field.onChange}
-                      placeholder="Pick a date (optional)"
-                    />
+                    <DatePicker value={field.value || undefined} onChange={field.onChange} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

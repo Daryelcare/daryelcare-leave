@@ -1,5 +1,6 @@
 "use client"
 
+import { formatLocalDate } from "@/lib/dates"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { DatePicker } from "@/components/ui/date-picker"
@@ -114,20 +115,19 @@ export function LeaveReportsForm() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="report-start">From</Label>
-                <DatePicker id="report-start" value={startDate} onChange={setStartDate} placeholder="Start date" />
+                <DatePicker id="report-start" value={startDate} onChange={setStartDate} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="report-end">To</Label>
-                <DatePicker
-                  id="report-end"
-                  value={endDate}
-                  onChange={setEndDate}
-                  placeholder="End date"
-                  disabledDays={startDate ? { before: startDate } : undefined}
-                />
+                <DatePicker id="report-end" value={endDate} onChange={setEndDate} min={startDate} />
               </div>
             </div>
-            <RadioGroup value={dateFilterMode} onValueChange={setDateFilterMode} className="grid gap-2.5 sm:grid-cols-2" aria-label="Which leave to include">
+            <RadioGroup
+              value={dateFilterMode}
+              onValueChange={setDateFilterMode}
+              className="grid gap-2.5 sm:grid-cols-2"
+              aria-label="Which leave to include"
+            >
               {matchOptions.map((option) => (
                 <Label
                   key={option.value}
@@ -202,14 +202,16 @@ export function LeaveReportsForm() {
           </div>
           <dl className="space-y-2.5 text-sm">
             {[
-              ["Period", ready ? `${format(startDate!, "d MMM yyyy")} – ${format(endDate!, "d MMM yyyy")}` : "Not set"],
+              ["Period", ready ? `${formatLocalDate(startDate)} – ${formatLocalDate(endDate)}` : "Not set"],
               ["Includes", dateFilterMode === "overlap" ? "Overlapping leave" : "Leave within the dates"],
               ["Branch", selectedBranch === "all" ? "All branches" : selectedBranch],
               ["Leave type", selectedLeaveType === "all" ? "All types" : selectedLeaveType],
             ].map(([label, value]) => (
               <div key={label} className="flex justify-between gap-4">
                 <dt className="text-muted-foreground">{label}</dt>
-                <dd className={cn("text-right font-medium", value === "Not set" && "text-muted-foreground")}>{value}</dd>
+                <dd className={cn("text-right font-medium", value === "Not set" && "text-muted-foreground")}>
+                  {value}
+                </dd>
               </div>
             ))}
           </dl>
@@ -223,7 +225,9 @@ export function LeaveReportsForm() {
               CSV
             </Button>
           </div>
-          {!ready && <p className="text-center text-xs text-muted-foreground">Choose a start and end date to export.</p>}
+          {!ready && (
+            <p className="text-center text-xs text-muted-foreground">Choose a start and end date to export.</p>
+          )}
         </aside>
       </div>
     </div>

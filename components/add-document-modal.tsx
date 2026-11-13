@@ -589,11 +589,7 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
                   render={({ field }) => (
                     <FormItem className="space-y-0">
                       <FormControl>
-                        <DatePicker
-                          value={field.value || undefined}
-                          onChange={field.onChange}
-                          placeholder="Select date"
-                        />
+                        <DatePicker value={field.value || undefined} onChange={field.onChange} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -624,11 +620,7 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
                     render={({ field }) => (
                       <FormItem className="space-y-0">
                         <FormControl>
-                          <DatePicker
-                            value={field.value || undefined}
-                            onChange={field.onChange}
-                            placeholder="Select date"
-                          />
+                          <DatePicker value={field.value || undefined} onChange={field.onChange} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -650,11 +642,7 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
                     render={({ field }) => (
                       <FormItem className="space-y-0">
                         <FormControl>
-                          <DatePicker
-                            value={field.value || undefined}
-                            onChange={field.onChange}
-                            placeholder="Select date"
-                          />
+                          <DatePicker value={field.value || undefined} onChange={field.onChange} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -691,7 +679,7 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
                       render={({ field }) => (
                         <FormItem className="space-y-0">
                           <FormControl>
-                            <DatePicker value={field.value || undefined} onChange={field.onChange} placeholder="Date" />
+                            <DatePicker value={field.value || undefined} onChange={field.onChange} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

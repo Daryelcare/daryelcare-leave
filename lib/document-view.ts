@@ -113,14 +113,13 @@ export function daysLabel(days: number | null): string {
   return `In ${days} days`
 }
 
-/** Day and short month for a calendar-style date chip */
-export function dateChip(value: string): { day: string; month: string; year: string } | null {
+/** The two lines of a date chip: "13/11" over "2026" (dates are always DD/MM/YYYY) */
+export function dateChip(value: string): { dayMonth: string; year: string } | null {
   const time = parseDateToUtc(value)
   if (time === null) return null
   const d = new Date(time)
   return {
-    day: String(d.getUTCDate()),
-    month: d.toLocaleString("en-GB", { month: "short", timeZone: "UTC" }),
+    dayMonth: `${String(d.getUTCDate()).padStart(2, "0")}/${String(d.getUTCMonth() + 1).padStart(2, "0")}`,
     year: String(d.getUTCFullYear()),
   }
 }
