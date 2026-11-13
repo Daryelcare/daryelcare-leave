@@ -25,12 +25,15 @@ const PAGE_SIZE = 1000 // Supabase returns at most 1000 rows per request
 // Read every leave request (optionally only some branches), page by page.
 // Dates are stored as text, so the database can't filter them by date range:
 // we read them all and filter here.
-async function fetchAllLeaveRows(branches: string[] | null): Promise<LeaveRequestRow[]> {
+async function fetchAllLeaveRows(
+  branches: string[] | null,
+  statuses: string[] = ["Approved"],
+): Promise<LeaveRequestRow[]> {
   if (branches && branches.length === 0) return []
 
   const rows: LeaveRequestRow[] = []
   for (let from = 0; ; from += PAGE_SIZE) {
-    let query = supabase.from("leave_requests").select("*").eq("status", "Approved")
+    let query = supabase.from("leave_requests").select("*").in("status", statuses)
     if (branches) query = query.in("branch", branches)
     const { data, error } = await query.order("id").range(from, from + PAGE_SIZE - 1)
     if (error) throw error
@@ -40,10 +43,16 @@ async function fetchAllLeaveRows(branches: string[] | null): Promise<LeaveReques
   return rows
 }
 
-// Approved leave that overlaps the days from `from` to `to` (UTC-midnight
-// timestamps, both included), sorted by start date then name.
-export async function getLeaveBetween(from: number, to: number, branches: string[] | null): Promise<LeaveEntry[]> {
-  const rows = await fetchAllLeaveRows(branches)
+// Leave that overlaps the days from `from` to `to` (UTC-midnight timestamps,
+// both included), sorted by start date then name. Approved only unless other
+// statuses are asked for (the team calendar also shows Pending).
+export async function getLeaveBetween(
+  from: number,
+  to: number,
+  branches: string[] | null,
+  statuses: string[] = ["Approved"],
+): Promise<LeaveEntry[]> {
+  const rows = await fetchAllLeaveRows(branches, statuses)
   const entries: LeaveEntry[] = []
 
   for (const row of rows) {
