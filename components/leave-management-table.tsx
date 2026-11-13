@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -53,6 +53,16 @@ import { TeamCalendar } from "./team-calendar"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useRouter, useSearchParams } from "next/navigation"
 import { LEAVE_CALENDAR_HREF, LEAVE_PATH } from "@/lib/navigation"
+import { parseDateToUtc, toIsoDate, todayUtc } from "@/lib/dates"
+import {
+  type StoredPeriod,
+  buildLeaveYears,
+  crossesYear,
+  daysInYear,
+  inYear,
+  summariseYear,
+  yearRange,
+} from "@/lib/leave-years"
 
 type LeaveView = "list" | "calendar"
 
@@ -162,6 +172,54 @@ export function LeaveManagementTable() {
     },
   })
 
+  // Leave years: the periods stored in Settings, plus older years that have
+  // records. The current year is shown by default; ?year= picks another (or
+  // "all"). Only the list view uses it; the calendar is browsed by month.
+  const { data: periods = [], isError: isPeriodsError } = useQuery<StoredPeriod[]>({
+    queryKey: ["leavePeriods"],
+    queryFn: () => fetchWithAuth("/api/leave-periods"),
+  })
+  const today = useMemo(() => todayUtc(), [])
+  const years = useMemo(() => buildLeaveYears(periods, leaveRequests, today), [periods, leaveRequests, today])
+  const currentYear = years.find((y) => y.isCurrent) ?? years[0]
+  const yearParam = searchParams.get("year")
+  const selectedYear = yearParam === "all" ? null : (years.find((y) => y.key === yearParam) ?? currentYear ?? null)
+  const yearValue = yearParam === "all" ? "all" : (selectedYear?.key ?? "all")
+  const setYear = (key: string) => {
+    const next = new URLSearchParams(searchParams.toString())
+    if (key === currentYear?.key) next.delete("year")
+    else next.set("year", key)
+    const qs = next.toString()
+    router.replace(qs ? `${LEAVE_PATH}?${qs}` : LEAVE_PATH, { scroll: false })
+  }
+  const isPastSelection = !!selectedYear && !!currentYear && selectedYear.end < currentYear.start
+
+  // The records for the selected year (any that fall partly inside it count)
+  const rows = useMemo(
+    () => (selectedYear ? leaveRequests.filter((r) => inYear(r, selectedYear)) : leaveRequests),
+    [leaveRequests, selectedYear],
+  )
+  const summary = useMemo(() => (selectedYear ? summariseYear(rows, selectedYear) : null), [rows, selectedYear])
+
+  // Leave that ended before the current leave year is view only here: changing
+  // it would adjust the employee's current balance, not that year's
+  const isReadOnly = (row: LeaveRequest) => {
+    const end = parseDateToUtc(row.endDate)
+    return !!currentYear && end !== null && end < currentYear.start
+  }
+
+  // When the list is one employee's leave, show their entitlement for the
+  // current year. Past years' entitlement was never stored, so none is shown.
+  const singleEmployeeId =
+    employeeSearch.trim() && rows.length > 0 && rows.every((r) => r.employeeId === rows[0].employeeId)
+      ? rows[0].employeeId
+      : null
+  const { data: singleEmployee } = useQuery<{ name: string; daysTaken: number; daysRemaining: number }>({
+    queryKey: ["employee", singleEmployeeId],
+    queryFn: () => fetchWithAuth(`/api/employees/${singleEmployeeId}`),
+    enabled: !!singleEmployeeId && !!selectedYear?.isCurrent,
+  })
+
   const deleteLeaveRequest = async (id: string) => {
     try {
       await fetchWithAuth(`/api/leave-requests/${id}`, {
@@ -215,6 +273,11 @@ export function LeaveManagementTable() {
       formData.append("type", selectedType)
       formData.append("employee", employeeSearch)
       formData.append("exportAll", "true")
+      if (selectedYear) {
+        formData.append("startDate", toIsoDate(selectedYear.start))
+        formData.append("endDate", toIsoDate(selectedYear.end))
+        formData.append("dateFilterMode", "overlap")
+      }
 
       if (sortColumn) {
         formData.append("sortColumn", sortColumn)
@@ -270,6 +333,7 @@ export function LeaveManagementTable() {
   }
 
   const resetFilters = () => {
+    if (yearParam) setYear(currentYear?.key ?? "all")
     setEmployeeSearch("")
     setSelectedBranch("all")
     setSelectedType("all")
@@ -279,7 +343,11 @@ export function LeaveManagementTable() {
 
   const typeColor = (type: string) => leaveTypes.find((t) => t.name === type)?.color || "#64748b"
   const canAdd = user?.role === "admin" || (user?.role === "normal" && user?.branches && user?.branches.length > 0)
-  const filtersActive = employeeSearch !== "" || selectedType !== "all" || (isAdmin && selectedBranch !== "all")
+  const filtersActive =
+    employeeSearch !== "" ||
+    selectedType !== "all" ||
+    (isAdmin && selectedBranch !== "all") ||
+    (!!yearParam && yearValue !== currentYear?.key)
 
   const statusBadge = (status: string) => (
     <Badge dot variant={status === "Approved" ? "success" : status === "Pending" ? "warning" : "destructive"}>
@@ -321,21 +389,43 @@ export function LeaveManagementTable() {
           <Eye />
           View details
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setLeaveToEdit(row)}>
-          <Pencil />
-          Edit
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          className="text-destructive focus:text-destructive [&_svg]:!text-destructive"
-          onClick={() => handleDeleteLeaveRequest(row)}
-        >
-          <Trash2 />
-          Delete
-        </DropdownMenuItem>
+        {isReadOnly(row) ? (
+          <p className="px-2.5 py-1.5 text-xs text-muted-foreground">From a past leave year, so view only.</p>
+        ) : (
+          <>
+            <DropdownMenuItem onClick={() => setLeaveToEdit(row)}>
+              <Pencil />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive [&_svg]:!text-destructive"
+              onClick={() => handleDeleteLeaveRequest(row)}
+            >
+              <Trash2 />
+              Delete
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )
+
+  // "Spans 2 leave years · 2 of 14 days in this year"
+  const spansNote = (row: LeaveRequest) =>
+    selectedYear && crossesYear(row, selectedYear)
+      ? `Spans 2 leave years · ${daysInYear(row, selectedYear)} of ${plural(row.duration, "day")} in this year`
+      : null
+
+  const otherFilters = employeeSearch !== "" || selectedType !== "all" || (isAdmin && selectedBranch !== "all")
+  const emptyCopy = otherFilters
+    ? { title: "No leave matches these filters", description: "Try clearing the filters." }
+    : selectedYear && leaveRequests.length > 0
+      ? {
+          title: `No leave in ${selectedYear.label}`,
+          description: `Nothing was recorded between ${yearRange(selectedYear).replace(" – ", " and ")}.`,
+        }
+      : { title: "No leave recorded yet", description: "Add a leave entry to get started." }
 
   const isMockData = branches.length > 0 && branches[0].id === "1" && branches[0].name === "London"
 
@@ -432,6 +522,20 @@ export function LeaveManagementTable() {
 
             <div className="surface overflow-hidden">
               <Toolbar className="border-b border-border/70 p-3 sm:p-4">
+                <Select value={yearValue} onValueChange={setYear}>
+                  <SelectTrigger className="sm:w-[200px]" aria-label="Leave year">
+                    <SelectValue placeholder="Leave year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {years.map((y) => (
+                      <SelectItem key={y.key} value={y.key}>
+                        {y.label}
+                        {y.isCurrent ? " (Current)" : ""}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="all">All leave years</SelectItem>
+                  </SelectContent>
+                </Select>
                 <div className="relative flex-1 sm:max-w-xs">
                   <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
@@ -482,6 +586,71 @@ export function LeaveManagementTable() {
                 )}
               </Toolbar>
 
+              {/* Which leave year is showing, and its figures */}
+              <div
+                className="flex flex-col gap-1.5 border-b border-border/70 bg-muted/40 px-4 py-2.5 text-sm sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:px-5"
+                aria-live="polite"
+              >
+                {selectedYear ? (
+                  <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="font-semibold tabular text-foreground">{yearRange(selectedYear)}</span>
+                    {selectedYear.isCurrent ? (
+                      <Badge variant="default" className="px-2 text-[11px] leading-[18px]">
+                        Current leave year
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="px-2 text-[11px] leading-[18px]">
+                        {isPastSelection ? "Past leave year · view only" : "Future leave year"}
+                      </Badge>
+                    )}
+                  </p>
+                ) : (
+                  <p className="font-semibold text-foreground">All leave years</p>
+                )}
+                {isPeriodsError && (
+                  <p className="text-xs text-muted-foreground">
+                    Couldn&apos;t load the leave years from Settings, so 1 April is assumed.
+                  </p>
+                )}
+                {summary && !isLoading && (
+                  <p className="text-muted-foreground sm:ml-auto">
+                    <span className="font-semibold tabular text-foreground">{summary.taken}</span> days annual leave
+                    taken · <span className="font-semibold tabular text-foreground">{summary.pending}</span> days
+                    pending
+                    {summary.other > 0 && (
+                      <>
+                        {" "}
+                        · <span className="font-semibold tabular text-foreground">{summary.other}</span> days other
+                        leave
+                      </>
+                    )}
+                    {singleEmployeeId &&
+                      (selectedYear?.isCurrent ? (
+                        singleEmployee && (
+                          <>
+                            {" "}
+                            · {singleEmployee.name}: entitlement{" "}
+                            <span className="font-semibold tabular text-foreground">
+                              {singleEmployee.daysTaken + singleEmployee.daysRemaining}
+                            </span>
+                            , remaining{" "}
+                            <span
+                              className={cn(
+                                "font-semibold tabular",
+                                singleEmployee.daysRemaining < 0 ? "text-destructive" : "text-foreground",
+                              )}
+                            >
+                              {singleEmployee.daysRemaining}
+                            </span>
+                          </>
+                        )
+                      ) : (
+                        <> · Entitlement wasn&apos;t recorded for past years</>
+                      ))}
+                  </p>
+                )}
+              </div>
+
               {/* Desktop and tablet: table */}
               <div className="hidden md:block">
                 <Table>
@@ -511,8 +680,8 @@ export function LeaveManagementTable() {
                           </TableCell>
                         </TableRow>
                       ))
-                    ) : leaveRequests.length > 0 ? (
-                      leaveRequests.map((row) => (
+                    ) : rows.length > 0 ? (
+                      rows.map((row) => (
                         <TableRow key={row.id} className="cursor-pointer" onClick={() => handleViewDetails(row.id)}>
                           <TableCell>
                             <div className="flex items-center gap-3">
@@ -540,6 +709,9 @@ export function LeaveManagementTable() {
                           </TableCell>
                           <TableCell className="whitespace-nowrap tabular">
                             {formatDisplayRange(row.startDate, row.endDate)}
+                            {spansNote(row) && (
+                              <span className="block text-xs text-muted-foreground">{spansNote(row)}</span>
+                            )}
                           </TableCell>
                           <TableCell className="text-right tabular">{row.duration}</TableCell>
                           <TableCell
@@ -559,13 +731,7 @@ export function LeaveManagementTable() {
                     ) : (
                       <TableRow className="hover:bg-transparent">
                         <TableCell colSpan={7}>
-                          <EmptyState
-                            icon={CalendarDays}
-                            title={filtersActive ? "No leave matches these filters" : "No leave recorded yet"}
-                            description={
-                              filtersActive ? "Try clearing the filters." : "Add a leave entry to get started."
-                            }
-                          />
+                          <EmptyState icon={CalendarDays} title={emptyCopy.title} description={emptyCopy.description} />
                         </TableCell>
                       </TableRow>
                     )}
@@ -577,9 +743,9 @@ export function LeaveManagementTable() {
               <div className="md:hidden">
                 {isLoading ? (
                   <ListSkeleton rows={5} />
-                ) : leaveRequests.length > 0 ? (
+                ) : rows.length > 0 ? (
                   <ul className="divide-y divide-border/70">
-                    {leaveRequests.map((row) => (
+                    {rows.map((row) => (
                       <li key={row.id} className="flex items-start gap-3 px-4 py-3.5">
                         <button
                           className="flex min-w-0 flex-1 items-start gap-3 text-left"
@@ -604,6 +770,9 @@ export function LeaveManagementTable() {
                             <span className="block text-[13px] font-medium tabular">
                               {formatDisplayRange(row.startDate, row.endDate)} · {plural(row.duration, "day")}
                             </span>
+                            {spansNote(row) && (
+                              <span className="block text-xs text-muted-foreground">{spansNote(row)}</span>
+                            )}
                           </span>
                         </button>
                         {rowActions(row)}
@@ -611,16 +780,14 @@ export function LeaveManagementTable() {
                     ))}
                   </ul>
                 ) : (
-                  <EmptyState
-                    icon={CalendarDays}
-                    title={filtersActive ? "No leave matches these filters" : "No leave recorded yet"}
-                  />
+                  <EmptyState icon={CalendarDays} title={emptyCopy.title} description={emptyCopy.description} />
                 )}
               </div>
 
-              {!isLoading && leaveRequests.length > 0 && (
+              {!isLoading && rows.length > 0 && (
                 <div className="border-t border-border/70 px-4 py-3 text-sm text-muted-foreground sm:px-5">
-                  {plural(leaveRequests.length, "entry", "entries")}
+                  {plural(rows.length, "entry", "entries")}
+                  {selectedYear && ` in ${selectedYear.label}`}
                 </div>
               )}
             </div>

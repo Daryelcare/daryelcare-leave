@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase"
+import { parseDateToUtc } from "@/lib/dates"
 import type { LeaveRequest, Employee } from "@/lib/types"
 import {
   convertToCSV,
@@ -161,21 +162,6 @@ export async function exportLeaveRequests(formData: FormData) {
       query = query.eq("employee_id", employeeId)
     }
 
-    // Apply date range filter if provided
-    if (startDate && endDate) {
-      if (dateFilterMode === "overlap") {
-        // Overlapping mode: Include leaves that overlap with the selected date range
-        query = query
-          .filter("end_date", "gte", startDate) // Leave ends on or after filter start
-          .filter("start_date", "lte", endDate) // Leave starts on or before filter end
-      } else {
-        // Restrictive mode: Only include leaves that fall completely within the selected date range
-        query = query
-          .filter("start_date", "gte", startDate) // Leave starts on or after filter start
-          .filter("end_date", "lte", endDate) // Leave ends on or before filter end
-      }
-    }
-
     // Apply sorting if provided
     if (sortColumn && sortDirection && columnMapping[sortColumn]) {
       const dbColumn = columnMapping[sortColumn]
@@ -186,11 +172,27 @@ export async function exportLeaveRequests(formData: FormData) {
     }
 
     // Execute the query - get ALL records for export
-    const { data, error } = await query
+    const { data: allRows, error } = await query
 
     if (error) {
       throw error
     }
+
+    // Date range: dates are stored as DD/MM/YYYY text, which doesn't sort by
+    // date, so compare real dates here rather than in the query
+    const rangeStart = startDate ? parseDateToUtc(startDate) : null
+    const rangeEnd = endDate ? parseDateToUtc(endDate) : null
+    const data =
+      rangeStart !== null && rangeEnd !== null
+        ? (allRows || []).filter((row) => {
+            const s = parseDateToUtc(row.start_date)
+            const e = parseDateToUtc(row.end_date)
+            if (s === null || e === null) return false
+            return dateFilterMode === "overlap"
+              ? e >= rangeStart && s <= rangeEnd // overlaps the range
+              : s >= rangeStart && e <= rangeEnd // wholly inside the range
+          })
+        : allRows
 
     // Get employee codes and hours for each leave request
     const employeeCodeMap = new Map()
