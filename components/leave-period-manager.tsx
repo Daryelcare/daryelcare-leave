@@ -16,7 +16,7 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { DatePicker } from "@/components/ui/date-picker"
 import { CalendarCheck2, Plus } from "lucide-react"
-import { format } from "date-fns"
+import { addDays, format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
 import { useToast } from "@/components/ui/use-toast"
@@ -193,7 +193,7 @@ export function LeavePeriodManager() {
                           value={field.value}
                           onChange={field.onChange}
                           placeholder="End date"
-                          disabledDays={(date) => date <= form.getValues("startDate")}
+                          min={form.watch("startDate") ? addDays(form.watch("startDate"), 1) : undefined}
                         />
                       </FormControl>
                       <FormMessage />

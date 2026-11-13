@@ -508,10 +508,7 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
                     <FormControl>
                       <DatePicker
                         value={field.value}
-                        onChange={(date) => {
-                          // Add a small delay to prevent rapid DOM updates
-                          setTimeout(() => field.onChange(date), 0)
-                        }}
+                        onChange={field.onChange}
                         placeholder="Pick a date"
                       />
                     </FormControl>
@@ -529,12 +526,9 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
                     <FormControl>
                       <DatePicker
                         value={field.value}
-                        onChange={(date) => {
-                          // Add a small delay to prevent rapid DOM updates
-                          setTimeout(() => field.onChange(date), 0)
-                        }}
+                        onChange={field.onChange}
                         placeholder="Pick a date"
-                        disabledDays={(date) => (startDate ? date < startDate : false)}
+                        min={startDate}
                       />
                     </FormControl>
                     <FormMessage />

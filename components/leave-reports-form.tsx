@@ -123,7 +123,7 @@ export function LeaveReportsForm() {
                   value={endDate}
                   onChange={setEndDate}
                   placeholder="End date"
-                  disabledDays={startDate ? { before: startDate } : undefined}
+                  min={startDate}
                 />
               </div>
             </div>

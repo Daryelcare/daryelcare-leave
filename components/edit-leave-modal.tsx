@@ -166,7 +166,7 @@ export function EditLeaveModal({ leave, open, onOpenChange }: EditLeaveModalProp
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-leave-end">End date</Label>
-              <DatePicker id="edit-leave-end" value={endDate} onChange={(d) => d && setEndDate(d)} />
+              <DatePicker id="edit-leave-end" value={endDate} min={startDate} onChange={(d) => d && setEndDate(d)} />
             </div>
           </div>
 
