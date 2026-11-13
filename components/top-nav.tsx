@@ -44,26 +44,26 @@ export function TopNav() {
   }, [pathname])
 
   return (
-    <header className="sticky top-0 z-30 px-4 pt-3 sm:px-6 sm:pt-4 lg:px-10">
+    <header className="sticky top-0 z-30 px-4 pt-2 sm:px-6 sm:pt-3 lg:px-10">
       <div
         className={cn(
-          "mx-auto flex h-14 max-w-[1360px] items-center gap-3 rounded-full border border-border/70 bg-card/85 pl-4 pr-2 backdrop-blur-xl transition-shadow duration-300 supports-[backdrop-filter]:bg-card/75 sm:h-16 sm:pl-5",
+          "mx-auto flex h-12 max-w-[1360px] items-center gap-3 rounded-full border border-border/70 bg-card/85 pl-3.5 pr-1.5 backdrop-blur-xl transition-shadow duration-300 supports-[backdrop-filter]:bg-card/75 sm:h-[52px] sm:pl-4",
           scrolled ? "shadow-float" : "shadow-raised",
         )}
       >
         <Link
           href="/dashboard"
           aria-label="DaryelCare home"
-          className="flex h-10 min-w-10 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30"
+          className="flex h-9 min-w-9 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30"
         >
-          <Image src="/images/daryelcare-mark.png" alt="" width={30} height={30} priority className="lg:hidden" />
+          <Image src="/images/daryelcare-mark.png" alt="" width={26} height={26} priority className="lg:hidden" />
           <Image
             src="/images/daryelcare-wordmark.png"
             alt=""
             width={150}
             height={26}
             priority
-            className="hidden h-[24px] w-auto lg:block"
+            className="hidden h-[20px] w-auto lg:block"
           />
         </Link>
 
@@ -83,7 +83,7 @@ export function TopNav() {
           <ul className="flex items-center gap-0.5 lg:gap-1">
             {groups.map((group, gi) => (
               <Fragment key={group.label}>
-                {gi > 0 && <li aria-hidden className="mx-1.5 h-5 w-px bg-border lg:mx-2" />}
+                {gi > 0 && <li aria-hidden className="mx-1 h-4 w-px bg-border lg:mx-1.5" />}
                 {group.items.map((item) => {
                   const active = activeHref === item.href
                   return (
@@ -92,7 +92,7 @@ export function TopNav() {
                         href={item.href}
                         aria-current={active ? "page" : undefined}
                         className={cn(
-                          "flex h-10 items-center whitespace-nowrap rounded-full px-3 text-[15px] font-medium transition-colors duration-150 lg:px-4",
+                          "flex h-8 items-center whitespace-nowrap rounded-full px-2.5 text-sm font-medium transition-colors duration-150 lg:px-3.5",
                           "outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30",
                           active
                             ? "bg-primary-soft font-semibold text-primary"
@@ -130,17 +130,17 @@ function AccountMenu() {
       <DropdownMenuTrigger asChild>
         <button
           aria-label="Account menu"
-          className="flex h-10 shrink-0 items-center gap-2 rounded-full p-1 outline-none transition-colors hover:bg-secondary focus-visible:ring-[3px] focus-visible:ring-ring/30 sm:h-12 sm:pr-3"
+          className="flex h-10 shrink-0 items-center gap-2 rounded-full p-1 outline-none transition-colors hover:bg-secondary focus-visible:ring-[3px] focus-visible:ring-ring/30 sm:pr-2.5"
         >
-          <Avatar name={user?.name} className="sm:h-10 sm:w-10" />
+          <Avatar name={user?.name} className="h-8 w-8 text-xs" />
           <span className="hidden min-w-0 max-w-[140px] text-left xl:block">
-            <span className="block truncate text-sm font-semibold leading-5">{user?.name || "Account"}</span>
-            <span className="block truncate text-xs leading-4 text-muted-foreground">{branchSummary}</span>
+            <span className="block truncate text-[13px] font-semibold leading-4">{user?.name || "Account"}</span>
+            <span className="block truncate text-[11px] leading-4 text-muted-foreground">{branchSummary}</span>
           </span>
-          <ChevronDown className="hidden h-4 w-4 text-muted-foreground sm:block" />
+          <ChevronDown className="hidden h-3.5 w-3.5 text-muted-foreground sm:block" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={10} className="w-64">
+      <DropdownMenuContent align="end" sideOffset={8} className="w-64">
         <DropdownMenuLabel className="space-y-0.5">
           <p className="truncate font-semibold">{user?.name}</p>
           <p className="truncate text-xs font-normal text-muted-foreground">{user?.email}</p>

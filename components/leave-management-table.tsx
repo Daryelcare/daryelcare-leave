@@ -26,6 +26,7 @@ import {
   Search,
   Trash2,
   X,
+  Users,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -50,6 +51,7 @@ import { EditLeaveModal } from "./edit-leave-modal"
 import type { LeaveRequest } from "@/lib/types"
 import { useApp } from "./app-provider"
 import { TeamCalendar } from "./team-calendar"
+import { WhosOnLeaveDialog } from "./whos-on-leave-dialog"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useRouter, useSearchParams } from "next/navigation"
 import { LEAVE_CALENDAR_HREF, LEAVE_PATH } from "@/lib/navigation"
@@ -88,6 +90,7 @@ export function LeaveManagementTable() {
   const [leaveToDelete, setLeaveToDelete] = useState<LeaveRequest | null>(null)
   const [leaveToEdit, setLeaveToEdit] = useState<LeaveRequest | null>(null)
   const [isExporting, setIsExporting] = useState(false)
+  const [onLeaveOpen, setOnLeaveOpen] = useState(false)
   const [exportFormat, setExportFormat] = useState<string | null>(null)
 
   const { toast } = useToast()
@@ -458,6 +461,10 @@ export function LeaveManagementTable() {
                 </TabsTrigger>
               </TabsList>
             </Tabs>
+            <Button variant="outline" onClick={() => setOnLeaveOpen(true)}>
+              <Users />
+              Who&apos;s on leave
+            </Button>
             {view === "list" && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -796,6 +803,8 @@ export function LeaveManagementTable() {
       </div>
 
       <AddLeaveModal open={isAddModalOpen} onOpenChange={setIsAddModalOpen} />
+
+      <WhosOnLeaveDialog open={onLeaveOpen} onOpenChange={setOnLeaveOpen} />
 
       <EditLeaveModal leave={leaveToEdit} open={!!leaveToEdit} onOpenChange={(open) => !open && setLeaveToEdit(null)} />
 
