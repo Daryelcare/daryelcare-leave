@@ -76,10 +76,16 @@ const tint = (hex: string, alpha = "1f") => (/^#[0-9a-f]{6}$/i.test(hex) ? `${he
 export function TeamCalendar({
   onOpen,
   actions,
+  typeFilter = "all",
+  search = "",
 }: {
   onOpen?: (id: string) => void
   /** Page actions (view switch, Who's on leave, Add leave) shown in the controls row */
   actions?: ReactNode
+  /** The list's leave type filter, so both views show the same leave */
+  typeFilter?: string
+  /** The list's employee search */
+  search?: string
 }) {
   const { user } = useApp()
   const isAdmin = user?.role === "admin"
@@ -130,7 +136,14 @@ export function TeamCalendar({
   // One row per leave entry, its bar clamped to this month
   const rows = useMemo(() => {
     return (data?.leaves || [])
-      .filter((l) => l.status !== "Rejected" && l.start <= to && l.end >= from)
+      .filter(
+        (l) =>
+          l.status !== "Rejected" &&
+          l.start <= to &&
+          l.end >= from &&
+          (typeFilter === "all" || l.type === typeFilter) &&
+          (!search.trim() || l.employeeName.toLowerCase().includes(search.trim().toLowerCase())),
+      )
       .sort((a, b) => a.start.localeCompare(b.start) || a.employeeName.localeCompare(b.employeeName))
       .map((l) => {
         const startDay = Number((l.start < from ? from : l.start).slice(8, 10))
@@ -148,7 +161,7 @@ export function TeamCalendar({
           label: pending ? `${l.type} (pending)` : l.type,
         }
       })
-  }, [data, from, to, numDays, dayPct])
+  }, [data, from, to, numDays, dayPct, typeFilter, search])
 
   // Branches with `threshold` or more people off (approved leave) on each day
   const busyByDay = useMemo(() => {

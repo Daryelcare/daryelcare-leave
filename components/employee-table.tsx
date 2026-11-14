@@ -190,6 +190,17 @@ export function EmployeeTable() {
     setIsDetailsModalOpen(true)
   }
 
+  // A link to one employee (?employee=<id>, e.g. from the Leave page's
+  // "Over entitlement" list) opens their details, then tidies the address
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("employee")
+    if (!id) return
+    fetchWithAuth(`/api/employees/${encodeURIComponent(id)}`)
+      .then((employee: Employee) => employee && handleViewDetails(employee))
+      .catch(() => {})
+      .finally(() => window.history.replaceState(null, "", window.location.pathname))
+  }, [])
+
   const handleEditEmployee = (employee: Employee) => {
     setSelectedEmployee(employee)
     setIsEditModalOpen(true)

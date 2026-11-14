@@ -30,7 +30,9 @@ export function PageHeader({
         {description && <p className="max-w-2xl text-[15px] leading-relaxed text-muted-foreground">{description}</p>}
       </div>
       {actions && (
-        <div className="flex flex-wrap items-center gap-2 [&>*]:flex-1 sm:[&>*]:flex-none lg:shrink-0 lg:justify-end">{actions}</div>
+        <div className="flex flex-wrap items-center gap-2 [&>*]:flex-1 sm:[&>*]:flex-none lg:shrink-0 lg:justify-end">
+          {actions}
+        </div>
       )}
     </div>
   )
@@ -91,6 +93,8 @@ export function StatCard({
   tone = "default",
   loading,
   className,
+  onClick,
+  actionLabel,
 }: {
   label: string
   value: ReactNode
@@ -99,9 +103,31 @@ export function StatCard({
   tone?: Tone
   loading?: boolean
   className?: string
+  /** Makes the card a shortcut (e.g. to the list behind its number) */
+  onClick?: () => void
+  /** What clicking does, for screen readers */
+  actionLabel?: string
 }) {
+  const Root = onClick ? "button" : "div"
   return (
-    <div className={cn("surface flex flex-col gap-3 p-4 sm:p-5", className)}>
+    <Root
+      {...(onClick
+        ? {
+            type: "button" as const,
+            onClick,
+            title: actionLabel,
+            "aria-label": actionLabel
+              ? `${label}: ${typeof value === "number" || typeof value === "string" ? value : ""}. ${actionLabel}`
+              : undefined,
+          }
+        : {})}
+      className={cn(
+        "surface flex flex-col gap-3 p-4 text-left sm:p-5",
+        onClick &&
+          "transition-[box-shadow,transform] duration-200 ease-smooth hover:-translate-y-px hover:shadow-raised focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30",
+        className,
+      )}
+    >
       <div className="flex items-center justify-between gap-3">
         <p className="text-[13px] font-semibold text-muted-foreground">{label}</p>
         {Icon && (
@@ -117,13 +143,18 @@ export function StatCard({
         </div>
       ) : (
         <div className="space-y-1">
-          <p className={cn("font-display text-[30px] font-semibold leading-none tracking-[-0.03em] tabular", toneText[tone])}>
+          <p
+            className={cn(
+              "font-display text-[30px] font-semibold leading-none tracking-[-0.03em] tabular",
+              toneText[tone],
+            )}
+          >
             {value}
           </p>
           {detail && <p className="text-xs leading-5 text-muted-foreground">{detail}</p>}
         </div>
       )}
-    </div>
+    </Root>
   )
 }
 

@@ -4,9 +4,12 @@ import { supabase } from "@/lib/supabase"
 import { shouldDeductFromBalance } from "@/lib/utils"
 import { inclusiveDays, parseDateToUtc, toUkDate } from "@/lib/dates"
 import { canAccessBranch, requireUser } from "@/lib/server-auth"
+import { isMissingColumn, leaveYearBoundaryError } from "@/lib/leave-server"
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const auth = await requireUser(request)
+    if (auth.response) return auth.response
     const { id } = await params
 
     // Fetch the leave request from Supabase
@@ -18,6 +21,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     if (!data) {
       return NextResponse.json({ error: "Leave request not found" }, { status: 404 })
+    }
+    if (!canAccessBranch(auth.user, data.branch)) {
+      return NextResponse.json({ error: "You can only see leave for your own branches" }, { status: 403 })
     }
 
     // Get employee code
@@ -52,7 +58,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       status: data.status,
       reason: data.reason || undefined,
       submittedDate: data.submitted_date,
-      addedBy: data.added_by || "System", // Add this line
+      addedBy: data.added_by || "System",
+      remaining: data.remaining,
+      adminNotes: data.admin_notes ?? null,
+      decidedBy: data.decided_by ?? null,
+      decidedAt: data.decided_at ?? null,
     }
 
     return NextResponse.json(leaveRequest)
@@ -88,40 +98,73 @@ function deductedDays(status: string, type: string, duration: number): number {
   return status === "Approved" && shouldDeductFromBalance(type) ? duration : 0
 }
 
-// PUT: change a leave request's status (Approved / Rejected / Pending)
+const STATUSES = ["Approved", "Rejected", "Pending"] as const
+
+// PUT: decide on a leave request: approve, reject (a reason is required) or
+// reset it to pending. The employee's balance follows the status (approved
+// Annual Leave / Working Holiday uses it). The admin's note and who decided
+// are kept when the database has those columns.
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const auth = await requireUser(request)
+    if (auth.response) return auth.response
+
     const { id } = await params
     const data = await request.json()
-
-    if (!data.status || typeof data.status !== "string") {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    const status = STATUSES.find((s) => s === data.status)
+    if (!status) {
+      return NextResponse.json({ error: "Status must be Approved, Rejected or Pending" }, { status: 400 })
+    }
+    const note = typeof data.note === "string" ? data.note.trim().slice(0, 1000) : ""
+    if (status === "Rejected" && !note) {
+      return NextResponse.json({ error: "Give a reason for rejecting this leave" }, { status: 400 })
     }
 
     const { data: leaveRequest, error: leaveError } = await supabase
       .from("leave_requests")
       .select("*")
       .eq("id", id)
-      .single()
+      .maybeSingle()
     if (leaveError) throw leaveError
+    if (!leaveRequest) {
+      return NextResponse.json({ error: "Leave entry not found" }, { status: 404 })
+    }
+    if (!canAccessBranch(auth.user, leaveRequest.branch)) {
+      return NextResponse.json({ error: "You can only manage leave for your own branches" }, { status: 403 })
+    }
 
     const delta =
-      deductedDays(data.status, leaveRequest.type, leaveRequest.duration) -
+      deductedDays(status, leaveRequest.type, leaveRequest.duration) -
       deductedDays(leaveRequest.status, leaveRequest.type, leaveRequest.duration)
-    await adjustBalance(leaveRequest.employee_id, delta)
+    const daysRemaining = await adjustBalance(leaveRequest.employee_id, delta)
 
-    const { data: updatedRequest, error } = await supabase
-      .from("leave_requests")
-      .update({ status: data.status })
-      .eq("id", id)
-      .select()
-      .single()
-    if (error) throw error
+    // Reset to pending clears the last decision; approve / reject records it
+    const decision =
+      status === "Pending"
+        ? { admin_notes: null, decided_by: null, decided_at: null }
+        : { admin_notes: note || null, decided_by: auth.user.email, decided_at: new Date().toISOString() }
+
+    let noteSaved = true
+    let result = await supabase.from("leave_requests").update({ status, ...decision }).eq("id", id).select().single()
+    if (result.error && isMissingColumn(result.error)) {
+      // The decision columns haven't been added yet: change the status only
+      noteSaved = false
+      result = await supabase.from("leave_requests").update({ status }).eq("id", id).select().single()
+    }
+    if (result.error) {
+      if (delta !== 0) await adjustBalance(leaveRequest.employee_id, -delta).catch(() => {})
+      throw result.error
+    }
+
+    console.log(`${auth.user.email} set leave ${id} for ${leaveRequest.employee_name} to ${status}${note ? ` (${note})` : ""}`)
 
     return NextResponse.json({
-      id: updatedRequest.id,
-      status: updatedRequest.status,
-      message: `Leave request ${data.status.toLowerCase()} successfully`,
+      id: result.data.id,
+      status: result.data.status,
+      noteSaved: noteSaved || !note,
+      balanceChange: -delta,
+      daysRemaining,
+      message: `Leave ${status === "Pending" ? "reset to pending" : status.toLowerCase()}`,
     })
   } catch (error) {
     console.error("Error updating leave request:", error)
@@ -153,6 +196,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (duration > 366) {
       return NextResponse.json({ error: "Leave can't be longer than a year" }, { status: 400 })
     }
+    const boundary = await leaveYearBoundaryError(start, end)
+    if (boundary) return NextResponse.json({ error: boundary }, { status: 400 })
 
     const { data: existing, error: fetchError } = await supabase
       .from("leave_requests")
@@ -212,6 +257,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       reason: updated.reason || undefined,
       submittedDate: updated.submitted_date,
       addedBy: updated.added_by || "System",
+      adminNotes: updated.admin_notes ?? null,
       balanceChange: -delta,
       daysRemaining,
     })
@@ -226,6 +272,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const auth = await requireUser(request)
+    if (auth.response) return auth.response
     const { id } = await params
 
     // First, get the leave request details before deleting
@@ -237,6 +285,9 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
     if (fetchError) {
       throw fetchError
+    }
+    if (leaveRequest && !canAccessBranch(auth.user, leaveRequest.branch)) {
+      return NextResponse.json({ error: "You can only delete leave for your own branches" }, { status: 403 })
     }
 
     // If the leave was approved AND it's a leave type that deducts from balance, restore the employee's leave balance

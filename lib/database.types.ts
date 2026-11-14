@@ -54,6 +54,10 @@ export type LeaveRequestRow = {
   submitted_date: string
   added_by: string | null
   created_at: string
+  // Added by 20261113_add_leave_decision_fields.sql (may be missing until it's run)
+  admin_notes?: string | null
+  decided_by?: string | null
+  decided_at?: string | null
 }
 
 export type DocumentRow = {
