@@ -88,6 +88,7 @@ import { EditDocumentModal } from "./edit-document-modal"
 import { DeleteConfirmationDialog } from "./delete-confirmation-dialog"
 import { ImportDocumentsModal } from "./import-documents-modal"
 import { DocumentDateDialog, RenewDocumentsDialog, useRefreshDocuments } from "./document-tracker-dialogs"
+import { EmployeePanel } from "./employee-profile"
 import { TablePagination } from "./table-pagination"
 import { useApp } from "./app-provider"
 import { Avatar, EmptyState, ErrorState, ListSkeleton, PageHeader, StatCard, plural } from "./page-kit"
@@ -172,6 +173,13 @@ export function DocumentTrackerTable() {
   const sort: Sort = isSort(params.get("sort")) ? (params.get("sort") as Sort) : "urgent"
   const status: StatusFilter = toStatusFilter(params.get("status"))
   const q = params.get("q") ?? ""
+  // An employee's profile opens in a panel on this page (?person=<id>)
+  const person = params.get("person")
+  const personHref = (id: string) => {
+    const next = new URLSearchParams(params.toString())
+    next.set("person", id)
+    return `?${next.toString()}`
+  }
   const branch = params.get("branch") || "all"
 
   const setParam = (updates: Record<string, string | null>) => {
@@ -450,7 +458,8 @@ export function DocumentTrackerTable() {
       <div className="min-w-0">
         <p className="flex flex-wrap items-center gap-1.5">
           <Link
-            href={`/dashboard/employees/${doc.employeeId}`}
+            href={personHref(doc.employeeId)}
+            scroll={false}
             className="truncate text-left font-semibold text-foreground hover:underline focus-visible:underline focus-visible:outline-none"
           >
             {doc.employeeName || "—"}
@@ -495,7 +504,7 @@ export function DocumentTrackerTable() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem asChild>
-          <Link href={`/dashboard/employees/${doc.employeeId}`}>
+          <Link href={personHref(doc.employeeId)} scroll={false}>
             <UserRound />
             Open profile
           </Link>
@@ -1324,6 +1333,7 @@ export function DocumentTrackerTable() {
         cancelLabel="Cancel"
       />
       <ImportDocumentsModal open={isImportModalOpen} onOpenChange={setIsImportModalOpen} />
+      <EmployeePanel id={person} onClose={() => setParam({ person: null })} />
     </div>
   )
 }

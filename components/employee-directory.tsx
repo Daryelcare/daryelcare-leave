@@ -73,6 +73,7 @@ import {
   type PeopleShow,
 } from "@/lib/employee-directory"
 import { AddEmployeeModal } from "./add-employee-modal"
+import { EmployeePanel } from "./employee-profile"
 import { EditEmployeeModal } from "./edit-employee-modal"
 import { ImportEmployeesModal } from "./import-employees-modal"
 import { DeleteConfirmationDialog } from "./delete-confirmation-dialog"
@@ -190,11 +191,19 @@ export function EmployeeDirectory() {
     router.replace(qs ? `?${qs}` : "?", { scroll: false })
   }
 
-  // Old links (?employee=<id>) go straight to the profile
+  // The open profile panel lives in the address too (?person=<id>); old
+  // ?employee=<id> links open it
+  const person = params.get("person")
   useEffect(() => {
     const id = params.get("employee")
-    if (id) router.replace(`/dashboard/employees/${encodeURIComponent(id)}`)
-  }, [params, router])
+    if (id) setParam({ employee: null, person: id })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params])
+  const personHref = (id: string) => {
+    const next = new URLSearchParams(params.toString())
+    next.set("person", id)
+    return `?${next.toString()}`
+  }
 
   const [search, setSearch] = useState(q)
   useEffect(() => {
@@ -357,7 +366,7 @@ export function EmployeeDirectory() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem asChild>
-          <Link href={`/dashboard/employees/${e.id}`}>
+          <Link href={personHref(e.id)} scroll={false}>
             <UserRound />
             Open profile
           </Link>
@@ -395,7 +404,8 @@ export function EmployeeDirectory() {
       <div className="min-w-0">
         <p className="flex flex-wrap items-center gap-1.5">
           <Link
-            href={`/dashboard/employees/${e.id}`}
+            href={personHref(e.id)}
+            scroll={false}
             className="truncate font-semibold text-foreground hover:underline focus-visible:underline focus-visible:outline-none"
           >
             {e.name}
@@ -927,6 +937,7 @@ export function EmployeeDirectory() {
       <AddEmployeeModal open={addOpen} onOpenChange={setAddOpen} />
       <ImportEmployeesModal open={importOpen} onOpenChange={setImportOpen} />
       {editId && <EditEmployeeModal employeeId={editId} isOpen onClose={() => setEditId(null)} />}
+      <EmployeePanel id={person} onClose={() => setParam({ person: null })} />
     </div>
   )
 }

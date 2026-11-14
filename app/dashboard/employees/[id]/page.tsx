@@ -1,17 +1,7 @@
-import type { Metadata } from "next"
-import { Suspense } from "react"
-import { EmployeeProfile } from "@/components/employee-profile"
+import { redirect } from "next/navigation"
 
-export const metadata: Metadata = {
-  title: "Employee",
-  description: "One employee: details, leave and documents",
-}
-
+// Profiles open in a panel on the Employees page; old profile links land there
 export default async function EmployeeProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  return (
-    <Suspense>
-      <EmployeeProfile id={id} />
-    </Suspense>
-  )
+  redirect(`/dashboard/employees?person=${encodeURIComponent(id)}`)
 }

@@ -6,10 +6,8 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import {
-  ArrowLeft,
   CalendarDays,
   CalendarPlus,
   FilePlus2,
@@ -24,6 +22,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet"
 import { useToast } from "@/components/ui/use-toast"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
 import { formatDisplayDate, formatDisplayRange, todayUtc } from "@/lib/dates"
@@ -47,15 +46,15 @@ import { Avatar, EmptyState, ErrorState, Field, ListSkeleton, StatCard, plural }
 const TABS = ["overview", "leave", "documents"] as const
 type Tab = (typeof TABS)[number]
 
-export function EmployeeProfile({ id }: { id: string }) {
+/**
+ * One employee: details, leave and documents, with the actions you'd take.
+ * Shown in the right-hand panel from the Employees and Documents pages.
+ */
+export function EmployeeProfile({ id, onClose }: { id: string; onClose: () => void }) {
   const { toast } = useToast()
   const queryClient = useQueryClient()
-  const router = useRouter()
-  const params = useSearchParams()
-  const tab: Tab = (TABS as readonly string[]).includes(params.get("tab") || "")
-    ? (params.get("tab") as Tab)
-    : "overview"
-  const setTab = (t: string) => router.replace(t === "overview" ? "?" : `?tab=${t}`, { scroll: false })
+  const [tab, setTabState] = useState<Tab>("overview")
+  const setTab = (t: string) => setTabState((TABS as readonly string[]).includes(t) ? (t as Tab) : "overview")
 
   const employeeQuery = useQuery<Employee>({
     queryKey: ["employee", id],
@@ -148,7 +147,7 @@ export function EmployeeProfile({ id }: { id: string }) {
       await fetchWithAuth(`/api/employees/${id}`, { method: "DELETE" })
       toast({ title: `${employee?.name} deleted` })
       refresh()
-      router.push("/dashboard/employees")
+      onClose()
     } catch (err) {
       console.error("Couldn't delete:", err)
       toast({ title: "Couldn't delete", description: handleApiError(err), variant: "destructive" })
@@ -158,6 +157,7 @@ export function EmployeeProfile({ id }: { id: string }) {
   if (employeeQuery.isLoading) {
     return (
       <div className="space-y-6">
+        <SheetTitle className="sr-only">Loading employee</SheetTitle>
         <ListSkeleton rows={2} />
         <ListSkeleton rows={4} />
       </div>
@@ -166,7 +166,7 @@ export function EmployeeProfile({ id }: { id: string }) {
   if (employeeQuery.isError || !employee?.id) {
     return (
       <div className="space-y-6">
-        <BackLink />
+        <SheetTitle className="sr-only">Employee</SheetTitle>
         <ErrorState
           title="Couldn't open this employee"
           message={employeeQuery.isError ? handleApiError(employeeQuery.error) : "They may have been deleted."}
@@ -180,20 +180,23 @@ export function EmployeeProfile({ id }: { id: string }) {
   const job = shownJobTitle(employee.jobTitle)
 
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="space-y-6">
       <div className="space-y-4">
-        <BackLink />
         {/* Header: who they are, and what you'd do next */}
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <Avatar name={employee.name} className="h-16 w-16 text-xl" />
-          <div className="min-w-0 flex-1">
-            <h1 className="flex flex-wrap items-center gap-2 font-display text-[28px] font-semibold leading-tight tracking-[-0.03em]">
-              {employee.name}
-              {leaver && <Badge variant="secondary">Left</Badge>}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {[job, employee.branch, employee.employeeCode].filter(Boolean).join(" · ")}
-            </p>
+        <header className="space-y-4 pr-8">
+          <div className="flex items-center gap-4">
+            <Avatar name={employee.name} className="h-14 w-14 text-lg" />
+            <div className="min-w-0 flex-1">
+              <SheetTitle asChild>
+                <h2 className="flex flex-wrap items-center gap-2 font-display text-[24px] font-semibold leading-tight tracking-[-0.03em]">
+                  {employee.name}
+                  {leaver && <Badge variant="secondary">Left</Badge>}
+                </h2>
+              </SheetTitle>
+              <SheetDescription className="text-sm text-muted-foreground">
+                {[job, employee.branch, employee.employeeCode].filter(Boolean).join(" · ")}
+              </SheetDescription>
+            </div>
           </div>
           <div className="flex flex-wrap gap-2">
             {!leaver && (
@@ -222,7 +225,7 @@ export function EmployeeProfile({ id }: { id: string }) {
       </div>
 
       {/* At a glance */}
-      <section aria-label="At a glance" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section aria-label="At a glance" className="grid grid-cols-2 gap-3">
         <StatCard
           label="Leave left"
           icon={CalendarDays}
@@ -503,18 +506,6 @@ export function EmployeeProfile({ id }: { id: string }) {
   )
 }
 
-function BackLink() {
-  return (
-    <Link
-      href="/dashboard/employees"
-      className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
-    >
-      <ArrowLeft className="h-4 w-4" />
-      Employees
-    </Link>
-  )
-}
-
 /** "NON-EU" → "Non-EU", as people say it */
 function friendlyStatus(status: string | null | undefined) {
   const s = (status || "").toUpperCase()
@@ -522,4 +513,15 @@ function friendlyStatus(status: string | null | undefined) {
   if (s === "EU") return "EU"
   if (s === "BRITISH") return "British"
   return status || "Not recorded"
+}
+
+/** The right-hand panel that holds an employee's profile */
+export function EmployeePanel({ id, onClose }: { id: string | null; onClose: () => void }) {
+  return (
+    <Sheet open={!!id} onOpenChange={(open) => !open && onClose()}>
+      <SheetContent side="right" className="w-full overflow-y-auto p-5 sm:max-w-[640px] sm:p-6">
+        {id && <EmployeeProfile key={id} id={id} onClose={onClose} />}
+      </SheetContent>
+    </Sheet>
+  )
 }
