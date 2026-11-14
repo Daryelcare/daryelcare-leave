@@ -188,3 +188,20 @@ export function yearRange(year: Pick<LeaveYear, "start" | "end">): string {
 export function isPastYear(year: Pick<LeaveYear, "end">, today: number): boolean {
   return year.end < today
 }
+
+/**
+ * The leave year a day falls in, using the organisation's stored periods (or
+ * the same start day and month for years outside them).
+ */
+export function leaveYearContaining(periods: StoredPeriod[], time: number): LeaveYear | undefined {
+  return buildLeaveYears(periods, [], time).find((y) => time >= y.start && time <= y.end)
+}
+
+/**
+ * Leave can't cross the end of a leave year (as in CarerHR): book each year's
+ * part separately. Returns the year the start falls in when the end is past it.
+ */
+export function crossesLeaveYearEnd(periods: StoredPeriod[], start: number, end: number): LeaveYear | null {
+  const year = leaveYearContaining(periods, start)
+  return year && end > year.end ? year : null
+}

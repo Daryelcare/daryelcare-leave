@@ -20,7 +20,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast"
 import { useLeaveTypes } from "@/hooks/use-leave-types"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
-import { inclusiveDays, localDateToUtc, parseDateToUtc, utcToLocalDate } from "@/lib/dates"
+import { inclusiveDays, localDateToUtc, parseDateToUtc, toUkDate, utcToLocalDate } from "@/lib/dates"
+import { type StoredPeriod, crossesLeaveYearEnd } from "@/lib/leave-years"
 import { shouldDeductFromBalance } from "@/lib/utils"
 import type { LeaveRequest } from "@/lib/types"
 
@@ -71,12 +72,20 @@ export function EditLeaveModal({ leave, open, onOpenChange }: EditLeaveModalProp
     return names
   }, [leaveTypes, leave])
 
+  // Leave can't cross the end of a leave year (the server checks this too)
+  const { data: periods = [] } = useQuery<StoredPeriod[]>({
+    queryKey: ["leavePeriods"],
+    queryFn: () => fetchWithAuth("/api/leave-periods"),
+    enabled: open,
+  })
+
   if (!leave) return null
 
   const start = startDate ? localDateToUtc(startDate) : null
   const end = endDate ? localDateToUtc(endDate) : null
   const datesValid = start !== null && end !== null && end >= start
   const duration = datesValid ? inclusiveDays(start, end) : 0
+  const crossesYear = datesValid ? crossesLeaveYearEnd(periods, start, end) : null
 
   // Same rule as the server: only approved Annual Leave / Working Holiday use the balance
   const counts = (t: string, days: number) => (leave.status === "Approved" && shouldDeductFromBalance(t) ? days : 0)
@@ -213,6 +222,16 @@ export function EditLeaveModal({ leave, open, onOpenChange }: EditLeaveModalProp
             </div>
           )}
 
+          {crossesYear && (
+            <div className="flex gap-2.5 rounded-xl border border-destructive/25 bg-danger-soft p-3 text-sm">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+              <span>
+                Leave can&apos;t cross the end of the leave year ({toUkDate(crossesYear.end)}). Keep it on or before{" "}
+                {toUkDate(crossesYear.end)}, and add the rest as a separate entry.
+              </span>
+            </div>
+          )}
+
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
 
@@ -220,7 +239,7 @@ export function EditLeaveModal({ leave, open, onOpenChange }: EditLeaveModalProp
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={isSaving || !type || !datesValid || unchanged}>
+          <Button onClick={handleSave} disabled={isSaving || !type || !datesValid || unchanged || !!crossesYear}>
             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save changes
           </Button>

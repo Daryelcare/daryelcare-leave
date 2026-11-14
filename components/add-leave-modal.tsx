@@ -28,6 +28,9 @@ import { useQuery } from "@tanstack/react-query"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useApp } from "./app-provider"
 import type { Employee } from "@/lib/types"
+import { EmployeePicker } from "./employee-picker"
+import { type StoredPeriod, crossesLeaveYearEnd } from "@/lib/leave-years"
+import { localDateToUtc, toUkDate } from "@/lib/dates"
 
 // Form schema
 const formSchema = z.object({
@@ -64,6 +67,16 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
     pendingDays: number
     availableDays: number
   } | null>(null)
+
+  // Recorded leave is approved straight away unless saved as pending (as in CarerHR)
+  const [saveAs, setSaveAs] = useState<"Approved" | "Pending">("Approved")
+
+  // Leave can't cross the end of a leave year: book each year's part separately
+  const { data: periods = [] } = useQuery<StoredPeriod[]>({
+    queryKey: ["leavePeriods"],
+    queryFn: () => fetchWithAuth("/api/leave-periods"),
+    enabled: open,
+  })
 
   // Add state for exceeding balance warning and confirmation
   const [exceedingBalanceConfirmCount, setExceedingBalanceConfirmCount] = useState(0)
@@ -291,12 +304,16 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
     duration = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1 // +1 to include both start and end days
   }
 
+  const crossesYear =
+    startDate && endDate ? crossesLeaveYearEnd(periods, localDateToUtc(startDate), localDateToUtc(endDate)) : null
+
   // Check if the requested leave exceeds the employee's remaining days
   // This now applies to ALL leave types, not just Annual
   const isExceedingBalance = selectedEmployee && duration > selectedEmployee.availableDays
 
   // Handle form submission
   const onSubmit = async (data: FormValues) => {
+    if (crossesYear) return
     // If there's an overlap warning and the confirm count is less than 3
     if (overlapWarning && overlapConfirmCount < 2) {
       // Increment the confirm count
@@ -335,7 +352,7 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
         endDate: format(data.endDate, "dd/MM/yyyy"),
         duration: duration,
         reason: data.reason,
-        status: "Approved",
+        status: saveAs,
         addedBy: user?.name || "", // Use the user's name instead of "System"
       }
 
@@ -345,9 +362,13 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
       })
 
       toast({
-        title: "Success",
-        description: "Leave request added successfully",
+        title: saveAs === "Pending" ? "Leave saved as pending" : "Leave added",
+        description:
+          saveAs === "Pending"
+            ? "It's waiting for a decision on the Leave page."
+            : `${selectedEmployee.name}'s leave is approved.`,
       })
+      setSaveAs("Approved")
 
       // Reset form
       form.reset()
@@ -360,6 +381,7 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
 
       // Refresh leave requests list
       queryClient.invalidateQueries({ queryKey: ["leaveRequests"] })
+      queryClient.invalidateQueries({ queryKey: ["leaveRequestsAll"] })
       queryClient.invalidateQueries({ queryKey: ["employees"] })
       queryClient.invalidateQueries({ queryKey: ["dashboard"] })
       queryClient.invalidateQueries({ queryKey: ["leave-calendar"] })
@@ -401,6 +423,7 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
   // Get the submit button text based on warnings and confirm counts
   const getSubmitButtonText = () => {
     if (isSubmitting) return "Saving…"
+    if (saveAs === "Pending" && !overlapWarning && !isExceedingBalance) return "Save as pending"
 
     if (overlapWarning) {
       if (overlapConfirmCount === 0) {
@@ -441,10 +464,17 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
         onOpenChange(newOpen)
       }}
     >
-      <DialogContent className="sm:max-w-[550px]">
+      <DialogContent
+        className="sm:max-w-[550px]"
+        // Focus the dialog itself, so the employee list doesn't pop open on arrival
+        onOpenAutoFocus={(e) => {
+          e.preventDefault()
+          ;(e.currentTarget as HTMLElement | null)?.focus()
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Add leave</DialogTitle>
-          <DialogDescription>Record approved leave for an employee.</DialogDescription>
+          <DialogDescription>Record leave for an employee: approve it now or save it as pending.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -454,20 +484,15 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Employee</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingEmployees}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select an employee" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className="max-h-[300px]">
-                      {employees.map((employee) => (
-                        <SelectItem key={employee.id} value={employee.id}>
-                          {employee.name} ({employee.branch})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <EmployeePicker
+                      employees={employees}
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={isLoadingEmployees}
+                      placeholder={isLoadingEmployees ? "Loading employees…" : "Search by name, branch or code"}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -584,6 +609,54 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
               </Alert>
             )}
 
+            {crossesYear && (
+              <Alert variant="destructive">
+                <AlertTriangle />
+                <AlertTitle>Crosses the end of the leave year</AlertTitle>
+                <AlertDescription>
+                  Leave can&apos;t run past {toUkDate(crossesYear.end)}. Add it as two entries: one up to{" "}
+                  {toUkDate(crossesYear.end)} and one from the next day.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <div className="space-y-1.5">
+              <p className="text-sm font-medium">Status</p>
+              <div
+                role="radiogroup"
+                aria-label="Save as"
+                className="grid grid-cols-2 gap-1 rounded-xl bg-secondary p-1"
+              >
+                {(
+                  [
+                    { value: "Approved", label: "Approve now" },
+                    { value: "Pending", label: "Save as pending" },
+                  ] as const
+                ).map((o) => (
+                  <button
+                    key={o.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={saveAs === o.value}
+                    onClick={() => setSaveAs(o.value)}
+                    className={cn(
+                      "h-9 rounded-lg text-sm font-semibold transition-colors",
+                      saveAs === o.value
+                        ? "bg-card text-foreground shadow-raised"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {saveAs === "Approved"
+                  ? "Approved leave uses the balance straight away (Annual Leave and Working Holiday)."
+                  : "Pending leave waits for a decision and only uses the balance once approved."}
+              </p>
+            </div>
+
             <FormField
               control={form.control}
               name="reason"
@@ -610,7 +683,7 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
               </Button>
               <Button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !!crossesYear}
                 variant={overlapWarning && overlapConfirmCount >= 2 ? "destructive" : "default"}
                 className={cn(
                   ((overlapWarning && overlapConfirmCount < 2) ||

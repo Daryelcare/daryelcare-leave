@@ -1,6 +1,8 @@
-
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
+import { canAccessBranch, requireUser } from "@/lib/server-auth"
+import { leaveYearBoundaryError } from "@/lib/leave-server"
+import { parseDateToUtc } from "@/lib/dates"
 
 // Helper function to check if a leave type should affect the days balance
 function shouldDeductFromBalance(leaveType: string): boolean {
@@ -186,6 +188,9 @@ export async function GET(request: Request) {
       reason: req.reason || undefined,
       submittedDate: req.submitted_date,
       addedBy: req.added_by || "System",
+      adminNotes: req.admin_notes ?? null,
+      decidedBy: req.decided_by ?? null,
+      decidedAt: req.decided_at ?? null,
     }))
 
     return NextResponse.json(leaveRequests)
@@ -197,12 +202,40 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const auth = await requireUser(request)
+    if (auth.response) return auth.response
+
     const data = await request.json()
 
     // Validate required fields
     if (!data.employeeId || !data.type || !data.startDate || !data.endDate) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
+    // The employee's real branch decides who may add leave for them
+    const { data: employee, error: empError } = await supabase
+      .from("employees")
+      .select("days_remaining, branch, name")
+      .eq("id", data.employeeId)
+      .single()
+    if (empError || !employee) {
+      return NextResponse.json({ error: "Employee not found" }, { status: 404 })
+    }
+    if (!canAccessBranch(auth.user, employee.branch)) {
+      return NextResponse.json({ error: "You can only add leave for your own branches" }, { status: 403 })
+    }
+
+    // Recorded leave is approved straight away unless saved as pending
+    const status = data.status === "Pending" ? "Pending" : "Approved"
+    const startTime = parseDateToUtc(data.startDate)
+    const endTime = parseDateToUtc(data.endDate)
+    if (startTime === null || endTime === null || endTime < startTime) {
+      return NextResponse.json(
+        { error: "Give a valid start and end date, with the end on or after the start" },
+        { status: 400 },
+      )
+    }
+    const boundary = await leaveYearBoundaryError(startTime, endTime)
+    if (boundary) return NextResponse.json({ error: boundary }, { status: 400 })
 
     // Validate leave request against employee's remaining days
     // Now selective based on leave type
@@ -210,15 +243,6 @@ export async function POST(request: Request) {
     if (!validation.valid) {
       return NextResponse.json({ error: validation.message }, { status: 400 })
     }
-
-    // Get the employee's current remaining days
-    const { data: employee, error: empError } = await supabase
-      .from("employees")
-      .select("days_remaining")
-      .eq("id", data.employeeId)
-      .single()
-
-    if (empError) throw empError
 
     // Get all pending leave requests for this employee that should affect the balance
     const { data: pendingRequests, error: pendingError } = await supabase
@@ -239,25 +263,23 @@ export async function POST(request: Request) {
 
     // Calculate what will remain after this request and all pending requests (if approved)
     const availableDays = employee.days_remaining - pendingDays
-    
+
     // Only reduce remaining days if this leave type should deduct from balance
-    const remainingDays = shouldDeductFromBalance(data.type) 
-      ? availableDays - data.duration 
-      : availableDays
+    const remainingDays = shouldDeductFromBalance(data.type) ? availableDays - data.duration : availableDays
 
     // Insert into Supabase
     const { data: newRequest, error } = await supabase
       .from("leave_requests")
       .insert({
         employee_id: data.employeeId,
-        employee_name: data.employee,
-        branch: data.branch,
+        employee_name: employee.name ?? data.employee,
+        branch: employee.branch,
         type: data.type,
         start_date: data.startDate,
         end_date: data.endDate,
         duration: data.duration,
         remaining: remainingDays,
-        status: "Approved",
+        status,
         reason: data.reason,
         submitted_date: new Date().toLocaleDateString("en-GB"),
         added_by: data.addedBy || "System",
@@ -269,8 +291,8 @@ export async function POST(request: Request) {
       throw error
     }
 
-    // Update the employee's leave balance ONLY if this leave type should deduct from balance
-    if (shouldDeductFromBalance(data.type)) {
+    // Update the employee's balance only for approved leave of a type that uses it
+    if (status === "Approved" && shouldDeductFromBalance(data.type)) {
       const { data: employeeData, error: empDataError } = await supabase
         .from("employees")
         .select("days_taken, days_remaining")
