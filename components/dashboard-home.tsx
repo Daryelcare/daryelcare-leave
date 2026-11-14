@@ -3,14 +3,19 @@
 import { useState, type ReactNode } from "react"
 import { leaveTypeColour } from "@/lib/leave-type-colour"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { AddLeaveModal } from "./add-leave-modal"
+import { AddDocumentModal } from "./add-document-modal"
 import { useQuery } from "@tanstack/react-query"
 import {
   ArrowRight,
   CalendarDays,
   CalendarRange,
+  FilePlus2,
   FileWarning,
   PartyPopper,
   Plane,
+  Plus,
   Scale,
   ShieldCheck,
 } from "lucide-react"
@@ -88,6 +93,10 @@ export function DashboardHome() {
   const [branch, setBranch] = useState<string>("all")
   const [range, setRange] = useState<"today" | "week">("today")
   const { data: allBranches = [] } = useBranches()
+  const router = useRouter()
+  const [addLeave, setAddLeave] = useState(false)
+  const [addDocument, setAddDocument] = useState(false)
+  const canManage = isAdmin || myBranches.length > 0
 
   const branchOptions = isAdmin ? allBranches.map((b) => b.name) : myBranches
   const showBranchPicker = branchOptions.length > 1
@@ -97,6 +106,25 @@ export function DashboardHome() {
     queryFn: () => fetchWithAuth(`/api/dashboard?branch=${encodeURIComponent(branch)}`),
     enabled: !!user,
     refetchInterval: 5 * 60 * 1000,
+  })
+  // Leave waiting for a decision: only shown when there is some
+  const { data: pending = [] } = useQuery<
+    {
+      id: string
+      employee: string
+      branch: string
+      type: string
+      startDate: string
+      endDate: string
+      duration: number
+    }[]
+  >({
+    queryKey: ["leaveRequests", "pending", branch],
+    queryFn: () =>
+      fetchWithAuth(
+        `/api/leave-requests?status=Pending${branch !== "all" ? `&branch=${encodeURIComponent(branch)}` : ""}`,
+      ),
+    enabled: !!user,
   })
 
   const typeColor = (type: string) => leaveTypeColour(type)
@@ -142,6 +170,18 @@ export function DashboardHome() {
                 Leave calendar
               </Link>
             </Button>
+            {isAdmin && (
+              <Button variant="outline" onClick={() => setAddDocument(true)} className="hidden sm:inline-flex">
+                <FilePlus2 />
+                Add document
+              </Button>
+            )}
+            {canManage && (
+              <Button onClick={() => setAddLeave(true)}>
+                <Plus />
+                Add leave
+              </Button>
+            )}
           </>
         }
       />
@@ -158,6 +198,8 @@ export function DashboardHome() {
           loading={isLoading}
           value={data?.offToday.length ?? "–"}
           detail={data ? (data.offToday.length === 1 ? "person on leave" : "people on leave") : undefined}
+          onClick={() => router.push("/dashboard/leave-management?status=Approved&dates=today&year=all")}
+          actionLabel="Show who is off today"
         />
         <StatCard
           label="Off this week"
@@ -165,6 +207,8 @@ export function DashboardHome() {
           loading={isLoading}
           value={peopleOffThisWeek}
           detail={data ? `${formatDay(data.weekStart)} – ${formatDay(data.weekEnd)}` : undefined}
+          onClick={() => router.push(LEAVE_CALENDAR_HREF)}
+          actionLabel="Open the team calendar"
         />
         {isAdmin && (
           <StatCard
@@ -172,7 +216,9 @@ export function DashboardHome() {
             icon={FileWarning}
             loading={isLoading}
             value={documentItems.length}
-            tone={rtwExpired ? "danger" : documentItems.length ? "warning" : "success"}
+            tone={rtwExpired ? "danger" : documentItems.length ? "warning" : "default"}
+            onClick={() => router.push("/dashboard/document-tracker?status=rtw_action")}
+            actionLabel="Show whose right to work needs action"
             detail={
               data?.documents
                 ? `${rtwExpired} expired · ${documentItems.length - rtwExpired} due in ${data.documents.warningDays}d`
@@ -185,7 +231,9 @@ export function DashboardHome() {
           icon={Scale}
           loading={isLoading}
           value={balanceItems.length}
-          tone={data?.balances.negative.length ? "danger" : balanceItems.length ? "warning" : "success"}
+          tone={data?.balances.negative.length ? "danger" : balanceItems.length ? "warning" : "default"}
+          onClick={() => router.push("/dashboard/employees?sort=leave_low")}
+          actionLabel="Show who has least leave left"
           className={cn(!isAdmin && "col-span-2 lg:col-span-1")}
           detail={data ? `${data.balances.negative.length} negative · ${data.balances.low.length} low` : undefined}
         />
@@ -240,6 +288,39 @@ export function DashboardHome() {
 
         {/* Needs attention */}
         <div className="space-y-4 sm:space-y-6 lg:col-span-2">
+          {pending.length > 0 && (
+            <section className="surface overflow-hidden">
+              <PanelHeading
+                title="Needs a decision"
+                description="Leave waiting to be approved or rejected"
+                count={pending.length}
+              />
+              <ul className="divide-y divide-border/70 border-t border-border/70">
+                {pending.slice(0, LIST_LIMIT).map((l) => (
+                  <li key={l.id}>
+                    <Link
+                      href={`/dashboard/leave-management?request=${l.id}`}
+                      className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-muted/50 sm:px-6"
+                    >
+                      <Avatar name={l.employee} className="h-8 w-8 text-xs" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold">{l.employee}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {l.type} · {formatDisplayRange(l.startDate, l.endDate)}
+                        </p>
+                      </div>
+                      <Badge dot variant="warning" className="shrink-0">
+                        Pending
+                      </Badge>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <PanelFooter href="/dashboard/leave-management?status=Pending&year=all">
+                {pending.length > LIST_LIMIT ? `${pending.length - LIST_LIMIT} more to decide` : "Open pending leave"}
+              </PanelFooter>
+            </section>
+          )}
           {isAdmin && (
             <section className="surface overflow-hidden">
               <PanelHeading
@@ -348,6 +429,9 @@ export function DashboardHome() {
           </section>
         </div>
       </div>
+
+      <AddLeaveModal open={addLeave} onOpenChange={setAddLeave} />
+      {isAdmin && <AddDocumentModal open={addDocument} onOpenChange={setAddDocument} />}
     </div>
   )
 }
@@ -380,10 +464,13 @@ function LeaveRow({ leave, color }: { leave: LeaveEntry; color: string }) {
             {leave.type} · {leave.branch}
           </span>
         </p>
+        {/* Phones: the dates go under the name, so the name keeps its room */}
+        <p className="mt-0.5 text-xs font-medium tabular text-foreground/80 sm:hidden">
+          {formatDisplayRange(leave.startDate, leave.endDate)} · {plural(leave.duration, "day")}
+        </p>
       </div>
-      <div className="shrink-0 text-right">
-        <p className="hidden text-sm font-medium tabular sm:block">{formatRange(leave)}</p>
-        <p className="text-sm font-medium tabular sm:hidden">{formatDisplayRange(leave.startDate, leave.endDate)}</p>
+      <div className="hidden shrink-0 text-right sm:block">
+        <p className="text-sm font-medium tabular">{formatRange(leave)}</p>
         <p className="text-xs text-muted-foreground">{plural(leave.duration, "day")}</p>
       </div>
     </li>
