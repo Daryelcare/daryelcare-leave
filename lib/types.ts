@@ -32,6 +32,10 @@ export interface LeaveRequest {
   remaining: number | null
   submittedDate?: string
   addedBy: string
+  /** The admin's note on the last decision (approve / reject) */
+  adminNotes?: string | null
+  decidedBy?: string | null
+  decidedAt?: string | null
 }
 
 export type UserRole = "admin" | "normal"

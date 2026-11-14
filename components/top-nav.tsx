@@ -44,26 +44,26 @@ export function TopNav() {
   }, [pathname])
 
   return (
-    <header className="sticky top-0 z-30 px-4 pt-2 sm:px-6 sm:pt-3 lg:px-10">
+    <header className="sticky top-0 z-30 px-4 pt-2 sm:px-6 lg:px-10">
       <div
         className={cn(
-          "mx-auto flex h-12 max-w-[1360px] items-center gap-3 rounded-full border border-border/70 bg-card/85 pl-3.5 pr-1.5 backdrop-blur-xl transition-shadow duration-300 supports-[backdrop-filter]:bg-card/75 sm:h-[52px] sm:pl-4",
+          "mx-auto flex h-11 max-w-[1360px] items-center gap-3 rounded-full border border-border/70 bg-card/85 pl-3 pr-1 backdrop-blur-xl transition-shadow duration-300 supports-[backdrop-filter]:bg-card/75 sm:pl-3.5",
           scrolled ? "shadow-float" : "shadow-raised",
         )}
       >
         <Link
           href="/dashboard"
           aria-label="DaryelCare home"
-          className="flex h-9 min-w-9 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30"
+          className="flex h-8 min-w-8 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30"
         >
-          <Image src="/images/daryelcare-mark.png" alt="" width={26} height={26} priority className="lg:hidden" />
+          <Image src="/images/daryelcare-mark.png" alt="" width={22} height={22} priority className="lg:hidden" />
           <Image
             src="/images/daryelcare-wordmark.png"
             alt=""
             width={150}
             height={26}
             priority
-            className="hidden h-[20px] w-auto lg:block"
+            className="hidden h-[17px] w-auto lg:block"
           />
         </Link>
 
@@ -92,7 +92,7 @@ export function TopNav() {
                         href={item.href}
                         aria-current={active ? "page" : undefined}
                         className={cn(
-                          "flex h-8 items-center whitespace-nowrap rounded-full px-2.5 text-sm font-medium transition-colors duration-150 lg:px-3.5",
+                          "flex h-7 items-center whitespace-nowrap rounded-full px-2.5 text-[13px] font-medium transition-colors duration-150 lg:px-3",
                           "outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30",
                           active
                             ? "bg-primary-soft font-semibold text-primary"
@@ -130,12 +130,12 @@ function AccountMenu() {
       <DropdownMenuTrigger asChild>
         <button
           aria-label="Account menu"
-          className="flex h-10 shrink-0 items-center gap-2 rounded-full p-1 outline-none transition-colors hover:bg-secondary focus-visible:ring-[3px] focus-visible:ring-ring/30 sm:pr-2.5"
+          className="flex h-9 shrink-0 items-center gap-2 rounded-full p-1 outline-none transition-colors hover:bg-secondary focus-visible:ring-[3px] focus-visible:ring-ring/30 sm:pr-2"
         >
-          <Avatar name={user?.name} className="h-8 w-8 text-xs" />
+          <Avatar name={user?.name} className="h-7 w-7 text-[11px]" />
           <span className="hidden min-w-0 max-w-[140px] text-left xl:block">
-            <span className="block truncate text-[13px] font-semibold leading-4">{user?.name || "Account"}</span>
-            <span className="block truncate text-[11px] leading-4 text-muted-foreground">{branchSummary}</span>
+            <span className="block truncate text-xs font-semibold leading-4">{user?.name || "Account"}</span>
+            <span className="block truncate text-[11px] leading-3 text-muted-foreground">{branchSummary}</span>
           </span>
           <ChevronDown className="hidden h-3.5 w-3.5 text-muted-foreground sm:block" />
         </button>

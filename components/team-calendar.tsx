@@ -6,7 +6,7 @@
 // by leave type. Approved leave is a solid bar; pending leave is a pale, dashed
 // version of the same colour. Rejected leave is never shown.
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { AlertTriangle, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react"
 import { Input } from "@/components/ui/input"
@@ -73,7 +73,20 @@ function textOn(hex: string) {
 }
 const tint = (hex: string, alpha = "1f") => (/^#[0-9a-f]{6}$/i.test(hex) ? `${hex}${alpha}` : hex)
 
-export function TeamCalendar({ onOpen }: { onOpen?: (id: string) => void }) {
+export function TeamCalendar({
+  onOpen,
+  actions,
+  typeFilter = "all",
+  search = "",
+}: {
+  onOpen?: (id: string) => void
+  /** Page actions (view switch, Who's on leave, Add leave) shown in the controls row */
+  actions?: ReactNode
+  /** The list's leave type filter, so both views show the same leave */
+  typeFilter?: string
+  /** The list's employee search */
+  search?: string
+}) {
   const { user } = useApp()
   const isAdmin = user?.role === "admin"
   const myBranches = user?.branches || []
@@ -123,7 +136,14 @@ export function TeamCalendar({ onOpen }: { onOpen?: (id: string) => void }) {
   // One row per leave entry, its bar clamped to this month
   const rows = useMemo(() => {
     return (data?.leaves || [])
-      .filter((l) => l.status !== "Rejected" && l.start <= to && l.end >= from)
+      .filter(
+        (l) =>
+          l.status !== "Rejected" &&
+          l.start <= to &&
+          l.end >= from &&
+          (typeFilter === "all" || l.type === typeFilter) &&
+          (!search.trim() || l.employeeName.toLowerCase().includes(search.trim().toLowerCase())),
+      )
       .sort((a, b) => a.start.localeCompare(b.start) || a.employeeName.localeCompare(b.employeeName))
       .map((l) => {
         const startDay = Number((l.start < from ? from : l.start).slice(8, 10))
@@ -141,7 +161,7 @@ export function TeamCalendar({ onOpen }: { onOpen?: (id: string) => void }) {
           label: pending ? `${l.type} (pending)` : l.type,
         }
       })
-  }, [data, from, to, numDays, dayPct])
+  }, [data, from, to, numDays, dayPct, typeFilter, search])
 
   // Branches with `threshold` or more people off (approved leave) on each day
   const busyByDay = useMemo(() => {
@@ -238,6 +258,11 @@ export function TeamCalendar({ onOpen }: { onOpen?: (id: string) => void }) {
             </button>
           )}
         </div>
+        {actions && (
+          <div className="flex w-full flex-wrap items-center gap-2 lg:ml-2 lg:w-auto [&>*]:flex-1 lg:[&>*]:flex-none">
+            {actions}
+          </div>
+        )}
       </div>
 
       {/* Branch, warning level and legend */}
