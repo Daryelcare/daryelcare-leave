@@ -13,8 +13,7 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   UserRound,
-  Users,
-} from "lucide-react"
+  Users, Stethoscope } from "lucide-react"
 
 // One place that defines the app's navigation, used by the top bar, the
 // mobile tab bar and the page titles in the header.
@@ -108,7 +107,7 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
   {
     id: "leave-types",
     title: "Leave types",
-    description: "The kinds of leave that can be recorded, and their colour on the calendar.",
+    description: "The kinds of leave that can be recorded. Each gets a calm colour of its own automatically.",
     icon: Palette,
     group: "Organisation",
     adminOnly: true,
@@ -116,8 +115,16 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
   {
     id: "leave-periods",
     title: "Leave periods",
-    description: "Each leave year runs between two dates. Starting a new one resets active employees to 28 days.",
+    description: "Each leave year runs between two dates. Starting a new one gives everyone 28 days, less leave already taken in it.",
     icon: CalendarCheck2,
+    group: "Organisation",
+    adminOnly: true,
+  },
+  {
+    id: "data-health",
+    title: "Data health",
+    description: "Problems in your records that make screens and reports wrong, and one-click tidy-ups.",
+    icon: Stethoscope,
     group: "Organisation",
     adminOnly: true,
   },

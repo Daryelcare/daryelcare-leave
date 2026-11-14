@@ -293,6 +293,4 @@ export function Field({ label, children, className }: { label: string; children:
 }
 
 /** "1 day" / "3 days" */
-export function plural(count: number, one: string, many = `${one}s`) {
-  return `${count} ${Math.abs(count) === 1 ? one : many}`
-}
+export { plural } from "@/lib/plural"

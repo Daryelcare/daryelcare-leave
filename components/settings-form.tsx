@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils"
 import { UserManagementTable } from "./user-management-table"
 import { BranchManagementTable } from "./branch-management-table"
 import { LeavePeriodManager } from "./leave-period-manager"
+import { DataHealth } from "./data-health"
 import { AdminSettings } from "./admin-settings"
 import { Avatar, Field, PageHeader, SectionHeader } from "./page-kit"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -240,6 +241,8 @@ export function SettingsForm() {
         return <LeaveTypeManagementTable />
       case "leave-periods":
         return <LeavePeriodManager />
+      case "data-health":
+        return <DataHealth />
       case "advanced":
         return (
           <div className="space-y-4">

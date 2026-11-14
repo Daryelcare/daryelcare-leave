@@ -8,6 +8,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { createPortal } from "react-dom"
+import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
 import {
@@ -86,7 +87,6 @@ import { AddDocumentModal } from "./add-document-modal"
 import { EditDocumentModal } from "./edit-document-modal"
 import { DeleteConfirmationDialog } from "./delete-confirmation-dialog"
 import { ImportDocumentsModal } from "./import-documents-modal"
-import { EmployeeDetailsModal } from "./employee-details-modal"
 import { DocumentDateDialog, RenewDocumentsDialog, useRefreshDocuments } from "./document-tracker-dialogs"
 import { TablePagination } from "./table-pagination"
 import { useApp } from "./app-provider"
@@ -206,7 +206,6 @@ export function DocumentTrackerTable() {
   const [deleteTargets, setDeleteTargets] = useState<TrackerDocument[]>([])
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
   const [renewOpen, setRenewOpen] = useState(false)
-  const [detailsFor, setDetailsFor] = useState<string | null>(null)
   const [isExporting, setIsExporting] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [page, setPage] = useState(1)
@@ -450,12 +449,12 @@ export function DocumentTrackerTable() {
       <Avatar name={doc.employeeName} />
       <div className="min-w-0">
         <p className="flex flex-wrap items-center gap-1.5">
-          <button
-            onClick={() => setDetailsFor(doc.employeeId)}
+          <Link
+            href={`/dashboard/employees/${doc.employeeId}`}
             className="truncate text-left font-semibold text-foreground hover:underline focus-visible:underline focus-visible:outline-none"
           >
             {doc.employeeName || "—"}
-          </button>
+          </Link>
           {doc.isSponsored && (
             <Badge variant="secondary" className="px-2 text-[11px] leading-[18px]">
               Sponsored
@@ -495,9 +494,11 @@ export function DocumentTrackerTable() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setDetailsFor(doc.employeeId)}>
-          <UserRound />
-          View employee
+        <DropdownMenuItem asChild>
+          <Link href={`/dashboard/employees/${doc.employeeId}`}>
+            <UserRound />
+            Open profile
+          </Link>
         </DropdownMenuItem>
         {doc.noRecord ? (
           <DropdownMenuItem onClick={() => setAddFor({ employeeId: doc.employeeId })}>
@@ -1323,7 +1324,6 @@ export function DocumentTrackerTable() {
         cancelLabel="Cancel"
       />
       <ImportDocumentsModal open={isImportModalOpen} onOpenChange={setIsImportModalOpen} />
-      {detailsFor && <EmployeeDetailsModal employeeId={detailsFor} isOpen onClose={() => setDetailsFor(null)} />}
     </div>
   )
 }

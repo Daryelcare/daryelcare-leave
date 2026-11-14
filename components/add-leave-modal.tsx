@@ -48,9 +48,11 @@ type FormValues = z.infer<typeof formSchema>
 interface AddLeaveModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** Start with this employee chosen (e.g. from their profile) */
+  initialEmployeeId?: string
 }
 
-export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
+export function AddLeaveModal({ open, onOpenChange, initialEmployeeId }: AddLeaveModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
   const queryClient = useQueryClient()
@@ -145,6 +147,11 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
   const employees = useMemo(() => employeesResponse?.data || [], [employeesResponse])
 
   // Watch for employee ID changes to update selected employee
+  // Opened for a particular employee: choose them
+  useEffect(() => {
+    if (open && initialEmployeeId) form.setValue("employeeId", initialEmployeeId)
+  }, [open, initialEmployeeId, form])
+
   const employeeId = form.watch("employeeId")
 
   useEffect(() => {

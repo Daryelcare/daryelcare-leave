@@ -93,6 +93,12 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     if (error) {
       throw error
     }
+    // Their documents record follows a branch move, so it shows in the right place
+    const { error: docError } = await supabase
+      .from("documents")
+      .update({ branch: updatedEmployee.branch, employee_name: updatedEmployee.name })
+      .eq("employee_id", id)
+    if (docError) console.error("Couldn't update the documents record with the employee:", docError)
 
     // Transform to match frontend types
     const transformedEmployee = {
