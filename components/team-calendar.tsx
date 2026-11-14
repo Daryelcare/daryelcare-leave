@@ -353,7 +353,7 @@ export function TeamCalendar({
             </span>
           )}
         </div>
-        <div className="grid grid-cols-2 gap-2.5 sm:flex sm:items-end">
+        <div className="grid gap-2.5 min-[400px]:grid-cols-2 sm:flex sm:items-end">
           {branchOptions.length > 1 && (
             <div className="space-y-1.5">
               <Label htmlFor="calendar-branch" className="text-xs text-muted-foreground">
@@ -374,7 +374,7 @@ export function TeamCalendar({
               </Select>
             </div>
           )}
-          <div className={cn("space-y-1.5", branchOptions.length <= 1 && "col-span-2")}>
+          <div className={cn("min-w-0 space-y-1.5", branchOptions.length <= 1 && "min-[400px]:col-span-2")}>
             <Label htmlFor="calendar-threshold" className="text-xs text-muted-foreground">
               Warn when off in a branch
             </Label>
