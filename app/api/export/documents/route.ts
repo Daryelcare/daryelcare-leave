@@ -3,14 +3,18 @@ import { supabase } from "@/lib/supabase"
 import { matchesDocumentStatus, withLiveDaysLeft } from "@/lib/document-status"
 import * as XLSX from "xlsx"
 import type { EmployeeDocument } from "@/lib/types"
+import { allowedBranches, canAccessBranch, requireUser } from "@/lib/server-auth"
+import { safeSearch } from "@/lib/document-api"
 
 export async function POST(request: Request) {
   try {
+    const auth = await requireUser(request)
+    if (auth.response) return auth.response
     const formData = await request.formData()
     const format = formData.get("format") as string
     const branch = formData.get("branch") as string
     const status = formData.get("status") as string
-    const search = formData.get("search") as string
+    const search = safeSearch((formData.get("search") as string) || "")
     const sortColumn = (formData.get("sortColumn") as string) || "employee_name"
     const sortOrder = (formData.get("sortOrder") as string) || "asc"
 
@@ -18,8 +22,14 @@ export async function POST(request: Request) {
     let query = supabase.from("documents").select("*")
 
     // Apply filters
+    // Only the branches this user may see
+    const allowed = allowedBranches(auth.user)
     if (branch && branch !== "all") {
+      if (!canAccessBranch(auth.user, branch))
+        return NextResponse.json({ error: "You can only export your own branches" }, { status: 403 })
       query = query.eq("branch", branch)
+    } else if (allowed) {
+      query = query.in("branch", allowed.length ? allowed : ["\u0000"])
     }
 
     if (search) {

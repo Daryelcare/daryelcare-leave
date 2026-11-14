@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useToast } from "@/components/ui/use-toast"
-import { handleApiError } from "@/lib/api-utils"
+import { authHeaders, handleApiError } from "@/lib/api-utils"
 import {
   Download,
   Upload,
@@ -176,6 +176,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
       // Get preview data
       const response = await fetch("/api/import/documents/preview", {
         method: "POST",
+        headers: await authHeaders(),
         body: formData,
       })
 
@@ -222,6 +223,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
       // Upload file
       const response = await fetch("/api/import/documents", {
         method: "POST",
+        headers: await authHeaders(),
         body: formData,
       })
 
@@ -245,6 +247,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
 
       // Refresh documents list
       queryClient.invalidateQueries({ queryKey: ["documents"] })
+      queryClient.invalidateQueries({ queryKey: ["documents-tracker"] })
 
       toast({
         title: "Import successful",

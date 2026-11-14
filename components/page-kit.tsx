@@ -95,6 +95,7 @@ export function StatCard({
   className,
   onClick,
   actionLabel,
+  active,
 }: {
   label: string
   value: ReactNode
@@ -107,6 +108,8 @@ export function StatCard({
   onClick?: () => void
   /** What clicking does, for screen readers */
   actionLabel?: string
+  /** A clickable card that is currently filtering the list (pressed) */
+  active?: boolean
 }) {
   const Root = onClick ? "button" : "div"
   return (
@@ -115,6 +118,7 @@ export function StatCard({
         ? {
             type: "button" as const,
             onClick,
+            ...(active !== undefined ? { "aria-pressed": active } : {}),
             title: actionLabel,
             "aria-label": actionLabel
               ? `${label}: ${typeof value === "number" || typeof value === "string" ? value : ""}. ${actionLabel}`
@@ -125,6 +129,7 @@ export function StatCard({
         "surface flex flex-col gap-3 p-4 text-left sm:p-5",
         onClick &&
           "transition-[box-shadow,transform] duration-200 ease-smooth hover:-translate-y-px hover:shadow-raised focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30",
+        active && "ring-2 ring-primary",
         className,
       )}
     >

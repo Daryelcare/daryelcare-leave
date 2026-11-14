@@ -1,164 +1,95 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
-import { withLiveDaysLeft } from "@/lib/document-status"
+import { EXPIRY_FIELDS, expiryColumns, toEmployeeDocument } from "@/lib/document-api"
+import { canAccessBranch, requireAdmin, requireUser, type RequestUser } from "@/lib/server-auth"
+import type { DocumentRow } from "@/lib/database.types"
+
+/** The record, or a response to send instead (missing, or another branch's) */
+async function loadRecord(id: string, user: RequestUser) {
+  const { data, error } = await supabase.from("documents").select("*").eq("id", id).maybeSingle()
+  if (error) throw error
+  if (!data) return { response: NextResponse.json({ error: "Document record not found" }, { status: 404 }) }
+  if (!canAccessBranch(user, data.branch)) {
+    return {
+      response: NextResponse.json({ error: "You can only manage documents for your own branches" }, { status: 403 }),
+    }
+  }
+  return { record: data as DocumentRow }
+}
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const auth = await requireUser(request)
+    if (auth.response) return auth.response
     const { id } = await params
-
-    // Fetch the document from Supabase
-    const { data: stored, error } = await supabase.from("documents").select("*").eq("id", id).single()
-
-    if (error) {
-      throw error
-    }
-
-    if (!stored) {
-      return NextResponse.json({ error: "Document not found" }, { status: 404 })
-    }
-
-    // Recalculate days left from the expiry dates (the stored values go stale)
-    const data = withLiveDaysLeft(stored)
-
-    // Transform the data to match our frontend types
-    const document = {
-      id: data.id,
-      employeeId: data.employee_id,
-      employeeName: data.employee_name,
-      branch: data.branch,
-      status: data.status,
-      country: data.country,
-
-      passportExpiry: data.passport_expiry || null,
-      passportDaysLeft: data.passport_days_left ?? null,
-
-      rightToWorkExpiry: data.right_to_work_expiry || null,
-      rightToWorkDaysLeft: data.right_to_work_days_left ?? null,
-
-      brpExpiry: data.brp_expiry || null,
-      brpDaysLeft: data.brp_days_left ?? null,
-
-      otherDocumentType: data.other_document_type || null,
-      otherDocumentExpiry: data.other_document_expiry || null,
-      otherDocumentDaysLeft: data.other_document_days_left ?? null,
-
-      isSponsored: data.is_sponsored || false,
-      is20Hours: data.is_20_hours || false,
-    }
-
-    return NextResponse.json(document)
+    const found = await loadRecord(id, auth.user)
+    if (found.response) return found.response
+    return NextResponse.json(toEmployeeDocument(found.record))
   } catch (error) {
     console.error("Error fetching document:", error)
-    return NextResponse.json({ error: "Failed to fetch document" }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't load the document record. Please try again." }, { status: 500 })
   }
 }
 
+// PUT: change part of a record. Only the fields sent change; an expiry date
+// sent as null or "" is cleared ("no expiry").
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const auth = await requireUser(request)
+    if (auth.response) return auth.response
     const { id } = await params
     const data = await request.json()
 
-    // Validate required fields
-    if (!data.status || !data.country) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    const found = await loadRecord(id, auth.user)
+    if (found.response) return found.response
+    const existing = found.record
+
+    const status = typeof data.status === "string" && data.status.trim() ? data.status.trim() : existing.status
+
+    const updateData: Record<string, unknown> = {
+      status,
+      country: data.country !== undefined ? data.country : existing.country,
+      is_sponsored: data.isSponsored !== undefined ? !!data.isSponsored : existing.is_sponsored,
+      is_20_hours: data.is20Hours !== undefined ? !!data.is20Hours : existing.is_20_hours,
+    }
+    for (const key of Object.keys(EXPIRY_FIELDS) as (keyof typeof EXPIRY_FIELDS)[]) {
+      if (data[key] === undefined) continue
+      const result = expiryColumns(key, data[key])
+      if ("error" in result) return NextResponse.json({ error: result.error }, { status: 400 })
+      Object.assign(updateData, result.columns)
+    }
+    if (data.otherDocumentExpiry !== undefined || data.otherDocumentType !== undefined) {
+      updateData.other_document_type =
+        (typeof data.otherDocumentType === "string" && data.otherDocumentType.trim()) ||
+        existing.other_document_type ||
+        (data.otherDocumentExpiry ? "Other Document" : null)
     }
 
-    // Get the existing document to avoid overwriting fields
-    const { data: existingDoc, error: getError } = await supabase.from("documents").select("*").eq("id", id).single()
+    const { data: updated, error } = await supabase.from("documents").update(updateData).eq("id", id).select().single()
+    if (error) throw error
 
-    if (getError) {
-      throw getError
-    }
-
-    // Prepare update data - only include fields that are provided
-    const updateData: any = {
-      status: data.status,
-      country: data.country,
-      is_sponsored: data.isSponsored !== undefined ? data.isSponsored : existingDoc.is_sponsored,
-      is_20_hours: data.is20Hours !== undefined ? data.is20Hours : existingDoc.is_20_hours,
-    }
-
-    // Only update the fields that are provided, preserving existing values
-    if (data.passportExpiry !== undefined) {
-      updateData.passport_expiry = data.passportExpiry
-      updateData.passport_days_left = data.passportDaysLeft
-    }
-
-    if (data.rightToWorkExpiry !== undefined) {
-      updateData.right_to_work_expiry = data.rightToWorkExpiry
-      updateData.right_to_work_days_left = data.rightToWorkDaysLeft
-    }
-
-    if (data.brpExpiry !== undefined) {
-      updateData.brp_expiry = data.brpExpiry
-      updateData.brp_days_left = data.brpDaysLeft
-    }
-
-    if (data.otherDocumentExpiry !== undefined) {
-      updateData.other_document_type = data.otherDocumentType || existingDoc.other_document_type
-      updateData.other_document_expiry = data.otherDocumentExpiry
-      updateData.other_document_days_left = data.otherDocumentDaysLeft
-    }
-
-    // Update the document in Supabase
-    const { data: updatedDocument, error } = await supabase
-      .from("documents")
-      .update(updateData)
-      .eq("id", id)
-      .select()
-      .single()
-
-    if (error) {
-      throw error
-    }
-
-    // Transform to match frontend types
-    const transformedDocument = {
-      id: updatedDocument.id,
-      employeeId: updatedDocument.employee_id,
-      employeeName: updatedDocument.employee_name,
-      branch: updatedDocument.branch,
-      status: updatedDocument.status,
-      country: updatedDocument.country,
-
-      passportExpiry: updatedDocument.passport_expiry || null,
-      passportDaysLeft: updatedDocument.passport_days_left ?? null,
-
-      rightToWorkExpiry: updatedDocument.right_to_work_expiry || null,
-      rightToWorkDaysLeft: updatedDocument.right_to_work_days_left ?? null,
-
-      brpExpiry: updatedDocument.brp_expiry || null,
-      brpDaysLeft: updatedDocument.brp_days_left ?? null,
-
-      otherDocumentType: updatedDocument.other_document_type || null,
-      otherDocumentExpiry: updatedDocument.other_document_expiry || null,
-      otherDocumentDaysLeft: updatedDocument.other_document_days_left ?? null,
-
-      isSponsored: updatedDocument.is_sponsored || false,
-      is20Hours: updatedDocument.is_20_hours || false,
-    }
-
-    return NextResponse.json(transformedDocument)
+    return NextResponse.json(toEmployeeDocument(updated as DocumentRow))
   } catch (error) {
     console.error("Error updating document:", error)
-    return NextResponse.json({ error: "Failed to update document" }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't save the document record. Please try again." }, { status: 500 })
   }
 }
 
+// DELETE: admins only, as in CarerHR
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const auth = await requireAdmin(request)
+    if (auth.response) return auth.response
     const { id } = await params
+    const found = await loadRecord(id, auth.user)
+    if (found.response) return found.response
 
-    // Delete the document from Supabase
     const { error } = await supabase.from("documents").delete().eq("id", id)
-
-    if (error) {
-      throw error
-    }
-
+    if (error) throw error
+    console.log(`${auth.user.email} deleted the documents record for ${found.record.employee_name}`)
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error("Error deleting document:", error)
-    return NextResponse.json({ error: "Failed to delete document" }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't delete the document record. Please try again." }, { status: 500 })
   }
 }

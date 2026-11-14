@@ -1,4 +1,3 @@
-
 export interface Branch {
   id: string
   name: string
@@ -85,4 +84,15 @@ export interface EmployeeDocument {
   otherDocumentDaysLeft: number | null
   isSponsored: boolean
   is20Hours: boolean
+}
+
+/**
+ * One row of the Documents page: every current employee, with their documents
+ * record if they have one. `id` is the record's id, or "none:<employeeId>" for
+ * someone with nothing on file (then `recordId` is null and `noRecord` true).
+ */
+export interface TrackerDocument extends EmployeeDocument {
+  recordId: string | null
+  employeeCode: string | null
+  noRecord: boolean
 }

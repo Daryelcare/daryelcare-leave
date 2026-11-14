@@ -184,6 +184,7 @@ export function EditDocumentModal({
 
       // Refresh documents list
       queryClient.invalidateQueries({ queryKey: ["documents"] })
+      queryClient.invalidateQueries({ queryKey: ["documents-tracker"] })
     } catch (error) {
       toast({
         title: "Error",

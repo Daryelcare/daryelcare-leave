@@ -6,7 +6,7 @@
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { PAGE_SIZES, type PageSize } from "@/lib/leave-list"
+import { PAGE_SIZES, type PageSize } from "@/lib/pagination"
 
 export function TablePagination({
   page,
@@ -32,9 +32,7 @@ export function TablePagination({
 }) {
   return (
     <div className="flex flex-col gap-2 border-t border-border/70 px-4 py-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-5">
-      <p className="tabular">
-        {total === 0 ? `No ${label}` : `${from}–${to} of ${total} ${label}`}
-      </p>
+      <p className="tabular">{total === 0 ? `No ${label}` : `${from}–${to} of ${total} ${label}`}</p>
       <div className="flex items-center gap-2">
         <span className="hidden sm:inline">Rows per page</span>
         <Select value={String(pageSize)} onValueChange={(v) => onPageSizeChange(Number(v) as PageSize)}>

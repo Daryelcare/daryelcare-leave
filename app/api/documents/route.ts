@@ -1,211 +1,114 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
 import { matchesDocumentStatus, withLiveDaysLeft } from "@/lib/document-status"
+import { EXPIRY_FIELDS, expiryColumns, safeSearch, toEmployeeDocument } from "@/lib/document-api"
+import { allowedBranches, canAccessBranch, requireUser } from "@/lib/server-auth"
+import type { DocumentRow } from "@/lib/database.types"
 
+// GET: documents records, limited to the branches the user may see
 export async function GET(request: Request) {
   try {
-    // Get query parameters
+    const auth = await requireUser(request)
+    if (auth.response) return auth.response
+
     const { searchParams } = new URL(request.url)
     const branch = searchParams.get("branch")
-    const search = searchParams.get("search")?.toLowerCase()
+    const search = safeSearch(searchParams.get("search")?.toLowerCase() || "")
     const employeeId = searchParams.get("employeeId")
     const status = searchParams.get("status")
     const sponsoredOnly = searchParams.get("sponsoredOnly") === "true"
-
-    // Get sorting parameters
     const sortColumn = searchParams.get("sortColumn")
     const sortDirection = searchParams.get("sortDirection")
 
-    // Build the query
+    const allowed = allowedBranches(auth.user)
+    if (branch && branch !== "all" && !canAccessBranch(auth.user, branch)) return NextResponse.json([])
+
     let query = supabase.from("documents").select("*")
+    if (branch && branch !== "all") query = query.eq("branch", branch)
+    else if (allowed) query = query.in("branch", allowed.length ? allowed : ["\u0000"])
+    if (search) query = query.or(`employee_name.ilike.%${search}%,country.ilike.%${search}%`)
+    if (employeeId) query = query.eq("employee_id", employeeId)
+    if (sponsoredOnly) query = query.eq("is_sponsored", true)
 
-    // Apply filters
-    if (branch && branch !== "all") {
-      query = query.eq("branch", branch)
-    }
-
-    if (search) {
-      query = query.or(`employee_name.ilike.%${search}%,country.ilike.%${search}%`)
-    }
-
-    if (employeeId) {
-      query = query.eq("employee_id", employeeId)
-    }
-
-    // Filter by sponsored status if requested
-    if (sponsoredOnly) {
-      query = query.eq("is_sponsored", true)
-    }
-
-    // Apply sorting if provided
     if (sortColumn && sortDirection) {
-      // Map frontend column names to database column names if needed
       const dbColumn = sortColumn.includes("_") ? sortColumn : sortColumn.replace(/([A-Z])/g, "_$1").toLowerCase()
       query = query.order(dbColumn, { ascending: sortDirection === "asc" })
     } else {
-      // Default sorting by employee_name
       query = query.order("employee_name", { ascending: true })
     }
 
-    // Execute the query
     const { data, error } = await query
+    if (error) throw error
 
-    if (error) {
-      throw error
-    }
-
-    // Recalculate days left from the expiry dates (the stored values go stale),
-    // then apply the status filter on the fresh numbers
-    const rows = (data || [])
-      .map((doc) => withLiveDaysLeft(doc))
-      .filter((doc) => !status || status === "all" || matchesDocumentStatus(doc, status))
-
-    // Transform the data to match our frontend types
-    const documents = rows.map((doc) => ({
-      id: doc.id,
-      employeeId: doc.employee_id,
-      employeeName: doc.employee_name,
-      branch: doc.branch,
-      status: doc.status,
-      country: doc.country,
-
-      passportExpiry: doc.passport_expiry || null,
-      passportDaysLeft: doc.passport_days_left ?? null,
-
-      rightToWorkExpiry: doc.right_to_work_expiry || null,
-      rightToWorkDaysLeft: doc.right_to_work_days_left ?? null,
-
-      brpExpiry: doc.brp_expiry || null,
-      brpDaysLeft: doc.brp_days_left ?? null,
-
-      otherDocumentType: doc.other_document_type || null,
-      otherDocumentExpiry: doc.other_document_expiry || null,
-      otherDocumentDaysLeft: doc.other_document_days_left ?? null,
-
-      isSponsored: doc.is_sponsored || false,
-      is20Hours: doc.is_20_hours || false,
-    }))
+    // Days left come from the expiry dates (the stored values go stale), and the
+    // status filter is applied on the fresh numbers
+    const documents = ((data || []) as DocumentRow[])
+      .filter((doc) => !status || status === "all" || matchesDocumentStatus(withLiveDaysLeft(doc), status))
+      .map(toEmployeeDocument)
 
     return NextResponse.json(documents)
   } catch (error) {
     console.error("Error fetching documents:", error)
-    return NextResponse.json({ error: "Failed to fetch documents" }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't load the documents. Please try again." }, { status: 500 })
   }
 }
 
-// Update the POST method to handle the new form structure
+// POST: add or update an employee's documents record. Only the dates sent are
+// changed; the employee's name and branch come from their employee record.
 export async function POST(request: Request) {
   try {
-    const data = await request.json()
+    const auth = await requireUser(request)
+    if (auth.response) return auth.response
 
-    // Validate required fields
-    if (!data.employeeId || !data.employeeName || !data.branch || !data.status) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    const data = await request.json()
+    if (!data.employeeId || !data.status) {
+      return NextResponse.json({ error: "Choose an employee and their status" }, { status: 400 })
     }
 
-    // Check if document already exists for this employee
+    const { data: employee, error: employeeError } = await supabase
+      .from("employees")
+      .select("id, name, branch")
+      .eq("id", data.employeeId)
+      .maybeSingle()
+    if (employeeError) throw employeeError
+    if (!employee) return NextResponse.json({ error: "Employee not found" }, { status: 404 })
+    if (!canAccessBranch(auth.user, employee.branch)) {
+      return NextResponse.json({ error: "You can only manage documents for your own branches" }, { status: 403 })
+    }
+
     const { data: existingDoc, error: checkError } = await supabase
       .from("documents")
       .select("*")
       .eq("employee_id", data.employeeId)
       .maybeSingle()
+    if (checkError) throw checkError
 
-    if (checkError) {
-      throw checkError
-    }
-
-    // Prepare document data with all fields
-    const documentData: any = {
-      employee_id: data.employeeId,
-      employee_name: data.employeeName,
-      branch: data.branch,
+    const documentData: Partial<DocumentRow> &
+      Pick<DocumentRow, "employee_id" | "employee_name" | "branch" | "status"> = {
+      employee_id: employee.id,
+      employee_name: employee.name,
+      branch: employee.branch,
       status: data.status,
       country: data.country,
       is_sponsored: data.isSponsored || false,
       is_20_hours: data.is20Hours || false,
     }
-
-    // Add passport data if provided
-    if (data.passportExpiry) {
-      documentData.passport_expiry = data.passportExpiry
-      documentData.passport_days_left = data.passportDaysLeft
+    for (const key of Object.keys(EXPIRY_FIELDS) as (keyof typeof EXPIRY_FIELDS)[]) {
+      if (!data[key]) continue
+      const result = expiryColumns(key, data[key])
+      if ("error" in result) return NextResponse.json({ error: result.error }, { status: 400 })
+      Object.assign(documentData, result.columns)
     }
+    if (data.otherDocumentExpiry) documentData.other_document_type = data.otherDocumentType || "Other Document"
 
-    // Add right to work data if provided
-    if (data.rightToWorkExpiry) {
-      documentData.right_to_work_expiry = data.rightToWorkExpiry
-      documentData.right_to_work_days_left = data.rightToWorkDaysLeft
-    }
+    const { data: saved, error } = existingDoc
+      ? await supabase.from("documents").update(documentData).eq("id", existingDoc.id).select().single()
+      : await supabase.from("documents").insert(documentData).select().single()
+    if (error) throw error
 
-    // Add BRP data if provided
-    if (data.brpExpiry) {
-      documentData.brp_expiry = data.brpExpiry
-      documentData.brp_days_left = data.brpDaysLeft
-    }
-
-    // Add other document data if provided
-    if (data.otherDocumentExpiry) {
-      documentData.other_document_type = data.otherDocumentType || "Other Document"
-      documentData.other_document_expiry = data.otherDocumentExpiry
-      documentData.other_document_days_left = data.otherDocumentDaysLeft
-    }
-
-    let result
-
-    if (existingDoc) {
-      // Update existing document
-      const { data: updatedDoc, error: updateError } = await supabase
-        .from("documents")
-        .update(documentData)
-        .eq("id", existingDoc.id)
-        .select()
-        .single()
-
-      if (updateError) {
-        throw updateError
-      }
-
-      result = updatedDoc
-    } else {
-      // Insert new document
-      const { data: newDocument, error } = await supabase.from("documents").insert(documentData).select().single()
-
-      if (error) {
-        throw error
-      }
-
-      result = newDocument
-    }
-
-    // Transform to match frontend types
-    const transformedDocument = {
-      id: result.id,
-      employeeId: result.employee_id,
-      employeeName: result.employee_name,
-      branch: result.branch,
-      status: result.status,
-      country: result.country,
-
-      passportExpiry: result.passport_expiry || null,
-      passportDaysLeft: result.passport_days_left ?? null,
-
-      rightToWorkExpiry: result.right_to_work_expiry || null,
-      rightToWorkDaysLeft: result.right_to_work_days_left ?? null,
-
-      brpExpiry: result.brp_expiry || null,
-      brpDaysLeft: result.brp_days_left ?? null,
-
-      otherDocumentType: result.other_document_type || null,
-      otherDocumentExpiry: result.other_document_expiry || null,
-      otherDocumentDaysLeft: result.other_document_days_left ?? null,
-
-      isSponsored: result.is_sponsored || false,
-      is20Hours: result.is_20_hours || false,
-    }
-
-    return NextResponse.json(transformedDocument, { status: existingDoc ? 200 : 201 })
+    return NextResponse.json(toEmployeeDocument(saved as DocumentRow), { status: existingDoc ? 200 : 201 })
   } catch (error) {
     console.error("Error creating/updating document:", error)
-    return NextResponse.json({ error: "Failed to create/update document" }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't save the documents. Please try again." }, { status: 500 })
   }
 }

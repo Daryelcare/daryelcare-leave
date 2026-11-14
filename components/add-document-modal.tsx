@@ -255,9 +255,11 @@ type FormValues = z.output<typeof formSchema>
 interface AddDocumentModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** Start with this employee chosen (e.g. someone with nothing on file) */
+  initialEmployeeId?: string
 }
 
-export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) {
+export function AddDocumentModal({ open, onOpenChange, initialEmployeeId }: AddDocumentModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
   const queryClient = useQueryClient()
@@ -280,6 +282,11 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
       is20Hours: false,
     },
   })
+
+  // Opened for a particular employee: choose them
+  useEffect(() => {
+    if (open && initialEmployeeId) form.setValue("employeeId", initialEmployeeId)
+  }, [open, initialEmployeeId, form])
 
   // Watch status to handle special cases
   const status = form.watch("status")
@@ -442,6 +449,7 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
 
       // Refresh documents list
       queryClient.invalidateQueries({ queryKey: ["documents"] })
+      queryClient.invalidateQueries({ queryKey: ["documents-tracker"] })
 
       // Refresh the existing document data
       if (employeeId) {
@@ -485,7 +493,7 @@ export function AddDocumentModal({ open, onOpenChange }: AddDocumentModalProps) 
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Employee</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingEmployees}>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={isLoadingEmployees}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select an employee" />
