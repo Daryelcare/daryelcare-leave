@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { authHeaders } from "@/lib/api-utils"
 import { Button } from "@/components/ui/button"
 import { Download, FileText, FileSpreadsheet, Loader2 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -62,6 +63,7 @@ export function ExportButton({
 
       // Use fetch directly to download the file
       const response = await fetch(`/api/export/${endpoint}`, {
+        headers: await authHeaders(),
         method: "POST",
         body: formData,
       })

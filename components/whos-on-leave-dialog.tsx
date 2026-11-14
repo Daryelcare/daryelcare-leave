@@ -5,6 +5,7 @@
 // that period. Branch managers only see their own branches (the API scopes it).
 
 import { useEffect, useMemo, useState } from "react"
+import { leaveTypeColour } from "@/lib/leave-type-colour"
 import { useQuery } from "@tanstack/react-query"
 import { AlertTriangle, Loader2, PartyPopper, Users } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -12,7 +13,6 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { DatePicker } from "@/components/ui/date-picker"
 import { Avatar, plural } from "./page-kit"
-import { useLeaveTypes } from "@/hooks/use-leave-types"
 import { fetchWithAuth } from "@/lib/api-utils"
 import {
   addDays,
@@ -60,7 +60,6 @@ function presetRange(preset: Exclude<Preset, "custom">, today: number): { from: 
 }
 
 export function WhosOnLeaveDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
-  const { data: leaveTypes = [] } = useLeaveTypes()
   const [preset, setPreset] = useState<Preset>("today")
   // Read "today" when the dialog opens, so a page left open overnight moves on
   const [today, setToday] = useState(() => todayUtc())
@@ -96,7 +95,7 @@ export function WhosOnLeaveDialog({ open, onOpenChange }: { open: boolean; onOpe
   )
   // People, not bookings: two separate periods in one week is one person away
   const peopleAway = new Set(rows.map((r) => r.employeeId)).size
-  const typeColor = (type: string) => leaveTypes.find((t) => t.name === type)?.color || "#6366f1"
+  const typeColor = (type: string) => leaveTypeColour(type)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -124,7 +123,11 @@ export function WhosOnLeaveDialog({ open, onOpenChange }: { open: boolean; onOpe
         </DialogHeader>
 
         <div className="space-y-3 px-5 pb-3 sm:px-6">
-          <div role="group" aria-label="Period" className="grid w-full grid-cols-4 gap-1 rounded-full bg-secondary p-1 sm:inline-flex sm:w-auto">
+          <div
+            role="group"
+            aria-label="Period"
+            className="grid w-full grid-cols-4 gap-1 rounded-full bg-secondary p-1 sm:inline-flex sm:w-auto"
+          >
             {PRESETS.map((p) => {
               const active = preset === p.value
               return (

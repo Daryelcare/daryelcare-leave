@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { leaveTypeColour } from "@/lib/leave-type-colour"
 import { useQueryClient } from "@tanstack/react-query"
 import { useLeaveTypes } from "@/hooks/use-leave-types"
 import { Pencil, Plus, Trash2 } from "lucide-react"
@@ -91,10 +92,10 @@ export function LeaveTypeManagementTable() {
               <li key={leaveType.id} className="flex items-start gap-3 px-5 py-3.5 sm:items-center sm:px-6">
                 <span
                   className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg sm:mt-0"
-                  style={{ backgroundColor: `${leaveType.color}1f` }}
+                  style={{ backgroundColor: `${leaveTypeColour(leaveType.name)}1f` }}
                   aria-hidden
                 >
-                  <span className="h-3 w-3 rounded-full" style={{ backgroundColor: leaveType.color }} />
+                  <span className="h-3 w-3 rounded-full" style={{ backgroundColor: leaveTypeColour(leaveType.name) }} />
                 </span>
                 <div className="min-w-0 flex-1 space-y-1.5 sm:flex sm:items-center sm:gap-4 sm:space-y-0">
                   <div className="min-w-0 sm:flex-1">

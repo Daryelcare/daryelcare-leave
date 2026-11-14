@@ -7,8 +7,10 @@
 // version of the same colour. Rejected leave is never shown.
 
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react"
+import { leaveTypeColour } from "@/lib/leave-type-colour"
 import { useQuery } from "@tanstack/react-query"
-import { AlertTriangle, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react"
+import { AlertTriangle, CalendarDays, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
+import { busySummary, cleanLimit, dayRuns, DEFAULT_LIMIT, limitFor, type WarnLimit } from "@/lib/calendar-warnings"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -16,7 +18,6 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useApp } from "./app-provider"
 import { Avatar, EmptyState, ErrorState, plural } from "./page-kit"
 import { useBranches } from "@/hooks/use-branches"
-import { useLeaveTypes } from "@/hooks/use-leave-types"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
 import { formatDisplayRange, toIsoDate, todayUtc } from "@/lib/dates"
 import { cn } from "@/lib/utils"
@@ -38,15 +39,18 @@ type LeaveEntry = {
 const WEEKDAY_LETTERS = ["S", "M", "T", "W", "T", "F", "S"]
 const ROW = 48 // height of one person's row, px
 const DAY_WIDTH = 26 // minimum width of a day column, px
-const THRESHOLD_KEY = "teamCalendar.warnAt"
-const DEFAULT_THRESHOLD = 3
+const LIMIT_KEY = "teamCalendar.warnLimit"
+const OLD_THRESHOLD_KEY = "teamCalendar.warnAt"
+const GROUP_ROW = 34 // height of a branch heading row, px
 
-function readThreshold(): number {
+function readLimit(): WarnLimit {
   try {
-    const value = Number(window.localStorage.getItem(THRESHOLD_KEY))
-    return Number.isInteger(value) && value >= 2 ? value : DEFAULT_THRESHOLD
+    const saved = window.localStorage.getItem(LIMIT_KEY)
+    if (saved) return cleanLimit(JSON.parse(saved))
+    const old = Number(window.localStorage.getItem(OLD_THRESHOLD_KEY))
+    return Number.isInteger(old) && old >= 2 ? { value: old, unit: "people" } : DEFAULT_LIMIT
   } catch {
-    return DEFAULT_THRESHOLD
+    return DEFAULT_LIMIT
   }
 }
 
@@ -91,7 +95,6 @@ export function TeamCalendar({
   const isAdmin = user?.role === "admin"
   const myBranches = user?.branches || []
   const { data: allBranches = [] } = useBranches()
-  const { data: leaveTypes = [] } = useLeaveTypes()
 
   const today = todayUtc()
   const todayIso = toIsoDate(today)
@@ -100,19 +103,37 @@ export function TeamCalendar({
     return { year: d.getUTCFullYear(), month: d.getUTCMonth() }
   })
   const [branch, setBranch] = useState("all")
-  const [threshold, setThreshold] = useState(DEFAULT_THRESHOLD)
+  const [limit, setLimit] = useState<WarnLimit>(DEFAULT_LIMIT)
+  const [showBusyDays, setShowBusyDays] = useState(false)
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
 
   // The warning level is a per-browser preference
-  useEffect(() => setThreshold(readThreshold()), [])
-  const updateThreshold = (value: number) => {
-    const clean = Math.max(2, Math.min(50, Math.round(value) || DEFAULT_THRESHOLD))
-    setThreshold(clean)
+  useEffect(() => setLimit(readLimit()), [])
+  const updateLimit = (next: Partial<WarnLimit>) => {
+    const clean = cleanLimit({ ...limit, ...next })
+    setLimit(clean)
     try {
-      window.localStorage.setItem(THRESHOLD_KEY, String(clean))
+      window.localStorage.setItem(LIMIT_KEY, JSON.stringify(clean))
     } catch {
       // Storage unavailable: keep it for this visit only
     }
   }
+
+  // Staff per branch, for a limit that's a share of each branch
+  const { data: directory } = useQuery<{ rows: { branch: string; status: string }[] }>({
+    queryKey: ["employees", "directory"],
+    queryFn: () => fetchWithAuth("/api/employees/directory"),
+    enabled: !!user && limit.unit === "percent",
+    staleTime: 5 * 60_000,
+  })
+  const headcount = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const e of directory?.rows ?? []) {
+      if ((e.status || "active").toLowerCase() === "inactive") continue
+      map.set(e.branch, (map.get(e.branch) ?? 0) + 1)
+    }
+    return map
+  }, [directory])
 
   const branchOptions = isAdmin ? allBranches.map((b) => b.name) : myBranches
 
@@ -131,7 +152,7 @@ export function TeamCalendar({
     placeholderData: (previous) => previous,
   })
 
-  const typeColor = (type: string) => leaveTypes.find((t) => t.name === type)?.color || "#6366f1"
+  const typeColor = (type: string) => leaveTypeColour(type)
 
   // One row per leave entry, its bar clamped to this month
   const rows = useMemo(() => {
@@ -163,7 +184,7 @@ export function TeamCalendar({
       })
   }, [data, from, to, numDays, dayPct, typeFilter, search])
 
-  // Branches with `threshold` or more people off (approved leave) on each day
+  // Branches with too many people off (approved leave) on each day
   const busyByDay = useMemo(() => {
     const map = new Map<number, { branch: string; count: number }[]>()
     for (let n = 1; n <= numDays; n++) {
@@ -176,13 +197,13 @@ export function TeamCalendar({
         counts.set(leave.branch, people)
       }
       const busy = [...counts.entries()]
-        .filter(([, people]) => people.size >= threshold)
+        .filter(([name, people]) => people.size >= limitFor(limit, headcount.get(name)))
         .map(([name, people]) => ({ branch: name, count: people.size }))
         .sort((a, b) => b.count - a.count)
       if (busy.length) map.set(n, busy)
     }
     return map
-  }, [rows, numDays, view.year, view.month, threshold])
+  }, [rows, numDays, view.year, view.month, limit, headcount])
 
   const days = Array.from({ length: numDays }, (_, i) => {
     const n = i + 1
@@ -200,6 +221,42 @@ export function TeamCalendar({
   const legendTypes = [...new Set(rows.map((r) => r.leave.type))].sort((a, b) => a.localeCompare(b))
   const hasPending = rows.some((r) => r.pending)
   const busyDays = days.filter((d) => d.busy)
+  const busyBranches = busySummary(busyByDay)
+  const limitText = limit.unit === "people" ? `${limit.value} or more people` : `${limit.value}% or more of a branch`
+
+  // With several branches showing, rows are grouped under a heading per branch
+  const grouped = branch === "all" && new Set(rows.map((r) => r.leave.branch)).size > 1
+  type Item =
+    | { kind: "group"; branch: string; count: number; top: number }
+    | { kind: "row"; r: (typeof rows)[number]; top: number }
+  const items: Item[] = []
+  let height = 0
+  if (grouped) {
+    const byBranch = new Map<string, typeof rows>()
+    for (const r of rows) byBranch.set(r.leave.branch, [...(byBranch.get(r.leave.branch) ?? []), r])
+    for (const name of [...byBranch.keys()].sort((a, b) => a.localeCompare(b))) {
+      const list = byBranch.get(name)!
+      items.push({ kind: "group", branch: name, count: new Set(list.map((r) => r.leave.employeeId)).size, top: height })
+      height += GROUP_ROW
+      if (collapsed.has(name)) continue
+      for (const r of list) {
+        items.push({ kind: "row", r, top: height })
+        height += ROW
+      }
+    }
+  } else {
+    for (const r of rows) {
+      items.push({ kind: "row", r, top: height })
+      height += ROW
+    }
+  }
+  const toggleGroup = (name: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev)
+      if (next.has(name)) next.delete(name)
+      else next.add(name)
+      return next
+    })
 
   // On narrow screens the days scroll sideways: bring today into view
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -296,7 +353,7 @@ export function TeamCalendar({
             </span>
           )}
         </div>
-        <div className="grid grid-cols-2 gap-2.5 sm:flex sm:items-end">
+        <div className="grid gap-2.5 min-[400px]:grid-cols-2 sm:flex sm:items-end">
           {branchOptions.length > 1 && (
             <div className="space-y-1.5">
               <Label htmlFor="calendar-branch" className="text-xs text-muted-foreground">
@@ -317,42 +374,75 @@ export function TeamCalendar({
               </Select>
             </div>
           )}
-          <div className={cn("space-y-1.5", branchOptions.length <= 1 && "col-span-2")}>
+          <div className={cn("min-w-0 space-y-1.5", branchOptions.length <= 1 && "min-[400px]:col-span-2")}>
             <Label htmlFor="calendar-threshold" className="text-xs text-muted-foreground">
-              Warn at (per branch)
+              Warn when off in a branch
             </Label>
-            <Input
-              id="calendar-threshold"
-              type="number"
-              inputMode="numeric"
-              min={2}
-              max={50}
-              value={threshold}
-              onChange={(e) => updateThreshold(Number(e.target.value))}
-              title="Flag a day when this many people in one branch are off"
-              className="w-full sm:w-[120px]"
-            />
+            <div className="flex gap-1.5">
+              <Input
+                id="calendar-threshold"
+                type="number"
+                inputMode="numeric"
+                min={limit.unit === "percent" ? 1 : 2}
+                max={limit.unit === "percent" ? 100 : 50}
+                value={limit.value}
+                onChange={(e) => updateLimit({ value: Number(e.target.value) })}
+                title="Flag a day when this many people in one branch are off"
+                className="w-[76px]"
+              />
+              <Select
+                value={limit.unit}
+                onValueChange={(u) => updateLimit({ unit: u as WarnLimit["unit"], value: u === "percent" ? 10 : 3 })}
+              >
+                <SelectTrigger className="w-full sm:w-[150px]" aria-label="Warning unit">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="people">people</SelectItem>
+                  <SelectItem value="percent">% of branch staff</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Days with too many people off in one branch */}
-      {busyDays.length > 0 && (
-        <div className="mt-4 flex gap-2.5 rounded-xl border border-warning/25 bg-warning-soft p-3 text-sm">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
-          <div className="min-w-0">
-            <p className="font-semibold">
-              {plural(busyDays.length, "day")} with {threshold} or more people off in one branch
+      {/* Days with too many people off: one short line per branch, details on request */}
+      {busyBranches.length > 0 && (
+        <div className="mt-4 rounded-xl border border-warning/25 bg-warning-soft p-3 text-sm">
+          <div className="flex flex-wrap items-start gap-x-3 gap-y-1">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+            <p className="min-w-0 flex-1">
+              <span className="font-semibold">
+                {plural(busyDays.length, "day")} with {limitText} off
+              </span>
+              <span className="text-muted-foreground">
+                {" · "}
+                {busyBranches
+                  .map((b) => `${b.branch}: ${plural(b.days.length, "day")} (up to ${b.peak} off)`)
+                  .join(" · ")}
+              </span>
             </p>
-            <p className="text-muted-foreground">
-              {busyDays
-                .map(
-                  (d) =>
-                    `${String(d.n).padStart(2, "0")}/${String(view.month + 1).padStart(2, "0")}: ${d.busy!.map((b) => `${b.branch} (${b.count})`).join(", ")}`,
-                )
-                .join(" · ")}
-            </p>
+            <button
+              type="button"
+              onClick={() => setShowBusyDays((v) => !v)}
+              aria-expanded={showBusyDays}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-warning hover:underline"
+            >
+              {showBusyDays ? "Hide days" : "Show days"}
+              <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", showBusyDays && "rotate-180")} />
+            </button>
           </div>
+          {showBusyDays && (
+            <ul className="mt-2 space-y-1 pl-6 text-muted-foreground">
+              {busyBranches.map((b) => (
+                <li key={b.branch}>
+                  <span className="font-semibold text-foreground">{b.branch}</span> · {title.split(" ")[0]}{" "}
+                  {dayRuns(b.days)}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
 
@@ -387,24 +477,43 @@ export function TeamCalendar({
               {/* Names, pinned while the days scroll */}
               <div className="sticky left-0 z-20 flex flex-col bg-card shadow-[8px_0_12px_-10px_rgb(16_24_40_/_0.25)]">
                 <div className="h-11" />
-                {rows.map((r) => (
-                  <button
-                    type="button"
-                    key={r.leave.id}
-                    onClick={() => onOpen?.(r.leave.id)}
-                    tabIndex={-1}
-                    className="flex w-full items-center gap-2 border-t border-border/60 pr-2 text-left transition-colors hover:bg-muted/50 sm:gap-2.5"
-                    style={{ height: ROW }}
-                  >
-                    <Avatar name={r.leave.employeeName} className="hidden h-7 w-7 text-[11px] sm:flex" />
-                    <div className="min-w-0">
-                      <p className="truncate text-[13px] font-semibold">{r.leave.employeeName}</p>
-                      <p className="truncate text-xs text-muted-foreground tabular">
-                        {formatDisplayRange(r.leave.start, r.leave.end)}
-                      </p>
-                    </div>
-                  </button>
-                ))}
+                {items.map((item) =>
+                  item.kind === "group" ? (
+                    <button
+                      type="button"
+                      key={`g-${item.branch}`}
+                      onClick={() => toggleGroup(item.branch)}
+                      aria-expanded={!collapsed.has(item.branch)}
+                      className="flex w-full items-center gap-1.5 border-t border-border/60 bg-muted/40 px-1 text-left text-xs font-semibold text-foreground/80 hover:bg-muted"
+                      style={{ height: GROUP_ROW }}
+                    >
+                      <ChevronDown
+                        className={cn("h-3.5 w-3.5 transition-transform", collapsed.has(item.branch) && "-rotate-90")}
+                      />
+                      {item.branch}
+                      <span className="font-medium text-muted-foreground">
+                        · {plural(item.count, "person", "people")}
+                      </span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      key={item.r.leave.id}
+                      onClick={() => onOpen?.(item.r.leave.id)}
+                      tabIndex={-1}
+                      className="flex w-full items-center gap-2 border-t border-border/60 pr-2 text-left transition-colors hover:bg-muted/50 sm:gap-2.5"
+                      style={{ height: ROW }}
+                    >
+                      <Avatar name={item.r.leave.employeeName} className="hidden h-7 w-7 text-[11px] sm:flex" />
+                      <div className="min-w-0">
+                        <p className="truncate text-[13px] font-semibold">{item.r.leave.employeeName}</p>
+                        <p className="truncate text-xs text-muted-foreground tabular">
+                          {formatDisplayRange(item.r.leave.start, item.r.leave.end)}
+                        </p>
+                      </div>
+                    </button>
+                  ),
+                )}
               </div>
 
               <div className="relative">
@@ -428,9 +537,10 @@ export function TeamCalendar({
                         className={cn(
                           "text-[11px] font-semibold leading-none",
                           d.busy ? "text-warning" : d.weekend ? "text-muted-foreground/60" : "text-muted-foreground",
+                          d.busy && "underline decoration-2 underline-offset-2",
                         )}
                       >
-                        {d.busy ? <AlertTriangle className="h-3 w-3" aria-label="Too many off" /> : d.letter}
+                        {d.letter}
                       </span>
                       <span
                         className={cn(
@@ -444,6 +554,7 @@ export function TeamCalendar({
                       >
                         {d.n}
                       </span>
+                      {d.busy && <span className="sr-only">, too many off</span>}
                     </div>
                   ))}
                 </div>
@@ -457,19 +568,29 @@ export function TeamCalendar({
                     />
                   )}
                   {/* Row backgrounds with weekend shading */}
-                  {rows.map((r) => (
-                    <div
-                      key={`bg-${r.leave.id}`}
-                      className="grid border-t border-border/60"
-                      style={{ height: ROW, gridTemplateColumns: `repeat(${numDays}, 1fr)` }}
-                    >
-                      {days.map((d) => (
-                        <div key={d.n} className={cn(d.weekend && "bg-muted/60", d.busy && "bg-warning-soft/60")} />
-                      ))}
-                    </div>
-                  ))}
+                  {items.map((item) =>
+                    item.kind === "group" ? (
+                      <div
+                        key={`gbg-${item.branch}`}
+                        className="border-t border-border/60 bg-muted/40"
+                        style={{ height: GROUP_ROW }}
+                      />
+                    ) : (
+                      <div
+                        key={`bg-${item.r.leave.id}`}
+                        className="grid border-t border-border/60"
+                        style={{ height: ROW, gridTemplateColumns: `repeat(${numDays}, 1fr)` }}
+                      >
+                        {days.map((d) => (
+                          <div key={d.n} className={cn(d.weekend && "bg-muted/60", d.busy && "bg-warning-soft/60")} />
+                        ))}
+                      </div>
+                    ),
+                  )}
                   {/* Bars */}
-                  {rows.map((r, i) => {
+                  {items.map((item) => {
+                    if (item.kind !== "row") return null
+                    const r = item.r
                     const colour = typeColor(r.leave.type)
                     const range = formatDisplayRange(r.leave.start, r.leave.end)
                     return (
@@ -481,7 +602,7 @@ export function TeamCalendar({
                         style={{
                           left: `${r.left}%`,
                           width: `${r.width}%`,
-                          top: i * ROW + 11,
+                          top: item.top + 11,
                           height: 26,
                           backgroundColor: r.pending ? tint(colour, "26") : colour,
                           backgroundImage: r.pending
@@ -498,20 +619,20 @@ export function TeamCalendar({
                     )
                   })}
                   {/* Labels beside the short bars */}
-                  {rows.map((r, i) =>
-                    r.short ? (
+                  {items.map((item) =>
+                    item.kind === "row" && item.r.short ? (
                       <span
-                        key={`label-${r.leave.id}`}
+                        key={`label-${item.r.leave.id}`}
                         aria-hidden
                         className="pointer-events-none absolute whitespace-nowrap text-xs font-semibold leading-[26px] text-foreground/75"
                         style={{
-                          top: i * ROW + 11,
-                          ...(r.labelBefore
-                            ? { right: `calc(${100 - r.left}% + 6px)` }
-                            : { left: `calc(${r.left + r.width}% + 6px)` }),
+                          top: item.top + 11,
+                          ...(item.r.labelBefore
+                            ? { right: `calc(${100 - item.r.left}% + 6px)` }
+                            : { left: `calc(${item.r.left + item.r.width}% + 6px)` }),
                         }}
                       >
-                        {r.label}
+                        {item.r.label}
                       </span>
                     ) : null,
                   )}

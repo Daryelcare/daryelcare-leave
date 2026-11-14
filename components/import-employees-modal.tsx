@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useToast } from "@/components/ui/use-toast"
-import { handleApiError } from "@/lib/api-utils"
+import { handleApiError, authHeaders } from "@/lib/api-utils"
 import { Download, Upload, FileSpreadsheet, FileText, X, AlertCircle, CheckCircle, ArrowLeft } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -145,6 +145,7 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
 
       // Get preview data
       const response = await fetch("/api/import/employees/preview", {
+        headers: await authHeaders(),
         method: "POST",
         body: formData,
       })
@@ -190,6 +191,7 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
 
       // Upload file
       const response = await fetch("/api/import/employees", {
+        headers: await authHeaders(),
         method: "POST",
         body: formData,
       })
@@ -236,7 +238,7 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
   // Handle template download
   const handleDownloadTemplate = async (format: "csv" | "excel") => {
     try {
-      const response = await fetch(`/api/templates/employee-import?format=${format}`)
+      const response = await fetch(`/api/templates/employee-import?format=${format}`, { headers: await authHeaders() })
 
       if (!response.ok) {
         throw new Error("Failed to download template")
@@ -426,7 +428,9 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
             {/* File upload area */}
             <div
               className={`rounded-xl border-2 border-dashed p-8 text-center transition-colors duration-200 ${
-                dragActive ? "border-primary bg-primary-soft/60" : "border-border bg-muted/30 hover:border-foreground/20"
+                dragActive
+                  ? "border-primary bg-primary-soft/60"
+                  : "border-border bg-muted/30 hover:border-foreground/20"
               }`}
               onDragEnter={handleDrag}
               onDragOver={handleDrag}
@@ -443,7 +447,9 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
 
               {selectedFile ? (
                 <div className="flex flex-col items-center gap-2">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-success-soft text-success"><FileSpreadsheet className="h-6 w-6" /></span>
+                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-success-soft text-success">
+                    <FileSpreadsheet className="h-6 w-6" />
+                  </span>
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{selectedFile.name}</span>
                     <Button
@@ -460,7 +466,9 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-2">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-card text-muted-foreground shadow-card"><Upload className="h-5 w-5" /></span>
+                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-card text-muted-foreground shadow-card">
+                    <Upload className="h-5 w-5" />
+                  </span>
                   <p className="text-sm font-medium">
                     Drag and drop your file here, or{" "}
                     <button
@@ -496,17 +504,11 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
             Cancel
           </Button>
           {showPreview ? (
-            <Button
-              onClick={handleUpload}
-              disabled={isUploading || previewData.length === 0}
-            >
+            <Button onClick={handleUpload} disabled={isUploading || previewData.length === 0}>
               {isUploading ? "Importing…" : "Import employees"}
             </Button>
           ) : (
-            <Button
-              onClick={handlePreview}
-              disabled={!selectedFile || previewLoading}
-            >
+            <Button onClick={handlePreview} disabled={!selectedFile || previewLoading}>
               {previewLoading ? "Generating Preview..." : "Preview data"}
             </Button>
           )}

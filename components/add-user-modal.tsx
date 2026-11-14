@@ -28,7 +28,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
+  password: z.string().min(10, { message: "Password must be at least 10 characters." }),
   role: z.enum(["admin", "normal"]),
   branches: z.array(z.string()).optional(),
 })

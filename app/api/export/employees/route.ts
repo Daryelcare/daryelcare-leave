@@ -1,9 +1,20 @@
 import { NextResponse } from "next/server"
+import { allowedBranches, canAccessBranch, requireUser } from "@/lib/server-auth"
 import { exportEmployees } from "@/app/actions/export-actions"
 
 export async function POST(request: Request) {
   try {
+    const auth = await requireUser(request)
+    if (auth.response) return auth.response
     const formData = await request.formData()
+    // Only the branches this user may see; never trust a limit sent by the browser
+    formData.delete("allowedBranches")
+    const allowed = allowedBranches(auth.user)
+    const requested = formData.get("branch")
+    if (typeof requested === "string" && requested !== "all" && requested && !canAccessBranch(auth.user, requested)) {
+      return NextResponse.json({ error: "You can only export your own branches" }, { status: 403 })
+    }
+    if (allowed) formData.set("allowedBranches", JSON.stringify(allowed))
     const branch = formData.get("branch") as string
     const search = formData.get("search") as string
     const exportAll = formData.get("exportAll") === "true"

@@ -37,6 +37,9 @@ export async function exportEmployees(formData: FormData) {
     if (branch && branch !== "all") {
       query = query.eq("branch", branch)
     }
+    // Set by the API route from the signed-in user: managers only get their branches
+    const limit = formData.get("allowedBranches")
+    if (typeof limit === "string") query = query.in("branch", JSON.parse(limit).length ? JSON.parse(limit) : ["\u0000"])
 
     if (search) {
       query = query.or(`name.ilike.%${search}%,employee_code.ilike.%${search}%`)
@@ -149,6 +152,9 @@ export async function exportLeaveRequests(formData: FormData) {
     if (branch && branch !== "all") {
       query = query.eq("branch", branch)
     }
+    // Set by the API route from the signed-in user: managers only get their branches
+    const limit = formData.get("allowedBranches")
+    if (typeof limit === "string") query = query.in("branch", JSON.parse(limit).length ? JSON.parse(limit) : ["\u0000"])
 
     if (type && type !== "all") {
       query = query.eq("type", type)

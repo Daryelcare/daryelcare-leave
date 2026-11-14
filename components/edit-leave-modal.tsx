@@ -85,7 +85,8 @@ export function EditLeaveModal({ leave, open, onOpenChange }: EditLeaveModalProp
   const end = endDate ? localDateToUtc(endDate) : null
   const datesValid = start !== null && end !== null && end >= start
   const duration = datesValid ? inclusiveDays(start, end) : 0
-  const crossesYear = datesValid ? crossesLeaveYearEnd(periods, start, end) : null
+  // Only leave that uses the balance must stay inside one leave year
+  const crossesYear = datesValid && shouldDeductFromBalance(type) ? crossesLeaveYearEnd(periods, start, end) : null
 
   // Same rule as the server: only approved Annual Leave / Working Holiday use the balance
   const counts = (t: string, days: number) => (leave.status === "Approved" && shouldDeductFromBalance(t) ? days : 0)

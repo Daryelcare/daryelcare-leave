@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { EmptyState, ErrorState, ListSkeleton, SectionHeader } from "./page-kit"
+import { BalanceCheckPanel } from "./balance-check-panel"
 import {
   Dialog,
   DialogContent,
@@ -79,8 +80,8 @@ export function LeavePeriodManager() {
       })
 
       toast({
-        title: "Success",
-        description: "New leave period created successfully. All employee leave balances have been reset.",
+        title: "New leave period started",
+        description: "Balances start at 28 days, less any leave already taken in the new period.",
       })
 
       // Reset form
@@ -94,10 +95,12 @@ export function LeavePeriodManager() {
 
       // Also refresh employees as their leave balances have been reset
       queryClient.invalidateQueries({ queryKey: ["employees"] })
+      queryClient.invalidateQueries({ queryKey: ["balance-check"] })
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] })
     } catch (error) {
       toast({
-        title: "Error",
-        description: `Failed to create leave period: ${handleApiError(error)}`,
+        title: "Couldn't start the new period",
+        description: handleApiError(error),
         variant: "destructive",
       })
     } finally {
@@ -111,7 +114,7 @@ export function LeavePeriodManager() {
     <div className="space-y-4">
       <SectionHeader
         title="Leave periods"
-        description="Each leave year runs between two dates. Starting a new one resets active employees to 28 days."
+        description="Each leave year runs between two dates. Starting a new one gives everyone 28 days, less any leave they've already taken in it."
         actions={
           <Button onClick={() => setIsDialogOpen(true)}>
             <Plus />
@@ -172,7 +175,8 @@ export function LeavePeriodManager() {
           <DialogHeader>
             <DialogTitle>Start a new leave period</DialogTitle>
             <DialogDescription>
-              This ends the current period and resets every active employee to 28 days remaining and 0 taken.
+              This ends the current period. Every current employee starts on 28 days, less any approved annual leave
+              they&apos;ve already taken inside the new period.
             </DialogDescription>
           </DialogHeader>
 
@@ -223,6 +227,10 @@ export function LeavePeriodManager() {
           </Form>
         </DialogContent>
       </Dialog>
+
+      <div className="pt-4">
+        <BalanceCheckPanel />
+      </div>
     </div>
   )
 }

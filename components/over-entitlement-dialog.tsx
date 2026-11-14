@@ -49,7 +49,7 @@ export function OverEntitlementDialog({
               {people.map((p) => (
                 <li key={p.id}>
                   <Link
-                    href={`/dashboard/employees?employee=${encodeURIComponent(p.id)}`}
+                    href={`/dashboard/employees/${encodeURIComponent(p.id)}`}
                     onClick={() => onOpenChange(false)}
                     className="group flex items-center gap-3 rounded-2xl bg-muted/50 px-3 py-2.5 transition-colors hover:bg-muted"
                   >

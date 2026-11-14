@@ -1,6 +1,7 @@
 "use client"
 
 import { createPortal } from "react-dom"
+import { leaveTypeColour } from "@/lib/leave-type-colour"
 
 // The Leave page (admin side), modelled on CarerHR's client admin Leave page:
 // summary tiles, filters kept in the address, a list with selection and bulk
@@ -63,7 +64,7 @@ import { TablePagination } from "./table-pagination"
 import { TeamCalendar } from "./team-calendar"
 import { WhosOnLeaveDialog } from "./whos-on-leave-dialog"
 import { useApp } from "./app-provider"
-import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
+import { fetchWithAuth, handleApiError, authHeaders } from "@/lib/api-utils"
 import { cn } from "@/lib/utils"
 import { useBranches } from "@/hooks/use-branches"
 import { useLeaveTypes } from "@/hooks/use-leave-types"
@@ -199,14 +200,19 @@ export function LeaveManagementTable() {
       return fetchWithAuth(`/api/leave-requests?${params.toString()}`)
     },
   })
-  const { data: employeesData, isLoading: isLoadingEmployees } = useQuery<{ data: EmployeeBalance[] }>({
-    queryKey: ["employees", "balances", selectedBranch],
-    queryFn: () => {
-      const params = new URLSearchParams({ pageSize: "1000" })
-      branchParams(params)
-      return fetchWithAuth(`/api/employees?${params.toString()}`)
-    },
+  // Everyone's live balance (the same list the Employees page uses), for the
+  // "Leave left" column and the over-entitlement tile
+  const { data: directory, isLoading: isLoadingEmployees } = useQuery<{ rows: EmployeeBalance[] }>({
+    queryKey: ["employees", "directory"],
+    queryFn: () => fetchWithAuth("/api/employees/directory"),
   })
+  const employeesData = useMemo(
+    () => ({
+      data: (directory?.rows ?? []).filter((e) => selectedBranch === "all" || e.branch === selectedBranch),
+    }),
+    [directory, selectedBranch],
+  )
+  const leftNow = useMemo(() => new Map((directory?.rows ?? []).map((e) => [e.id, e.daysRemaining])), [directory])
 
   const { data: periods = [], isError: isPeriodsError } = useQuery<StoredPeriod[]>({
     queryKey: ["leavePeriods"],
@@ -345,7 +351,11 @@ export function LeaveManagementTable() {
         formData.append("endDate", toIsoDate(range.to))
         formData.append("dateFilterMode", "overlap")
       }
-      const response = await fetch("/api/export/leave-requests", { method: "POST", body: formData })
+      const response = await fetch("/api/export/leave-requests", {
+        headers: await authHeaders(),
+        method: "POST",
+        body: formData,
+      })
       if (!response.ok) throw new Error(`Export failed with status ${response.status}`)
       let filename = `leave-requests.${format === "csv" ? "csv" : "xlsx"}`
       const match = response.headers.get("Content-Disposition")?.match(/filename="(.+)"/)
@@ -389,7 +399,7 @@ export function LeaveManagementTable() {
     setParams({ year: null, status: null, dates: null, from: null, to: null, sort: null })
   }
 
-  const typeColor = (type: string) => leaveTypes.find((t) => t.name === type)?.color || "#64748b"
+  const typeColor = (type: string) => leaveTypeColour(type)
   const statusBadge = (s: string) => (
     <Badge dot variant={s === "Approved" ? "success" : s === "Pending" ? "warning" : "destructive"}>
       {s}
@@ -561,7 +571,10 @@ export function LeaveManagementTable() {
       />
 
       {/* Summary tiles: each is a shortcut to the list or people behind it */}
-      <section aria-label="Leave at a glance" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section
+        aria-label="Leave at a glance"
+        className={cn("grid grid-cols-2 gap-3 lg:grid-cols-4", view === "calendar" && "max-lg:hidden")}
+      >
         <StatCard
           label="Pending approval"
           icon={Clock}
@@ -755,7 +768,7 @@ export function LeaveManagementTable() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <Select value={sort} onValueChange={(v) => setParams({ sort: v === "pending_first" ? null : v })}>
+                    <Select value={sort} onValueChange={(v) => setParams({ sort: v === "upcoming" ? null : v })}>
                       <SelectTrigger className={filterSelect} aria-label="Sort">
                         <SelectValue />
                       </SelectTrigger>
@@ -812,6 +825,59 @@ export function LeaveManagementTable() {
                   </div>
                 )}
               </div>
+
+              {/* A removable chip for each filter in use */}
+              {filtersActive && (
+                <div
+                  className="flex flex-wrap items-center gap-2 border-b border-border/70 px-4 py-2.5 text-sm sm:px-5"
+                  aria-label="Filters in use"
+                >
+                  {[
+                    employeeSearch && { key: "q", label: `“${employeeSearch}”`, clear: () => setEmployeeSearch("") },
+                    isAdmin &&
+                      selectedBranch !== "all" && {
+                        key: "branch",
+                        label: selectedBranch,
+                        clear: () => setSelectedBranch("all"),
+                      },
+                    selectedType !== "all" && { key: "type", label: selectedType, clear: () => setSelectedType("all") },
+                    status !== "all" && {
+                      key: "status",
+                      label: STATUS_FILTERS.find((x) => x.value === status)?.label ?? status,
+                      clear: () => setParams({ status: null }),
+                    },
+                    datePreset !== "any" && {
+                      key: "dates",
+                      label: DATE_PRESETS.find((x) => x.value === datePreset)?.label ?? datePreset,
+                      clear: () => setParams({ dates: null, from: null, to: null }),
+                    },
+                    yearFiltered && {
+                      key: "year",
+                      label: selectedYear ? selectedYear.label : "All leave years",
+                      clear: () => setParams({ year: null }),
+                    },
+                  ]
+                    .filter((c): c is { key: string; label: string; clear: () => void } => !!c)
+                    .map((c) => (
+                      <span
+                        key={c.key}
+                        className="inline-flex h-7 items-center gap-1 rounded-full bg-card pl-3 pr-1 text-xs font-semibold shadow-card"
+                      >
+                        {c.label}
+                        <button
+                          onClick={c.clear}
+                          aria-label={`Remove filter: ${c.label}`}
+                          className="flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </span>
+                    ))}
+                  <button onClick={resetFilters} className="ml-1 text-xs font-semibold text-primary hover:underline">
+                    Clear all
+                  </button>
+                </div>
+              )}
 
               {/* Which leave year is showing, and its figures */}
               <div
@@ -874,7 +940,7 @@ export function LeaveManagementTable() {
                       <TableHead>Type</TableHead>
                       <TableHead>Dates</TableHead>
                       <TableHead className="text-right">Days</TableHead>
-                      <TableHead className="hidden text-right lg:table-cell">Balance after</TableHead>
+                      <TableHead className="hidden text-right lg:table-cell">Leave left now</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="w-12">
                         <span className="sr-only">Actions</span>
@@ -946,10 +1012,11 @@ export function LeaveManagementTable() {
                           <TableCell
                             className={cn(
                               "hidden text-right tabular lg:table-cell",
-                              (row.remaining ?? 0) < 0 && "font-semibold text-destructive",
+                              (leftNow.get(row.employeeId) ?? 0) < 0 && "font-semibold text-destructive",
                             )}
+                            title="This person's leave left today, not at the time of booking"
                           >
-                            {row.remaining ?? "—"}
+                            {leftNow.get(row.employeeId) ?? "—"}
                           </TableCell>
                           <TableCell>{statusBadge(row.status)}</TableCell>
                           <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>

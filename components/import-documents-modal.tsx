@@ -270,7 +270,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
   // Handle template download
   const handleDownloadTemplate = async (format: "csv" | "excel") => {
     try {
-      const response = await fetch(`/api/templates/document-import?format=${format}`)
+      const response = await fetch(`/api/templates/document-import?format=${format}`, { headers: await authHeaders() })
 
       if (!response.ok) {
         throw new Error("Failed to download template")

@@ -1,9 +1,11 @@
-
 import { NextResponse } from "next/server"
+import { requireAdmin, requireUser } from "@/lib/server-auth"
 import { supabase } from "@/lib/supabase"
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const auth = await requireUser(request)
+    if (auth.response) return auth.response
     const { data, error } = await supabase.from("leave_types").select("*").order("name")
 
     if (error) {
@@ -20,6 +22,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const auth = await requireAdmin(request)
+    if (auth.response) return auth.response
     const data = await request.json()
     const { error } = await supabase.from("leave_types").insert({
       name: data.name,

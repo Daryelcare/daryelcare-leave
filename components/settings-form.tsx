@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils"
 import { UserManagementTable } from "./user-management-table"
 import { BranchManagementTable } from "./branch-management-table"
 import { LeavePeriodManager } from "./leave-period-manager"
+import { DataHealth } from "./data-health"
+import { AccountName } from "./account-name"
 import { AdminSettings } from "./admin-settings"
 import { Avatar, Field, PageHeader, SectionHeader } from "./page-kit"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -27,7 +29,7 @@ import { LeaveTypeManagementTable } from "./leave-type-management-table"
 const passwordFormSchema = z
   .object({
     currentPassword: z.string().min(1, { message: "Current password is required" }),
-    newPassword: z.string().min(8, { message: "Password must be at least 8 characters" }),
+    newPassword: z.string().min(10, { message: "Password must be at least 10 characters" }),
     confirmPassword: z.string().min(8, { message: "Confirm password is required" }),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
@@ -168,7 +170,7 @@ export function SettingsForm() {
                 </div>
               </div>
               <dl className="grid gap-5 border-t border-border/70 p-5 sm:grid-cols-2 sm:p-6">
-                <Field label="Name">{user?.name || "—"}</Field>
+                <AccountName />
                 <Field label="Email">{user?.email || "—"}</Field>
                 <Field label="Role">{isAdmin ? "Administrator" : "Branch manager"}</Field>
                 <Field label="Branches">
@@ -187,9 +189,11 @@ export function SettingsForm() {
                   </span>
                 </Field>
               </dl>
-              <p className="border-t border-border/70 bg-muted/40 px-5 py-3 text-xs text-muted-foreground sm:px-6">
-                To change your name, role or branches, ask an administrator.
-              </p>
+              {!isAdmin && (
+                <p className="border-t border-border/70 bg-muted/40 px-5 py-3 text-xs text-muted-foreground sm:px-6">
+                  To change your role or branches, ask an administrator.
+                </p>
+              )}
             </div>
           </div>
         )
@@ -240,6 +244,8 @@ export function SettingsForm() {
         return <LeaveTypeManagementTable />
       case "leave-periods":
         return <LeavePeriodManager />
+      case "data-health":
+        return <DataHealth />
       case "advanced":
         return (
           <div className="space-y-4">

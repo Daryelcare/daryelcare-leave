@@ -4,6 +4,7 @@ import { supabase } from "./supabase"
 import type { StoredPeriod } from "./leave-years"
 import { crossesLeaveYearEnd } from "./leave-years"
 import { toUkDate } from "./dates"
+import { shouldDeductFromBalance } from "./utils"
 
 /** The organisation's leave years from Settings → Leave periods */
 export async function fetchLeavePeriods(): Promise<StoredPeriod[]> {
@@ -15,8 +16,12 @@ export async function fetchLeavePeriods(): Promise<StoredPeriod[]> {
   return (data || []).map((p) => ({ startDate: p.start_date, endDate: p.end_date, isActive: !!p.is_active }))
 }
 
-/** A plain-English refusal if the dates cross the end of a leave year, else null */
-export async function leaveYearBoundaryError(start: number, end: number): Promise<string | null> {
+/**
+ * A plain-English refusal if leave that uses the balance crosses the end of a
+ * leave year, else null. Other types (maternity, sick) may run across it.
+ */
+export async function leaveYearBoundaryError(start: number, end: number, type: string): Promise<string | null> {
+  if (!shouldDeductFromBalance(type)) return null
   const year = crossesLeaveYearEnd(await fetchLeavePeriods(), start, end)
   if (!year) return null
   return `Leave can't cross the end of the leave year (${toUkDate(year.end)}). Add it as two entries: one up to ${toUkDate(year.end)} and one from the next day.`

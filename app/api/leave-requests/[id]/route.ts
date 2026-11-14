@@ -1,4 +1,3 @@
-
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
 import { shouldDeductFromBalance } from "@/lib/utils"
@@ -145,7 +144,12 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         : { admin_notes: note || null, decided_by: auth.user.email, decided_at: new Date().toISOString() }
 
     let noteSaved = true
-    let result = await supabase.from("leave_requests").update({ status, ...decision }).eq("id", id).select().single()
+    let result = await supabase
+      .from("leave_requests")
+      .update({ status, ...decision })
+      .eq("id", id)
+      .select()
+      .single()
     if (result.error && isMissingColumn(result.error)) {
       // The decision columns haven't been added yet: change the status only
       noteSaved = false
@@ -156,7 +160,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       throw result.error
     }
 
-    console.log(`${auth.user.email} set leave ${id} for ${leaveRequest.employee_name} to ${status}${note ? ` (${note})` : ""}`)
+    console.log(
+      `${auth.user.email} set leave ${id} for ${leaveRequest.employee_name} to ${status}${note ? ` (${note})` : ""}`,
+    )
 
     return NextResponse.json({
       id: result.data.id,
@@ -196,7 +202,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (duration > 366) {
       return NextResponse.json({ error: "Leave can't be longer than a year" }, { status: 400 })
     }
-    const boundary = await leaveYearBoundaryError(start, end)
+    const boundary = await leaveYearBoundaryError(start, end, type)
     if (boundary) return NextResponse.json({ error: boundary }, { status: 400 })
 
     const { data: existing, error: fetchError } = await supabase
@@ -213,8 +219,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     }
 
     const delta =
-      deductedDays(existing.status, type, duration) -
-      deductedDays(existing.status, existing.type, existing.duration)
+      deductedDays(existing.status, type, duration) - deductedDays(existing.status, existing.type, existing.duration)
     const daysRemaining = await adjustBalance(existing.employee_id, delta)
 
     const reason = typeof data.reason === "string" ? data.reason.trim() : existing.reason
@@ -316,7 +321,9 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
         throw updateError
       }
 
-      console.log(`Restored ${leaveRequest.duration} days to employee ${leaveRequest.employee_id}'s balance for ${leaveRequest.type} leave type`)
+      console.log(
+        `Restored ${leaveRequest.duration} days to employee ${leaveRequest.employee_id}'s balance for ${leaveRequest.type} leave type`,
+      )
     }
 
     // Now delete the leave request

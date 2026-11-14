@@ -1,11 +1,17 @@
 import type { Metadata } from "next"
-import { EmployeeTable } from "@/components/employee-table"
+import { Suspense } from "react"
+import { EmployeeDirectory } from "@/components/employee-directory"
 
 export const metadata: Metadata = {
   title: "Employees",
-  description: "View and manage employees across your branches",
+  description: "Everyone in your branches: leave, right to work and details",
 }
 
 export default function EmployeesPage() {
-  return <EmployeeTable />
+  // Filters are read from the address, which needs a Suspense boundary
+  return (
+    <Suspense>
+      <EmployeeDirectory />
+    </Suspense>
+  )
 }

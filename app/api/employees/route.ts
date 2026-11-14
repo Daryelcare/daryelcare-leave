@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
+import { allowedBranches, canAccessBranch, requireUser } from "@/lib/server-auth"
 
 // Map frontend column names to database column names
 const columnMapping: Record<string, string> = {
@@ -15,6 +16,9 @@ const columnMapping: Record<string, string> = {
 
 export async function GET(request: Request) {
   try {
+    const auth = await requireUser(request)
+    if (auth.response) return auth.response
+    const allowed = allowedBranches(auth.user)
     // Get query parameters
     const { searchParams } = new URL(request.url)
     const branch = searchParams.get("branch")
@@ -40,12 +44,15 @@ export async function GET(request: Request) {
     let query = supabase.from("employees").select("*", { count: "exact" })
 
     // Apply filters
+    // Managers only see their own branches
     if (branch && branch !== "all") {
+      if (!canAccessBranch(auth.user, branch)) return NextResponse.json({ data: [], total: 0 })
       query = query.eq("branch", branch)
     } else if (branches) {
-      // Handle multiple branches (comma-separated list)
-      const branchList = branches.split(",")
-      query = query.in("branch", branchList)
+      const branchList = branches.split(",").filter((b) => canAccessBranch(auth.user, b))
+      query = query.in("branch", branchList.length ? branchList : ["\u0000"])
+    } else if (allowed) {
+      query = query.in("branch", allowed.length ? allowed : ["\u0000"])
     }
 
     if (search) {
@@ -67,7 +74,7 @@ export async function GET(request: Request) {
 
     if (error) {
       console.error("Supabase query error:", error)
-      return NextResponse.json({ error: `Failed to fetch employees: ${error.message}` }, { status: 500 })
+      return NextResponse.json({ error: "Couldn't load employees. Please try again." }, { status: 500 })
     }
 
     // For debugging
@@ -104,23 +111,22 @@ export async function GET(request: Request) {
     })
   } catch (error) {
     console.error("Error fetching employees:", error)
-    return NextResponse.json(
-      {
-        error: "Failed to fetch employees",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 },
-    )
+    return NextResponse.json({ error: "Couldn't load employees. Please try again." }, { status: 500 })
   }
 }
 
 export async function POST(request: Request) {
   try {
+    const auth = await requireUser(request)
+    if (auth.response) return auth.response
     const data = await request.json()
 
     // Validate required fields
     if (!data.name || !data.employeeCode || !data.branch || !data.jobTitle) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    }
+    if (!canAccessBranch(auth.user, data.branch)) {
+      return NextResponse.json({ error: "You can only add employees to your own branches" }, { status: 403 })
     }
 
     // Insert into Supabase

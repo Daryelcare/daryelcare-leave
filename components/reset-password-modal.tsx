@@ -23,8 +23,8 @@ import type { User } from "@/lib/types"
 // Form schema
 const formSchema = z
   .object({
-    password: z.string().min(6, { message: "Password must be at least 6 characters." }),
-    confirmPassword: z.string().min(6, { message: "Confirm password must be at least 6 characters." }),
+    password: z.string().min(10, { message: "Password must be at least 10 characters." }),
+    confirmPassword: z.string().min(10, { message: "Confirm password must be at least 10 characters." }),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",

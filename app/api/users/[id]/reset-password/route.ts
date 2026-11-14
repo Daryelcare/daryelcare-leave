@@ -16,8 +16,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const { id } = await params
     const { password } = await request.json()
 
-    if (!password || typeof password !== "string" || password.length < 6) {
-      return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 })
+    if (!password || typeof password !== "string" || password.length < 10) {
+      return NextResponse.json({ error: "Password must be at least 10 characters" }, { status: 400 })
     }
 
     const { data: target, error: userError } = await supabase.from("users").select("id, email").eq("id", id).maybeSingle()
