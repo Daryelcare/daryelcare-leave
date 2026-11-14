@@ -1,7 +1,7 @@
 // Filters, sorting and summary counts for the Leave page list, modelled on
 // CarerHR's client admin Leave page. Pure functions, so they're easy to test.
 
-import { DAY_MS, parseDateToUtc } from "./dates"
+import { DAY_MS, parseDateToUtc, todayUtc } from "./dates"
 
 export type LeaveLike = {
   id: string
@@ -77,8 +77,9 @@ export function inWindow(row: Pick<LeaveLike, "startDate" | "endDate">, w: Retur
 
 // ---------------------------------------------------------------- sort
 
-export type LeaveSort = "pending_first" | "submitted" | "start_soonest" | "start_latest" | "employee"
+export type LeaveSort = "upcoming" | "pending_first" | "submitted" | "start_soonest" | "start_latest" | "employee"
 export const LEAVE_SORTS: { value: LeaveSort; label: string }[] = [
+  { value: "upcoming", label: "Pending, away now, upcoming" },
   { value: "pending_first", label: "Pending first" },
   { value: "submitted", label: "Newest submitted" },
   { value: "start_soonest", label: "Start date, soonest" },
@@ -86,15 +87,33 @@ export const LEAVE_SORTS: { value: LeaveSort; label: string }[] = [
   { value: "employee", label: "Employee A–Z" },
 ]
 export const toLeaveSort = (v: string | null): LeaveSort =>
-  LEAVE_SORTS.some((s) => s.value === v) ? (v as LeaveSort) : "pending_first"
+  LEAVE_SORTS.some((s) => s.value === v) ? (v as LeaveSort) : "upcoming"
 
 const startOf = (r: LeaveLike) => parseDateToUtc(r.startDate) ?? 0
 const submittedOf = (r: LeaveLike) => (r.submittedDate ? (parseDateToUtc(r.submittedDate) ?? 0) : 0)
 
-export function sortLeave<T extends LeaveLike>(rows: T[], sort: LeaveSort): T[] {
+export function sortLeave<T extends LeaveLike>(rows: T[], sort: LeaveSort, today = todayUtc()): T[] {
   const list = [...rows]
   const byName = (a: T, b: T) => a.employee.localeCompare(b.employee)
   switch (sort) {
+    case "upcoming": {
+      // What needs attention first: pending, then who's away now, then the
+      // next leave to start, then past leave (most recent first)
+      const rank = (r: T) => {
+        if (r.status === "Pending") return 0
+        const s = startOf(r)
+        const e = parseDateToUtc(r.endDate) ?? s
+        if (s <= today && e >= today) return 1
+        return s > today ? 2 : 3
+      }
+      return list.sort((a, b) => {
+        const ra = rank(a)
+        const rb = rank(b)
+        if (ra !== rb) return ra - rb
+        if (ra === 3) return startOf(b) - startOf(a) || byName(a, b)
+        return startOf(a) - startOf(b) || byName(a, b)
+      })
+    }
     case "pending_first":
       // Pending needs a decision, so it comes first; then newest submitted
       return list.sort(
