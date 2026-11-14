@@ -1,7 +1,7 @@
-
 "use client"
 
 import { useEffect, useState } from "react"
+import { leaveTypeColour } from "@/lib/leave-type-colour"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -73,7 +73,6 @@ export function EditLeaveTypeModal({ leaveType, isOpen, onClose, onSuccess }: Ed
   const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true)
     try {
-      
       await fetchWithAuth(`/api/leave-types${leaveType ? `/${leaveType.id}` : ""}`, {
         method: leaveType ? "PUT" : "POST",
         body: JSON.stringify(data),
@@ -132,26 +131,18 @@ export function EditLeaveTypeModal({ leaveType, isOpen, onClose, onSuccess }: Ed
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="color"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Colour</FormLabel>
-                  <div className="flex items-center gap-3">
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="color"
-                        className="h-10 w-14 cursor-pointer p-1 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-md [&::-webkit-color-swatch]:border-0"
-                      />
-                    </FormControl>
-                    <span className="font-mono text-sm uppercase text-muted-foreground">{field.value}</span>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Colours are set automatically, so a leave type never looks like a status */}
+            <div className="space-y-1.5">
+              <p className="text-sm font-medium">Colour</p>
+              <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span
+                  className="h-3.5 w-3.5 rounded-full"
+                  style={{ backgroundColor: leaveTypeColour(form.watch("name") || leaveType?.name) }}
+                  aria-hidden
+                />
+                Set automatically, so leave types never look like a status (red, amber or green).
+              </p>
+            </div>
             <FormField
               control={form.control}
               name="defaultDays"

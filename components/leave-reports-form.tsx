@@ -1,6 +1,7 @@
 "use client"
 
 import { formatLocalDate } from "@/lib/dates"
+import { authHeaders } from "@/lib/api-utils"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { DatePicker } from "@/components/ui/date-picker"
@@ -49,6 +50,7 @@ export function LeaveReportsForm() {
       formData.append("dateFilterMode", dateFilterMode)
 
       const response = await fetch("/api/export/leave-requests", {
+        headers: await authHeaders(),
         method: "POST",
         body: formData,
       })

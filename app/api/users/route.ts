@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server"
+import { requireAdmin } from "@/lib/server-auth"
 import { supabase } from "@/lib/supabase"
 import { signUpUserWithProfile } from "@/lib/auth"
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const auth = await requireAdmin(request)
+    if (auth.response) return auth.response
     // Execute the query
     const { data, error } = await supabase.from("users").select("*")
 
@@ -30,11 +33,16 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const auth = await requireAdmin(request)
+    if (auth.response) return auth.response
     const data = await request.json()
 
     // Validate required fields
     if (!data.email || !data.role || !data.password) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    }
+    if (typeof data.password !== "string" || data.password.length < 10) {
+      return NextResponse.json({ error: "Password must be at least 10 characters" }, { status: 400 })
     }
 
     // Basic email validation before proceeding

@@ -7,6 +7,7 @@
 // version of the same colour. Rejected leave is never shown.
 
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react"
+import { leaveTypeColour } from "@/lib/leave-type-colour"
 import { useQuery } from "@tanstack/react-query"
 import { AlertTriangle, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react"
 import { Input } from "@/components/ui/input"
@@ -16,7 +17,6 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useApp } from "./app-provider"
 import { Avatar, EmptyState, ErrorState, plural } from "./page-kit"
 import { useBranches } from "@/hooks/use-branches"
-import { useLeaveTypes } from "@/hooks/use-leave-types"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
 import { formatDisplayRange, toIsoDate, todayUtc } from "@/lib/dates"
 import { cn } from "@/lib/utils"
@@ -91,7 +91,6 @@ export function TeamCalendar({
   const isAdmin = user?.role === "admin"
   const myBranches = user?.branches || []
   const { data: allBranches = [] } = useBranches()
-  const { data: leaveTypes = [] } = useLeaveTypes()
 
   const today = todayUtc()
   const todayIso = toIsoDate(today)
@@ -131,7 +130,7 @@ export function TeamCalendar({
     placeholderData: (previous) => previous,
   })
 
-  const typeColor = (type: string) => leaveTypes.find((t) => t.name === type)?.color || "#6366f1"
+  const typeColor = (type: string) => leaveTypeColour(type)
 
   // One row per leave entry, its bar clamped to this month
   const rows = useMemo(() => {

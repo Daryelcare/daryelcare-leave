@@ -1,6 +1,7 @@
 "use client"
 
 import { createPortal } from "react-dom"
+import { leaveTypeColour } from "@/lib/leave-type-colour"
 
 // The Leave page (admin side), modelled on CarerHR's client admin Leave page:
 // summary tiles, filters kept in the address, a list with selection and bulk
@@ -63,7 +64,7 @@ import { TablePagination } from "./table-pagination"
 import { TeamCalendar } from "./team-calendar"
 import { WhosOnLeaveDialog } from "./whos-on-leave-dialog"
 import { useApp } from "./app-provider"
-import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
+import { fetchWithAuth, handleApiError, authHeaders } from "@/lib/api-utils"
 import { cn } from "@/lib/utils"
 import { useBranches } from "@/hooks/use-branches"
 import { useLeaveTypes } from "@/hooks/use-leave-types"
@@ -345,7 +346,11 @@ export function LeaveManagementTable() {
         formData.append("endDate", toIsoDate(range.to))
         formData.append("dateFilterMode", "overlap")
       }
-      const response = await fetch("/api/export/leave-requests", { method: "POST", body: formData })
+      const response = await fetch("/api/export/leave-requests", {
+        headers: await authHeaders(),
+        method: "POST",
+        body: formData,
+      })
       if (!response.ok) throw new Error(`Export failed with status ${response.status}`)
       let filename = `leave-requests.${format === "csv" ? "csv" : "xlsx"}`
       const match = response.headers.get("Content-Disposition")?.match(/filename="(.+)"/)
@@ -389,7 +394,7 @@ export function LeaveManagementTable() {
     setParams({ year: null, status: null, dates: null, from: null, to: null, sort: null })
   }
 
-  const typeColor = (type: string) => leaveTypes.find((t) => t.name === type)?.color || "#64748b"
+  const typeColor = (type: string) => leaveTypeColour(type)
   const statusBadge = (s: string) => (
     <Badge dot variant={s === "Approved" ? "success" : s === "Pending" ? "warning" : "destructive"}>
       {s}

@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server"
+import { requireUser } from "@/lib/server-auth"
 import * as XLSX from "xlsx"
 
 export async function GET(request: Request) {
   try {
+    const auth = await requireUser(request)
+    if (auth.response) return auth.response
     // Get query parameters
     const { searchParams } = new URL(request.url)
     const format = searchParams.get("format") || "csv"

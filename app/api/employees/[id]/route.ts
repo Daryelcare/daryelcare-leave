@@ -1,9 +1,25 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
+import { canAccessBranch, requireUser, type RequestUser } from "@/lib/server-auth"
+
+/** The employee's branch check: a response to send instead, or null when allowed */
+async function branchCheck(id: string, user: RequestUser) {
+  const { data, error } = await supabase.from("employees").select("branch").eq("id", id).maybeSingle()
+  if (error) throw error
+  if (!data) return NextResponse.json({ error: "Employee not found" }, { status: 404 })
+  if (!canAccessBranch(user, data.branch)) {
+    return NextResponse.json({ error: "You can only manage employees in your own branches" }, { status: 403 })
+  }
+  return null
+}
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const auth = await requireUser(request)
+    if (auth.response) return auth.response
     const { id } = await params
+    const denied = await branchCheck(id, auth.user)
+    if (denied) return denied
 
     // Fetch the employee from Supabase
     const { data, error } = await supabase.from("employees").select("*").eq("id", id).single()
@@ -40,12 +56,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const auth = await requireUser(request)
+    if (auth.response) return auth.response
     const { id } = await params
+    const denied = await branchCheck(id, auth.user)
+    if (denied) return denied
     const data = await request.json()
 
     // Validate required fields
     if (!data.name || !data.employeeCode || !data.branch || !data.jobTitle) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    }
+    if (!canAccessBranch(auth.user, data.branch)) {
+      return NextResponse.json({ error: "You can only move employees to your own branches" }, { status: 403 })
     }
 
     // Update the employee in Supabase
@@ -95,7 +118,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const auth = await requireUser(request)
+    if (auth.response) return auth.response
     const { id } = await params
+    const denied = await branchCheck(id, auth.user)
+    if (denied) return denied
 
     // Delete the employee from Supabase
     const { error } = await supabase.from("employees").delete().eq("id", id)

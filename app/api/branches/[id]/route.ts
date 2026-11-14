@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server"
+import { requireAdmin } from "@/lib/server-auth"
 import { supabase } from "@/lib/supabase"
 
 // Update branch
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const auth = await requireAdmin(request)
+    if (auth.response) return auth.response
     const { id } = await params
     const { name } = await request.json()
 
@@ -22,8 +25,10 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 }
 
 // Delete branch
-export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const auth = await requireAdmin(request)
+    if (auth.response) return auth.response
     const { id } = await params
 
     const { error } = await supabase.from("branches").delete().eq("id", id)

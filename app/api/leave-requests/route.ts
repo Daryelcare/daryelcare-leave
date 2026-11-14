@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
-import { canAccessBranch, requireUser } from "@/lib/server-auth"
+import { fetchAllRows } from "@/lib/fetch-all"
+import { allowedBranches, canAccessBranch, requireUser } from "@/lib/server-auth"
 import { leaveYearBoundaryError } from "@/lib/leave-server"
 import { parseDateToUtc } from "@/lib/dates"
 
@@ -81,6 +82,9 @@ async function validateLeaveRequest(data: any) {
 
 export async function GET(request: Request) {
   try {
+    const auth = await requireUser(request)
+    if (auth.response) return auth.response
+    const allowed = allowedBranches(auth.user)
     // Get query parameters
     const { searchParams } = new URL(request.url)
     const branch = searchParams.get("branch")
@@ -111,12 +115,15 @@ export async function GET(request: Request) {
     let query = supabase.from("leave_requests").select("*")
 
     // Apply filters
+    // Managers only see their own branches
     if (branch && branch !== "all") {
+      if (!canAccessBranch(auth.user, branch)) return NextResponse.json([])
       query = query.eq("branch", branch)
     } else if (branches) {
-      // Handle multiple branches (comma-separated list)
-      const branchList = branches.split(",")
-      query = query.in("branch", branchList)
+      const branchList = branches.split(",").filter((b) => canAccessBranch(auth.user, b))
+      query = query.in("branch", branchList.length ? branchList : ["\u0000"])
+    } else if (allowed) {
+      query = query.in("branch", allowed.length ? allowed : ["\u0000"])
     }
 
     if (type && type !== "all") {
@@ -158,7 +165,10 @@ export async function GET(request: Request) {
     if (data.length > 0) {
       try {
         // Instead of trying to join by ID, we'll fetch all employees and create a mapping
-        const { data: employees } = await supabase.from("employees").select("id, employee_code")
+        // Every employee, a page at a time (PostgREST stops at 1000 rows)
+        const employees = await fetchAllRows<{ id: string; employee_code: string }>((from, to) =>
+          supabase.from("employees").select("id, employee_code").order("id").range(from, to),
+        )
 
         if (employees) {
           // Create a map of employee IDs to employee codes
@@ -234,7 +244,7 @@ export async function POST(request: Request) {
         { status: 400 },
       )
     }
-    const boundary = await leaveYearBoundaryError(startTime, endTime)
+    const boundary = await leaveYearBoundaryError(startTime, endTime, data.type)
     if (boundary) return NextResponse.json({ error: boundary }, { status: 400 })
 
     // Validate leave request against employee's remaining days

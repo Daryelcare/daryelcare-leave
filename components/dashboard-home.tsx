@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, type ReactNode } from "react"
+import { leaveTypeColour } from "@/lib/leave-type-colour"
 import Link from "next/link"
 import { useQuery } from "@tanstack/react-query"
 import {
@@ -20,7 +21,6 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, EmptyState, ErrorState, ListSkeleton, PageHeader, StatCard, plural } from "./page-kit"
 import { useApp } from "./app-provider"
 import { useBranches } from "@/hooks/use-branches"
-import { useLeaveTypes } from "@/hooks/use-leave-types"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
 import { formatDisplayDate, formatDisplayRange } from "@/lib/dates"
 import { LEAVE_CALENDAR_HREF } from "@/lib/navigation"
@@ -88,7 +88,6 @@ export function DashboardHome() {
   const [branch, setBranch] = useState<string>("all")
   const [range, setRange] = useState<"today" | "week">("today")
   const { data: allBranches = [] } = useBranches()
-  const { data: leaveTypes = [] } = useLeaveTypes()
 
   const branchOptions = isAdmin ? allBranches.map((b) => b.name) : myBranches
   const showBranchPicker = branchOptions.length > 1
@@ -100,7 +99,7 @@ export function DashboardHome() {
     refetchInterval: 5 * 60 * 1000,
   })
 
-  const typeColor = (type: string) => leaveTypes.find((t) => t.name === type)?.color || "#6366f1"
+  const typeColor = (type: string) => leaveTypeColour(type)
 
   const peopleOffThisWeek = new Set(data?.offThisWeek.map((l) => l.employeeId)).size
   // Right to work is the check that matters most: it leads, other documents follow

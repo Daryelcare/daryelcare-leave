@@ -1,12 +1,12 @@
 "use client"
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { leaveTypeColour } from "@/lib/leave-type-colour"
 import { Button } from "@/components/ui/button"
 import { useQuery } from "@tanstack/react-query"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
-import { useLeaveTypes } from "@/hooks/use-leave-types"
 import { formatDisplayDate, formatDisplayRange } from "@/lib/dates"
 import { Avatar, EmptyState, ErrorState, Field, plural } from "./page-kit"
 import type { LeaveRequest } from "@/lib/types"
@@ -31,8 +31,7 @@ export function LeaveDetailsModal({ leaveId, isOpen, onClose }: LeaveDetailsModa
     enabled: isOpen && !!leaveId,
   })
 
-  const { data: leaveTypes = [] } = useLeaveTypes()
-  const color = leaveTypes.find((t) => t.name === leave?.type)?.color || "#64748b"
+  const color = leaveTypeColour(leave?.type)
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -60,21 +59,33 @@ export function LeaveDetailsModal({ leaveId, isOpen, onClose }: LeaveDetailsModa
                   {leave.employeeCode && leave.employeeCode !== leave.employeeId ? ` · ${leave.employeeCode}` : ""}
                 </p>
               </div>
-              <Badge dot variant={leave.status === "Approved" ? "success" : leave.status === "Pending" ? "warning" : "destructive"}>
+              <Badge
+                dot
+                variant={
+                  leave.status === "Approved" ? "success" : leave.status === "Pending" ? "warning" : "destructive"
+                }
+              >
                 {leave.status}
               </Badge>
             </div>
 
             <div className="flex items-center gap-4 rounded-xl border border-border/80 bg-muted/40 p-4">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: `${color}1f` }}>
+              <span
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+                style={{ backgroundColor: `${color}1f` }}
+              >
                 <span className="h-3 w-3 rounded-full" style={{ backgroundColor: color }} />
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold">{leave.type}</p>
-                <p className="text-sm text-muted-foreground tabular">{formatDisplayRange(leave.startDate, leave.endDate)}</p>
+                <p className="text-sm text-muted-foreground tabular">
+                  {formatDisplayRange(leave.startDate, leave.endDate)}
+                </p>
               </div>
               <div className="text-right">
-                <p className="font-display text-2xl font-semibold leading-none tracking-[-0.03em] tabular">{leave.duration}</p>
+                <p className="font-display text-2xl font-semibold leading-none tracking-[-0.03em] tabular">
+                  {leave.duration}
+                </p>
                 <p className="text-xs text-muted-foreground">{leave.duration === 1 ? "day" : "days"}</p>
               </div>
             </div>

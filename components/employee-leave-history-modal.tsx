@@ -1,14 +1,21 @@
 "use client"
 
 import { useState } from "react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { leaveTypeColour } from "@/lib/leave-type-colour"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { useQuery } from "@tanstack/react-query"
-import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
+import { fetchWithAuth, handleApiError, authHeaders } from "@/lib/api-utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { CalendarDays, Download, FileSpreadsheet, FileText, Loader2 } from "lucide-react"
-import { useLeaveTypes } from "@/hooks/use-leave-types"
 import { formatDisplayRange } from "@/lib/dates"
 import { EmptyState, ErrorState, plural } from "./page-kit"
 import type { LeaveRequest } from "@/lib/types"
@@ -59,6 +66,7 @@ export function EmployeeLeaveHistoryModal({
 
       // Use fetch directly to download the file
       const response = await fetch("/api/export/leave-requests", {
+        headers: await authHeaders(),
         method: "POST",
         body: formData,
       })
@@ -109,8 +117,7 @@ export function EmployeeLeaveHistoryModal({
     }
   }
 
-  const { data: leaveTypes = [] } = useLeaveTypes()
-  const typeColor = (type: string) => leaveTypes.find((t) => t.name === type)?.color || "#64748b"
+  const typeColor = (type: string) => leaveTypeColour(type)
   const totalDays = leaveRequests.filter((l) => l.status === "Approved").reduce((sum, l) => sum + (l.duration || 0), 0)
 
   return (
@@ -120,7 +127,9 @@ export function EmployeeLeaveHistoryModal({
           <DialogTitle>Leave history</DialogTitle>
           <DialogDescription>
             {employeeName}
-            {!isLoading && leaveRequests.length > 0 && ` · ${plural(leaveRequests.length, "entry", "entries")} · ${plural(totalDays, "day")} approved`}
+            {!isLoading &&
+              leaveRequests.length > 0 &&
+              ` · ${plural(leaveRequests.length, "entry", "entries")} · ${plural(totalDays, "day")} approved`}
           </DialogDescription>
         </DialogHeader>
 
@@ -136,21 +145,35 @@ export function EmployeeLeaveHistoryModal({
           <ul className="divide-y divide-border/70 overflow-hidden rounded-xl border border-border/80">
             {leaveRequests.map((leave) => (
               <li key={leave.id} className="flex items-center gap-3 px-4 py-3">
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: typeColor(leave.type) }} aria-hidden />
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: typeColor(leave.type) }}
+                  aria-hidden
+                />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold">{leave.type}</p>
                   <p className="text-xs text-muted-foreground tabular">
                     {formatDisplayRange(leave.startDate, leave.endDate)} · {plural(leave.duration, "day")}
                   </p>
                 </div>
-                <Badge dot variant={leave.status === "Approved" ? "success" : leave.status === "Pending" ? "warning" : "destructive"}>
+                <Badge
+                  dot
+                  variant={
+                    leave.status === "Approved" ? "success" : leave.status === "Pending" ? "warning" : "destructive"
+                  }
+                >
                   {leave.status}
                 </Badge>
               </li>
             ))}
           </ul>
         ) : (
-          <EmptyState icon={CalendarDays} title="No leave recorded" description="Leave added for this employee will appear here." compact />
+          <EmptyState
+            icon={CalendarDays}
+            title="No leave recorded"
+            description="Leave added for this employee will appear here."
+            compact
+          />
         )}
 
         <DialogFooter>

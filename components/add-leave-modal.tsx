@@ -23,7 +23,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/components/ui/use-toast"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
 import { useLeaveTypes } from "@/hooks/use-leave-types"
-import { cn } from "@/lib/utils"
+import { cn, shouldDeductFromBalance } from "@/lib/utils"
 import { useQuery } from "@tanstack/react-query"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useApp } from "./app-provider"
@@ -304,8 +304,12 @@ export function AddLeaveModal({ open, onOpenChange }: AddLeaveModalProps) {
     duration = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1 // +1 to include both start and end days
   }
 
+  // Only leave that uses the balance must stay inside one leave year (maternity, sick and so on may cross it)
+  const leaveTypeValue = form.watch("type")
   const crossesYear =
-    startDate && endDate ? crossesLeaveYearEnd(periods, localDateToUtc(startDate), localDateToUtc(endDate)) : null
+    startDate && endDate && shouldDeductFromBalance(leaveTypeValue || "")
+      ? crossesLeaveYearEnd(periods, localDateToUtc(startDate), localDateToUtc(endDate))
+      : null
 
   // Check if the requested leave exceeds the employee's remaining days
   // This now applies to ALL leave types, not just Annual

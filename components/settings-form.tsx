@@ -27,7 +27,7 @@ import { LeaveTypeManagementTable } from "./leave-type-management-table"
 const passwordFormSchema = z
   .object({
     currentPassword: z.string().min(1, { message: "Current password is required" }),
-    newPassword: z.string().min(8, { message: "Password must be at least 8 characters" }),
+    newPassword: z.string().min(10, { message: "Password must be at least 10 characters" }),
     confirmPassword: z.string().min(8, { message: "Confirm password is required" }),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
