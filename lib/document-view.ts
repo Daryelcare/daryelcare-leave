@@ -142,6 +142,7 @@ export function documentsCsv(docs: EmployeeDocument[]): string {
     "Other document",
     "Other expiry",
     "Other days left",
+    "Documents on file",
   ]
   const cell = (value: unknown) => {
     const text = value === null || value === undefined ? "" : String(value)
@@ -164,6 +165,7 @@ export function documentsCsv(docs: EmployeeDocument[]): string {
       d.otherDocumentType,
       d.otherDocumentExpiry,
       d.otherDocumentDaysLeft,
+      "noRecord" in d && d.noRecord ? "No" : "Yes",
     ]
       .map(cell)
       .join(","),

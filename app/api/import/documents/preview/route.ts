@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server"
 import * as XLSX from "xlsx"
 import { supabase } from "@/lib/supabase"
+import { requireAdmin } from "@/lib/server-auth"
 
 export async function POST(request: Request) {
   try {
+    // Importing changes many employees' records at once, so it's for admins
+    const auth = await requireAdmin(request)
+    if (auth.response) return auth.response
     // Get form data with file
     const formData = await request.formData()
     const file = formData.get("file") as File
