@@ -21,6 +21,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/components/ui/use-toast"
+import { RtwBasisFields, rtwPayload, rtwValueProblem, ukToDate, useRtwTracking, type RtwValue } from "./rtw-basis-fields"
 import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
 import { useQuery } from "@tanstack/react-query"
 import { Switch } from "@/components/ui/switch"
@@ -264,6 +265,8 @@ export function AddDocumentModal({ open, onOpenChange, initialEmployeeId }: AddD
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const [existingDocument, setExistingDocument] = useState<EmployeeDocument | null>(null)
+  const rtwAvailable = useRtwTracking()
+  const [rtw, setRtw] = useState<RtwValue>({ basis: null })
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
   // Initialize form
@@ -326,6 +329,8 @@ export function AddDocumentModal({ open, onOpenChange, initialEmployeeId }: AddD
 
   // Fetch existing document for the selected employee
   useEffect(() => {
+    // A new person starts with a blank right to work
+    setRtw({ basis: null })
     if (!employeeId) {
       setExistingDocument(null)
       return
@@ -348,10 +353,15 @@ export function AddDocumentModal({ open, onOpenChange, initialEmployeeId }: AddD
             form.setValue("passportExpiryDate", parseDate(response[0].passportExpiry))
           }
 
-          // Set right to work expiry date
-          if (response[0].rightToWorkExpiry) {
-            form.setValue("rightToWorkExpiryDate", parseDate(response[0].rightToWorkExpiry))
-          }
+          // Right to work: how it's held, when checked, and the end date
+          setRtw({
+            basis: response[0].rtwBasis ?? null,
+            checkedOn: ukToDate(response[0].rtwCheckedOn),
+            endDate:
+              !response[0].rtwBasis || response[0].rtwBasis === "time_limited"
+                ? ukToDate(response[0].rightToWorkExpiry)
+                : undefined,
+          })
 
           // Set BRP expiry date
           if (response[0].brpExpiry) {
@@ -402,6 +412,11 @@ export function AddDocumentModal({ open, onOpenChange, initialEmployeeId }: AddD
 
   // Handle form submission
   const onSubmit = async (data: FormValues) => {
+    const rtwProblemText = rtwValueProblem(rtw, rtwAvailable)
+    if (rtwProblemText) {
+      toast({ title: "Check the right to work details", description: rtwProblemText, variant: "destructive" })
+      return
+    }
     setIsSubmitting(true)
     setSuccessMessage(null)
 
@@ -427,8 +442,8 @@ export function AddDocumentModal({ open, onOpenChange, initialEmployeeId }: AddD
         passportExpiry: data.passportExpiryDate ? format(data.passportExpiryDate, "dd/MM/yyyy") : null,
         passportDaysLeft: data.passportExpiryDate ? calculateDaysLeft(data.passportExpiryDate) : null,
 
-        rightToWorkExpiry: data.rightToWorkExpiryDate ? format(data.rightToWorkExpiryDate, "dd/MM/yyyy") : null,
-        rightToWorkDaysLeft: data.rightToWorkExpiryDate ? calculateDaysLeft(data.rightToWorkExpiryDate) : null,
+        rightToWorkExpiry: null as string | null,
+        ...rtwPayload(rtw, rtwAvailable),
 
         brpExpiry: data.brpExpiryDate ? format(data.brpExpiryDate, "dd/MM/yyyy") : null,
         brpDaysLeft: data.brpExpiryDate ? calculateDaysLeft(data.brpExpiryDate) : null,
@@ -591,23 +606,8 @@ export function AddDocumentModal({ open, onOpenChange, initialEmployeeId }: AddD
                     <span className="text-xs text-muted-foreground">Current: {existingDocument.rightToWorkExpiry}</span>
                   )}
                 </div>
-                <FormField
-                  control={form.control}
-                  name="rightToWorkExpiryDate"
-                  render={({ field }) => (
-                    <FormItem className="space-y-0">
-                      <FormControl>
-                        <DatePicker value={field.value || undefined} onChange={field.onChange} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <RtwBasisFields value={rtw} onChange={setRtw} available={rtwAvailable} idPrefix="add-rtw" />
               </div>
-
-              <p className="mt-2 text-xs text-muted-foreground">
-                When this employee&apos;s permission to work ends. Leave blank only if it doesn&apos;t expire.
-              </p>
             </div>
 
             <div className="rounded-2xl bg-background p-4">

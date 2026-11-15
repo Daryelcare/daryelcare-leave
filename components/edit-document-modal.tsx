@@ -26,6 +26,7 @@ import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
 import type { EmployeeDocument } from "@/lib/types"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { RtwBasisFields, rtwPayload, rtwValueProblem, ukToDate, useRtwTracking, type RtwValue } from "./rtw-basis-fields"
 
 // Form schema with optional expiry dates
 const formSchema = z.object({
@@ -67,6 +68,14 @@ export function EditDocumentModal({
   const [activeTab, setActiveTab] = useState<string>(initialTab)
   const { toast } = useToast()
   const queryClient = useQueryClient()
+  // Right to work: how it's held, when it was checked, and the end date
+  const rtwAvailable = useRtwTracking()
+  const [rtw, setRtw] = useState<RtwValue>(() => ({
+    basis: document.rtwBasis,
+    checkedOn: ukToDate(document.rtwCheckedOn),
+    endDate:
+      !document.rtwBasis || document.rtwBasis === "time_limited" ? ukToDate(document.rightToWorkExpiry) : undefined,
+  }))
 
   // Initialize form
   const form = useForm<FormInput, unknown, FormValues>({
@@ -140,6 +149,13 @@ export function EditDocumentModal({
 
   // Handle form submission
   const onSubmit = async (data: FormValues) => {
+    if (activeTab === "rightToWork") {
+      const problem = rtwValueProblem(rtw, rtwAvailable)
+      if (problem) {
+        toast({ title: "Check the right to work details", description: problem, variant: "destructive" })
+        return
+      }
+    }
     setIsSubmitting(true)
     try {
       // Calculate days left for expiry date (if provided)
@@ -157,9 +173,8 @@ export function EditDocumentModal({
       if (activeTab === "passport" && data.expiryDate) {
         updateData.passportExpiry = format(data.expiryDate, "dd/MM/yyyy")
         updateData.passportDaysLeft = daysLeft
-      } else if (activeTab === "rightToWork" && data.expiryDate) {
-        updateData.rightToWorkExpiry = format(data.expiryDate, "dd/MM/yyyy")
-        updateData.rightToWorkDaysLeft = daysLeft
+      } else if (activeTab === "rightToWork") {
+        Object.assign(updateData, rtwPayload(rtw, rtwAvailable))
       } else if (activeTab === "brp" && data.expiryDate) {
         updateData.brpExpiry = format(data.expiryDate, "dd/MM/yyyy")
         updateData.brpDaysLeft = daysLeft
@@ -185,6 +200,7 @@ export function EditDocumentModal({
       // Refresh documents list
       queryClient.invalidateQueries({ queryKey: ["documents"] })
       queryClient.invalidateQueries({ queryKey: ["documents-tracker"] })
+      queryClient.invalidateQueries({ queryKey: ["employees"] })
     } catch (error) {
       toast({
         title: "Error",
@@ -285,19 +301,23 @@ export function EditDocumentModal({
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="expiryDate"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Expiry date</FormLabel>
-                  <FormControl>
-                    <DatePicker value={field.value || undefined} onChange={field.onChange} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {activeTab === "rightToWork" ? (
+              <RtwBasisFields value={rtw} onChange={setRtw} available={rtwAvailable} idPrefix="edit-rtw" />
+            ) : (
+              <FormField
+                control={form.control}
+                name="expiryDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Expiry date</FormLabel>
+                    <FormControl>
+                      <DatePicker value={field.value || undefined} onChange={field.onChange} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <FormField
               control={form.control}

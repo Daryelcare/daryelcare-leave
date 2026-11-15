@@ -66,7 +66,7 @@ export function reportFigures(leaves: ReportLeave[], p: Period) {
     const slice = { from: Math.max(d, p.from), to: Math.min(end, p.to) }
     months.push({
       key: `${m.getUTCFullYear()}-${m.getUTCMonth() + 1}`,
-      label: m.toLocaleDateString("en-GB", { month: "short", year: "2-digit", timeZone: "UTC" }),
+      label: m.toLocaleDateString("en-GB", { month: "short", year: "numeric", timeZone: "UTC" }),
       days: approved.reduce((t, l) => t + daysInPeriod(l, slice), 0),
     })
     d = Date.UTC(m.getUTCFullYear(), m.getUTCMonth() + 1, 1)

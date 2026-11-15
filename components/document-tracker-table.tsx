@@ -85,6 +85,8 @@ import {
 import { paginate, type PageSize } from "@/lib/pagination"
 import { AddDocumentModal } from "./add-document-modal"
 import { EditDocumentModal } from "./edit-document-modal"
+import { isOneOff, rtwBasisLabel, type RtwBasis } from "@/lib/rtw"
+import { RtwBulkDialog } from "./rtw-bulk-dialog"
 import { DeleteConfirmationDialog } from "./delete-confirmation-dialog"
 import { ImportDocumentsModal } from "./import-documents-modal"
 import { DocumentDateDialog, RenewDocumentsDialog, useRefreshDocuments } from "./document-tracker-dialogs"
@@ -210,7 +212,13 @@ export function DocumentTrackerTable() {
   // Dialogs
   const [addFor, setAddFor] = useState<{ employeeId?: string } | null>(null)
   const [editing, setEditing] = useState<{ doc: TrackerDocument; tab: DocKind } | null>(null)
-  const [cellTarget, setCellTarget] = useState<{ doc: TrackerDocument; kind: DocKind } | null>(null)
+  const [cellTarget, setCellTargetRaw] = useState<{ doc: TrackerDocument; kind: DocKind } | null>(null)
+  // Right to work with a recorded basis is worked out from it, so it opens the
+  // full editor (how it's held, date checked) instead of the quick date box
+  const setCellTarget = (t: { doc: TrackerDocument; kind: DocKind } | null) => {
+    if (t && t.kind === "rightToWork" && t.doc.rtwBasis && !t.doc.noRecord) setEditing({ doc: t.doc, tab: "rightToWork" })
+    else setCellTargetRaw(t)
+  }
   const [deleteTargets, setDeleteTargets] = useState<TrackerDocument[]>([])
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
   const [renewOpen, setRenewOpen] = useState(false)
@@ -220,12 +228,19 @@ export function DocumentTrackerTable() {
   const [pageSize, setPageSize] = useState<PageSize>(50)
 
   // Every current employee in the chosen branch, with their documents record
-  const { data, isLoading, isError, error, refetch } = useQuery<{ rows: TrackerDocument[] }>({
+  const { data, isLoading, isError, error, refetch } = useQuery<{ rows: TrackerDocument[]; rtwTracking?: boolean }>({
     queryKey: ["documents-tracker", branch],
     queryFn: () => fetchWithAuth(`/api/documents/tracker?branch=${encodeURIComponent(branch)}`),
     retry: 1,
   })
   const rows = data?.rows ?? NO_ROWS
+  // Recording how right to work is held needs a one-off database update
+  const rtwTracking = !!data?.rtwTracking
+  const [rtwBulk, setRtwBulk] = useState<{ people: TrackerDocument[]; basis: RtwBasis | null } | null>(null)
+  // Staff marked British whose right to work basis isn't recorded yet
+  const britishToSet = rtwTracking
+    ? rows.filter((d) => !d.noRecord && !d.rtwBasis && (d.status || "").toUpperCase() === "BRITISH")
+    : NO_ROWS
 
   // The tiles cover everyone in the branch; the filters narrow the list
   const summary = useMemo(() => trackerSummary(rows), [rows])
@@ -410,6 +425,24 @@ export function DocumentTrackerTable() {
     const quiet = isQuiet(k)
     const name = k === "other" ? doc.otherDocumentType || "Other document" : DOC_KINDS.find((x) => x.id === k)!.label
     const edit = () => setCellTarget({ doc, kind: k })
+    // British/Irish or permanent permission: checked once, never due again
+    if (k === "rightToWork" && isOneOff(doc.rtwBasis)) {
+      return (
+        <button
+          onClick={edit}
+          aria-label={`Right to work for ${doc.employeeName}: ${rtwBasisLabel(doc.rtwBasis)}, no recheck needed. Change`}
+          className={cn(
+            "-mx-2 flex flex-col items-start gap-1 rounded-lg px-2 py-1 text-left transition-[opacity,background-color] hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70",
+            quiet && "opacity-60",
+          )}
+        >
+          <span className="text-sm font-medium text-foreground/80">{rtwBasisLabel(doc.rtwBasis)}</span>
+          <Badge variant="secondary" className="px-2 text-[11px] leading-[18px]">
+            No recheck needed
+          </Badge>
+        </button>
+      )
+    }
     if (!entry) {
       return (
         <button
@@ -437,6 +470,11 @@ export function DocumentTrackerTable() {
         )}
       >
         {k === "other" && <span className="text-[11px] font-semibold text-muted-foreground">{entry.label}</span>}
+        {k === "rightToWork" && doc.rtwBasis && (
+          <span className="text-[11px] font-semibold text-muted-foreground">
+            {doc.rtwBasis === "pending_application" ? "Recheck (pending application)" : "Permission ends"}
+          </span>
+        )}
         <span
           className={cn(
             "whitespace-nowrap tabular",
@@ -741,6 +779,31 @@ export function DocumentTrackerTable() {
           actionLabel="Show people whose right to work needs action"
         />
       </section>
+
+      {britishToSet.length > 0 && (
+        <div className="surface flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div className="flex gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
+              <ShieldCheck className="h-4 w-4" />
+            </span>
+            <div className="space-y-0.5">
+              <p className="text-sm font-semibold">
+                {plural(britishToSet.length, "person is", "people are")} marked British without a right to work basis
+              </p>
+              <p className="text-sm text-muted-foreground">
+                British and Irish citizens only need one check. Review the list, then confirm to stop them being flagged.
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            className="shrink-0"
+            onClick={() => setRtwBulk({ people: britishToSet, basis: "british_irish" })}
+          >
+            Review and set
+          </Button>
+        </div>
+      )}
 
       {/* What's coming up */}
       <section aria-label="Coming up" className="surface overflow-hidden">
@@ -1165,7 +1228,17 @@ export function DocumentTrackerTable() {
                       noRecordNote(doc)
                     ) : (
                       <>
-                        {focusMissing && (
+                        {focusKind === "rightToWork" && isOneOff(doc.rtwBasis) ? (
+                          <button
+                            onClick={() => setCellTarget({ doc, kind: "rightToWork" })}
+                            className="-my-2 flex items-center gap-2 self-start py-2 text-left text-xs font-medium text-muted-foreground"
+                          >
+                            Right to work: {rtwBasisLabel(doc.rtwBasis)}
+                            <Badge variant="secondary" className="px-2 text-[11px] leading-[18px]">
+                              No recheck needed
+                            </Badge>
+                          </button>
+                        ) : focusMissing && (
                           <button
                             onClick={() => setCellTarget({ doc, kind: focusKind })}
                             className="-my-2 self-start py-2 text-left text-xs font-medium text-muted-foreground underline-offset-2 hover:underline"
@@ -1269,6 +1342,12 @@ export function DocumentTrackerTable() {
                 <CalendarCheck />
                 Mark renewed
               </Button>
+              {rtwTracking && (
+                <Button size="sm" variant="outline" onClick={() => setRtwBulk({ people: selectedRows, basis: null })}>
+                  <ShieldCheck />
+                  Set right to work
+                </Button>
+              )}
               <Button size="sm" variant="outline" onClick={() => downloadCsv(selectedRows, "documents-selected.csv")}>
                 <Download />
                 Export
@@ -1315,6 +1394,13 @@ export function DocumentTrackerTable() {
         />
       )}
       <DocumentDateDialog target={cellTarget} onOpenChange={(o) => !o && setCellTarget(null)} />
+      <RtwBulkDialog
+        people={rtwBulk?.people ?? NO_ROWS}
+        initialBasis={rtwBulk?.basis ?? null}
+        open={!!rtwBulk}
+        onOpenChange={(o) => !o && setRtwBulk(null)}
+        onDone={() => setSelected(new Set())}
+      />
       <RenewDocumentsDialog
         people={selectedRows}
         open={renewOpen}

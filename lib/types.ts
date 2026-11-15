@@ -1,3 +1,4 @@
+import type { RtwBasis } from "./rtw"
 export interface Branch {
   id: string
   name: string
@@ -84,6 +85,10 @@ export interface EmployeeDocument {
   otherDocumentDaysLeft: number | null
   isSponsored: boolean
   is20Hours: boolean
+  /** How their right to work is held (null if not recorded yet) */
+  rtwBasis: RtwBasis | null
+  /** When right to work was last checked, DD/MM/YYYY */
+  rtwCheckedOn: string | null
 }
 
 /**

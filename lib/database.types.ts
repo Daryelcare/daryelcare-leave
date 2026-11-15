@@ -80,6 +80,9 @@ export type DocumentRow = {
   is_sponsored: boolean | null
   is_20_hours: boolean | null
   created_at: string
+  // Added by 20261115_add_right_to_work_basis.sql (missing until it's run)
+  rtw_basis?: string | null
+  rtw_checked_on?: string | null
 }
 
 export type UserRow = {

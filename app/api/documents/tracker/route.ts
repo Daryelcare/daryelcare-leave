@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
 import { fetchAllRows } from "@/lib/fetch-all"
-import { toEmployeeDocument } from "@/lib/document-api"
+import { rtwColumnsExist, toEmployeeDocument } from "@/lib/document-api"
 import { allowedBranches, canAccessBranch, requireUser } from "@/lib/server-auth"
 import type { DocumentRow, EmployeeRow } from "@/lib/database.types"
 import type { TrackerDocument } from "@/lib/types"
@@ -67,10 +67,13 @@ export async function GET(request: Request) {
         otherDocumentDaysLeft: null,
         isSponsored: false,
         is20Hours: false,
+        rtwBasis: null,
+        rtwCheckedOn: null,
       }
     })
 
-    return NextResponse.json({ rows })
+    // Whether "how right to work is held" can be saved yet (database update run)
+    return NextResponse.json({ rows, rtwTracking: await rtwColumnsExist() })
   } catch (error) {
     console.error("Error loading the document tracker:", error)
     return NextResponse.json({ error: "Couldn't load the documents. Please try again." }, { status: 500 })

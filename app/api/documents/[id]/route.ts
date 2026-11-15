@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
-import { EXPIRY_FIELDS, expiryColumns, toEmployeeDocument } from "@/lib/document-api"
+import { EXPIRY_FIELDS, RTW_SETUP_MESSAGE, expiryColumns, rtwColumns, rtwColumnsExist, toEmployeeDocument } from "@/lib/document-api"
 import { canAccessBranch, requireAdmin, requireUser, type RequestUser } from "@/lib/server-auth"
 import type { DocumentRow } from "@/lib/database.types"
 
@@ -63,6 +63,14 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         (typeof data.otherDocumentType === "string" && data.otherDocumentType.trim()) ||
         existing.other_document_type ||
         (data.otherDocumentExpiry ? "Other Document" : null)
+    }
+
+    // How right to work is held: when sent, it decides the right-to-work date
+    const rtw = rtwColumns(data)
+    if (rtw && "error" in rtw) return NextResponse.json({ error: rtw.error }, { status: 400 })
+    if (rtw) {
+      if (!(await rtwColumnsExist())) return NextResponse.json({ error: RTW_SETUP_MESSAGE }, { status: 409 })
+      Object.assign(updateData, rtw.columns)
     }
 
     const { data: updated, error } = await supabase.from("documents").update(updateData).eq("id", id).select().single()
