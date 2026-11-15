@@ -10,9 +10,13 @@
 //   has no expiry date for someone whose status means they need one (NON-EU),
 //   or there is no record at all. British staff and EU staff (who may hold
 //   settled status, which doesn't expire) aren't flagged for a missing date.
+// - Once how right to work is held is recorded (lib/rtw.ts), that decides:
+//   British/Irish and permanent permission are never flagged again; time-limited
+//   and pending applications count down to the date to check again by.
 
 import type { TrackerDocument } from "./types"
 import { entriesFor, nextExpiry } from "./document-view"
+import { isOneOff } from "./rtw"
 
 export const EXPIRING_DAYS = 30
 
@@ -33,6 +37,10 @@ export type PersonStatus = {
 
 export function rtwState(doc: TrackerDocument): RtwState {
   if (doc.noRecord) return "missing"
+  // British/Irish citizens and permanent permission: one check is enough
+  if (isOneOff(doc.rtwBasis)) return "not_needed"
+  // Time-limited or pending: the date to check again by must be there
+  if (doc.rtwBasis && !doc.rightToWorkExpiry) return "missing"
   const days = doc.rightToWorkExpiry ? doc.rightToWorkDaysLeft : null
   if (days !== null && days !== undefined) {
     if (days <= 0) return "expired"

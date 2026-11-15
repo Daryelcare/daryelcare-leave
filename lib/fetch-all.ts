@@ -20,3 +20,11 @@ export async function fetchAllRows<T>(
     if (batch.length < CHUNK) return rows
   }
 }
+
+/**
+ * Runs `work` over `ids` in chunks, so long `.in()` lists stay inside URL
+ * limits. Chunks run one after another.
+ */
+export async function inBatches<T>(ids: T[], work: (batch: T[]) => Promise<void>, size = 200): Promise<void> {
+  for (let i = 0; i < ids.length; i += size) await work(ids.slice(i, i + size))
+}

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
-import { EXPIRY_FIELDS, expiryColumns, toEmployeeDocument } from "@/lib/document-api"
+import { EXPIRY_FIELDS, RTW_SETUP_MESSAGE, expiryColumns, rtwColumns, rtwColumnsExist, toEmployeeDocument } from "@/lib/document-api"
 import { canAccessBranch, requireUser } from "@/lib/server-auth"
 import type { DocumentRow } from "@/lib/database.types"
 
@@ -49,6 +49,12 @@ export async function POST(request: Request) {
       const result = expiryColumns(key, data[key] || null)
       if ("error" in result) return NextResponse.json({ error: result.error }, { status: 400 })
       Object.assign(documentData, result.columns)
+    }
+    const rtw = rtwColumns(data)
+    if (rtw && "error" in rtw) return NextResponse.json({ error: rtw.error }, { status: 400 })
+    if (rtw) {
+      if (!(await rtwColumnsExist())) return NextResponse.json({ error: RTW_SETUP_MESSAGE }, { status: 409 })
+      Object.assign(documentData, rtw.columns)
     }
 
     const { data: saved, error } = existingDoc

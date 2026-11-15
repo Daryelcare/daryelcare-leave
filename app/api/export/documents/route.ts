@@ -1,3 +1,4 @@
+import { isRtwBasis } from "@/lib/rtw"
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
 import { matchesDocumentStatus, withLiveDaysLeft } from "@/lib/document-status"
@@ -91,6 +92,8 @@ export async function POST(request: Request) {
       otherDocumentDaysLeft: doc.other_document_days_left ?? null,
       isSponsored: doc.is_sponsored || false,
       is20Hours: doc.is_20_hours || false,
+      rtwBasis: isRtwBasis(doc.rtw_basis) ? doc.rtw_basis : null,
+      rtwCheckedOn: doc.rtw_checked_on || null,
     }))
 
     // Separate regular and sponsored employees
@@ -315,6 +318,8 @@ function groupDocumentsByEmployee(documents: EmployeeDocument[]) {
         otherDocumentDaysLeft: null,
         isSponsored: doc.isSponsored,
         is20Hours: doc.is20Hours,
+        rtwBasis: doc.rtwBasis,
+        rtwCheckedOn: doc.rtwCheckedOn,
       })
     }
 

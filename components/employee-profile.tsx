@@ -28,6 +28,7 @@ import { fetchWithAuth, handleApiError } from "@/lib/api-utils"
 import { formatDisplayDate, formatDisplayRange, todayUtc } from "@/lib/dates"
 import { DOC_KINDS, daysLabel, entriesFor, urgencyOf, type DocKind } from "@/lib/document-view"
 import { rtwState } from "@/lib/document-tracker"
+import { isOneOff, rtwBasisLabel } from "@/lib/rtw"
 import { buildLeaveYears, inYear, type StoredPeriod } from "@/lib/leave-years"
 import { daysUsedInYear, STANDARD_ENTITLEMENT } from "@/lib/balances"
 import { isLeaver, leaveAround, missingDetails, shownJobTitle } from "@/lib/employee-directory"
@@ -449,7 +450,10 @@ export function EmployeeProfile({ id, onClose }: { id: string; onClose: () => vo
                   return (
                     <li key={k.id}>
                       <button
-                        onClick={() => setCell({ doc, kind: k.id })}
+                        onClick={() =>
+                          // A recorded right to work basis is edited in full, not just its date
+                          k.id === "rightToWork" && doc.rtwBasis ? setEditDocs("rightToWork") : setCell({ doc, kind: k.id })
+                        }
                         className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-muted/50 sm:px-5"
                       >
                         <span className="min-w-0 flex-1">
@@ -457,7 +461,21 @@ export function EmployeeProfile({ id, onClose }: { id: string; onClose: () => vo
                             {k.id === "other" && doc.otherDocumentType ? doc.otherDocumentType : k.label}
                           </span>
                           <span className="block text-xs text-muted-foreground tabular">
-                            {entry ? `Expires ${formatDisplayDate(entry.date)}` : "No expiry recorded · Add"}
+                            {k.id === "rightToWork" && doc.rtwBasis
+                              ? [
+                                  rtwBasisLabel(doc.rtwBasis),
+                                  doc.rtwCheckedOn ? `checked ${doc.rtwCheckedOn}` : null,
+                                  isOneOff(doc.rtwBasis)
+                                    ? "no recheck needed"
+                                    : entry
+                                      ? `check again by ${formatDisplayDate(entry.date)}`
+                                      : null,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" · ")
+                              : entry
+                                ? `Expires ${formatDisplayDate(entry.date)}`
+                                : "No expiry recorded · Add"}
                           </span>
                         </span>
                         {entry && u && (

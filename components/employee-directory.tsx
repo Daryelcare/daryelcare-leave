@@ -112,7 +112,7 @@ export function RtwChip({ rtw }: { rtw: DirectoryEmployee["rtw"] }) {
         </Badge>
       )
     default:
-      return <span className="text-xs text-muted-foreground">No expiry needed</span>
+      return <span className="text-xs text-muted-foreground">No recheck needed</span>
   }
 }
 

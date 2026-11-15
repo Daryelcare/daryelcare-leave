@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
 import { matchesDocumentStatus, withLiveDaysLeft } from "@/lib/document-status"
-import { EXPIRY_FIELDS, expiryColumns, safeSearch, toEmployeeDocument } from "@/lib/document-api"
+import { EXPIRY_FIELDS, RTW_SETUP_MESSAGE, expiryColumns, rtwColumns, rtwColumnsExist, toEmployeeDocument } from "@/lib/document-api"
+import { safeSearch } from "@/lib/document-api"
 import { allowedBranches, canAccessBranch, requireUser } from "@/lib/server-auth"
 import type { DocumentRow } from "@/lib/database.types"
 
@@ -100,6 +101,12 @@ export async function POST(request: Request) {
       Object.assign(documentData, result.columns)
     }
     if (data.otherDocumentExpiry) documentData.other_document_type = data.otherDocumentType || "Other Document"
+    const rtw = rtwColumns(data)
+    if (rtw && "error" in rtw) return NextResponse.json({ error: rtw.error }, { status: 400 })
+    if (rtw) {
+      if (!(await rtwColumnsExist())) return NextResponse.json({ error: RTW_SETUP_MESSAGE }, { status: 409 })
+      Object.assign(documentData, rtw.columns)
+    }
 
     const { data: saved, error } = existingDoc
       ? await supabase.from("documents").update(documentData).eq("id", existingDoc.id).select().single()
