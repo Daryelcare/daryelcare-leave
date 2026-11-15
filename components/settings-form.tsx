@@ -169,7 +169,7 @@ export function SettingsForm() {
                   <p className="truncate text-sm text-muted-foreground">{user?.email}</p>
                 </div>
               </div>
-              <dl className="grid gap-5 border-t border-border/70 p-5 sm:grid-cols-2 sm:p-6">
+              <dl className="grid gap-5 p-5 sm:grid-cols-2 sm:p-6">
                 <AccountName />
                 <Field label="Email">{user?.email || "—"}</Field>
                 <Field label="Role">{isAdmin ? "Administrator" : "Branch manager"}</Field>
@@ -190,7 +190,7 @@ export function SettingsForm() {
                 </Field>
               </dl>
               {!isAdmin && (
-                <p className="border-t border-border/70 bg-muted/40 px-5 py-3 text-xs text-muted-foreground sm:px-6">
+                <p className=" px-5 py-3 text-xs text-muted-foreground sm:px-6">
                   To change your role or branches, ask an administrator.
                 </p>
               )}
@@ -225,7 +225,7 @@ export function SettingsForm() {
                       />
                     ))}
                   </div>
-                  <div className="flex justify-end border-t border-border/70 bg-muted/40 px-5 py-3 sm:px-6">
+                  <div className="flex justify-end px-5 py-3 sm:px-6">
                     <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
                       {isSubmitting && <Loader2 className="animate-spin" />}
                       {isSubmitting ? "Updating…" : "Update password"}
@@ -267,22 +267,26 @@ export function SettingsForm() {
 
       <div className="space-y-6 sm:space-y-8">
         {/* Section tabs, grouped Personal / Organisation. Scrolls sideways on small screens. */}
-        <div className="relative -mx-4 border-b border-border sm:mx-0">
+        <div className="relative -mx-4 sm:mx-0">
           <div
             ref={tabRowRef}
             onScroll={updateFade}
             role="tablist"
             aria-label="Settings sections"
             onKeyDown={onTabKey}
-            className="relative flex gap-6 overflow-x-auto px-4 [scrollbar-width:none] sm:gap-8 sm:px-0 [&::-webkit-scrollbar]:hidden"
+            className="relative flex overflow-x-auto px-4 py-1 [scrollbar-width:none] sm:px-0 [&::-webkit-scrollbar]:hidden"
           >
             {groups.map(({ group, items }, gi) => (
               <div
                 key={group}
-                className={cn("flex shrink-0 flex-col", gi > 0 && "border-l border-border pl-6 sm:pl-8")}
+                role="group"
+                aria-label={group}
+                className={cn(
+                  "flex shrink-0 gap-[3px] rounded-full bg-card p-1 shadow-soft",
+                  gi > 0 && "ml-2.5",
+                )}
               >
-                <p className="eyebrow pb-1.5">{group}</p>
-                <div className="flex gap-1">
+                <div className="contents">
                   {items.map((section) => {
                     const active = section.id === current.id
                     return (
@@ -297,12 +301,11 @@ export function SettingsForm() {
                         onClick={() => openSection(section.id)}
                         ref={active ? activeTabRef : undefined}
                         className={cn(
-                          "relative -mb-px flex h-11 shrink-0 items-center whitespace-nowrap rounded-t-lg px-2.5 text-sm font-medium transition-colors duration-150",
-                          "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-ring/30",
-                          "after:absolute after:inset-x-2.5 after:bottom-0 after:h-0.5 after:rounded-full after:transition-colors",
+                          "flex h-8 shrink-0 items-center whitespace-nowrap rounded-full px-4 text-[13px] font-bold transition-colors duration-150",
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70",
                           active
-                            ? "font-semibold text-primary after:bg-primary"
-                            : "text-muted-foreground after:bg-transparent hover:text-foreground",
+                            ? "bg-primary text-primary-foreground"
+                            : "text-muted-foreground hover:text-foreground",
                         )}
                       >
                         {section.title}
@@ -313,7 +316,7 @@ export function SettingsForm() {
               </div>
             ))}
             {/* End padding for the sideways-scrolling row on phones */}
-            <span aria-hidden className="-ml-6 w-4 shrink-0 sm:-ml-8 sm:w-0" />
+            <span aria-hidden className="w-4 shrink-0 sm:w-0" />
           </div>
           {/* Edge fades show there are more tabs to scroll to */}
           <div

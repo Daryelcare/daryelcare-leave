@@ -430,7 +430,7 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
               className={`rounded-xl border-2 border-dashed p-8 text-center transition-colors duration-200 ${
                 dragActive
                   ? "border-primary bg-primary-soft/60"
-                  : "border-border bg-muted/30 hover:border-foreground/20"
+                  : "border-border hover:border-foreground/20"
               }`}
               onDragEnter={handleDrag}
               onDragOver={handleDrag}

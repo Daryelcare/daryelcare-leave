@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
   [
-    "inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold tracking-[-0.005em]",
+    "inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-semibold tracking-[-0.005em]",
     "transition-[background-color,border-color,color,box-shadow,transform] duration-150 ease-smooth",
     "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30",
     "active:scale-[0.98] disabled:pointer-events-none disabled:opacity-45",
@@ -16,17 +16,17 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-raised hover:bg-primary/90 focus-visible:ring-primary/35 disabled:bg-secondary disabled:text-muted-foreground disabled:shadow-none disabled:opacity-100",
+          "bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-primary/35 disabled:bg-secondary disabled:text-muted-foreground disabled:shadow-none disabled:opacity-100",
         destructive:
-          "bg-destructive text-destructive-foreground shadow-raised hover:bg-destructive/90 focus-visible:ring-destructive/30 disabled:bg-secondary disabled:text-muted-foreground disabled:shadow-none disabled:opacity-100",
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-destructive/30 disabled:bg-secondary disabled:text-muted-foreground disabled:shadow-none disabled:opacity-100",
         outline:
-          "border border-input bg-card text-foreground shadow-card hover:border-foreground/20 hover:bg-secondary/60",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/70",
+          "bg-card text-secondary-foreground shadow-soft hover:shadow-soft-hover hover:text-foreground",
+        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/70 hover:text-foreground",
         ghost: "text-foreground/80 hover:bg-secondary hover:text-foreground",
-        link: "h-auto px-0 text-primary underline-offset-4 hover:underline active:scale-100",
+        link: "h-auto px-0 text-primary-text underline-offset-4 hover:underline active:scale-100",
       },
       size: {
-        default: "h-10 px-4",
+        default: "h-10 px-[18px]",
         sm: "h-9 px-3 text-[13px]",
         lg: "h-11 px-6 text-[15px]",
         icon: "h-10 w-10",

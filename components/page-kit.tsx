@@ -14,23 +14,34 @@ export function PageHeader({
   description,
   actions,
   eyebrow,
+  icon: Icon,
   className,
 }: {
   title: ReactNode
   description?: ReactNode
   actions?: ReactNode
   eyebrow?: ReactNode
+  /** Optional neutral icon beside the title */
+  icon?: ComponentType<{ className?: string }>
   className?: string
 }) {
   return (
-    <div className={cn("flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between", className)}>
-      <div className="min-w-0 space-y-1.5">
-        {eyebrow && <p className="eyebrow">{eyebrow}</p>}
-        <h1 className="text-[26px] font-semibold leading-[1.15] tracking-[-0.03em] sm:text-[30px]">{title}</h1>
-        {description && <p className="max-w-2xl text-[15px] leading-relaxed text-muted-foreground">{description}</p>}
+    <div className={cn("flex flex-wrap items-end justify-between gap-x-6 gap-y-4", className)}>
+      <div className="flex min-w-0 flex-[1_1_260px] items-center gap-3.5">
+        {Icon && (
+          <span className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground sm:flex">
+            <Icon className="h-5 w-5" />
+          </span>
+        )}
+        <div className="min-w-0 space-y-1">
+          {eyebrow && <p className="text-[13px] font-semibold text-muted-foreground">{eyebrow}</p>}
+          <h1 className="text-[26px] font-extrabold leading-[1.15] tracking-[-0.02em] sm:text-[28px]">{title}</h1>
+          {description && <p className="max-w-2xl text-sm font-semibold leading-relaxed text-muted-foreground">{description}</p>}
+        </div>
       </div>
       {actions && (
-        <div className="flex flex-wrap items-center gap-2 [&>*]:flex-1 sm:[&>*]:flex-none lg:shrink-0 lg:justify-end">
+        // Selects here sit on the canvas, so they get the white pill look of the buttons
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto [&>*]:flex-1 sm:[&>*]:flex-none [&_[role=combobox]]:rounded-full [&_[role=combobox]]:bg-card [&_[role=combobox]]:shadow-soft">
           {actions}
         </div>
       )}
@@ -77,14 +88,18 @@ const toneText: Record<Tone, string> = {
   danger: "text-destructive",
 }
 
+// Icons stay neutral: only the figure carries a status colour
 const toneIcon: Record<Tone, string> = {
-  default: "bg-secondary text-foreground/70",
-  success: "bg-success-soft text-success",
-  warning: "bg-warning-soft text-warning",
-  danger: "bg-destructive-soft text-destructive",
+  default: "bg-secondary text-secondary-foreground",
+  success: "bg-secondary text-secondary-foreground",
+  warning: "bg-secondary text-secondary-foreground",
+  danger: "bg-secondary text-secondary-foreground",
 }
 
-/** Headline number with a label and a short supporting line. */
+/**
+ * Headline number with a label and a short supporting line. A white 16px
+ * tile, meant to sit inside a grey `.tile-tray`.
+ */
 export function StatCard({
   label,
   value,
@@ -126,17 +141,17 @@ export function StatCard({
           }
         : {})}
       className={cn(
-        "surface flex flex-col gap-3 p-4 text-left sm:p-5",
+        "flex flex-col gap-2.5 rounded-2xl bg-card p-4 text-left",
         onClick &&
-          "transition-[box-shadow,transform] duration-200 ease-smooth hover:-translate-y-px hover:shadow-raised focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30",
+          "transition-shadow duration-200 ease-smooth hover:shadow-soft-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70",
         active && "ring-2 ring-primary",
         className,
       )}
     >
       <div className="flex items-center justify-between gap-3">
-        <p className="text-[13px] font-semibold text-muted-foreground">{label}</p>
+        <p className="text-[13px] font-bold text-secondary-foreground">{label}</p>
         {Icon && (
-          <span className={cn("flex h-8 w-8 items-center justify-center rounded-lg", toneIcon[tone])}>
+          <span className={cn("flex h-8 w-8 items-center justify-center rounded-full", toneIcon[tone])}>
             <Icon className="h-4 w-4" />
           </span>
         )}
@@ -150,13 +165,13 @@ export function StatCard({
         <div className="space-y-1">
           <p
             className={cn(
-              "font-display text-[30px] font-semibold leading-none tracking-[-0.03em] tabular",
+              "font-display text-[30px] font-extrabold leading-none tracking-[-0.03em] tabular",
               toneText[tone],
             )}
           >
             {value}
           </p>
-          {detail && <p className="text-xs leading-5 text-muted-foreground">{detail}</p>}
+          {detail && <p className="text-xs font-semibold leading-5 text-muted-foreground">{detail}</p>}
         </div>
       )}
     </Root>
@@ -215,7 +230,7 @@ export function ErrorState({
     <div
       role="alert"
       className={cn(
-        "flex flex-col gap-3 rounded-xl border border-destructive/20 bg-destructive-soft p-4 sm:flex-row sm:items-center sm:justify-between",
+        "flex flex-col gap-3 rounded-2xl bg-destructive-soft p-4 sm:flex-row sm:items-center sm:justify-between",
         className,
       )}
     >
@@ -239,9 +254,9 @@ export function ErrorState({
 /** Rows of skeletons shaped like a list. */
 export function ListSkeleton({ rows = 5, className }: { rows?: number; className?: string }) {
   return (
-    <div className={cn("divide-y divide-border/70", className)}>
+    <div className={cn("space-y-1.5", className)}>
       {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="flex items-center gap-3 px-4 py-3.5 sm:px-5">
+        <div key={i} className="soft-row flex items-center gap-3 px-4 py-3">
           <Skeleton className="h-9 w-9 rounded-full" />
           <div className="flex-1 space-y-2">
             <Skeleton className="h-3.5 w-1/3" />
@@ -254,6 +269,15 @@ export function ListSkeleton({ rows = 5, className }: { rows?: number; className
   )
 }
 
+const AVATAR_GRADIENTS = [
+  // Deep enough for white initials to stay readable
+  "linear-gradient(135deg,#60a5fa,#4f46e5)",
+  "linear-gradient(135deg,#f87171,#db2777)",
+  "linear-gradient(135deg,#34d399,#0f766e)",
+  "linear-gradient(135deg,#f59e0b,#c2410c)",
+  "linear-gradient(135deg,#a78bfa,#6d28d9)",
+]
+
 /** Circle with a person's initials. */
 export function Avatar({ name, className }: { name?: string | null; className?: string }) {
   const initials =
@@ -263,19 +287,18 @@ export function Avatar({ name, className }: { name?: string | null; className?: 
       .slice(0, 2)
       .map((part) => part[0]?.toUpperCase())
       .join("") || "?"
-  // Stable soft colour per name
-  const hues = [204, 152, 262, 24, 340, 186, 45]
+  // One gradient style, picked deterministically from the name
   let hash = 0
   for (const ch of name || "") hash = (hash * 31 + ch.charCodeAt(0)) >>> 0
-  const hue = hues[hash % hues.length]
+  const gradient = AVATAR_GRADIENTS[hash % AVATAR_GRADIENTS.length]
   return (
     <span
       aria-hidden
       className={cn(
-        "flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full font-display text-[13px] font-semibold",
+        "flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full text-[12px] font-bold text-white",
         className,
       )}
-      style={{ backgroundColor: `hsl(${hue} 70% 94%)`, color: `hsl(${hue} 55% 32%)` }}
+      style={{ backgroundImage: gradient }}
     >
       {initials}
     </span>

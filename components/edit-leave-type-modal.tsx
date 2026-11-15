@@ -160,7 +160,7 @@ export function EditLeaveTypeModal({ leaveType, isOpen, onClose, onSuccess }: Ed
               control={form.control}
               name="isPaid"
               render={({ field }) => (
-                <FormItem className="flex items-center justify-between rounded-xl border border-border/80 bg-card px-3.5 py-3">
+                <FormItem className="flex items-center justify-between rounded-2xl bg-background px-3.5 py-3">
                   <div className="space-y-0.5">
                     <FormLabel>Paid leave</FormLabel>
                   </div>
@@ -174,7 +174,7 @@ export function EditLeaveTypeModal({ leaveType, isOpen, onClose, onSuccess }: Ed
               control={form.control}
               name="requiresApproval"
               render={({ field }) => (
-                <FormItem className="flex items-center justify-between rounded-xl border border-border/80 bg-card px-3.5 py-3">
+                <FormItem className="flex items-center justify-between rounded-2xl bg-background px-3.5 py-3">
                   <div className="space-y-0.5">
                     <FormLabel>Requires approval</FormLabel>
                   </div>
@@ -188,7 +188,7 @@ export function EditLeaveTypeModal({ leaveType, isOpen, onClose, onSuccess }: Ed
               control={form.control}
               name="allowNegativeBalance"
               render={({ field }) => (
-                <FormItem className="flex items-center justify-between rounded-xl border border-border/80 bg-card px-3.5 py-3">
+                <FormItem className="flex items-center justify-between rounded-2xl bg-background px-3.5 py-3">
                   <div className="space-y-0.5">
                     <FormLabel>Allow negative balance</FormLabel>
                   </div>
@@ -202,7 +202,7 @@ export function EditLeaveTypeModal({ leaveType, isOpen, onClose, onSuccess }: Ed
               control={form.control}
               name="isActive"
               render={({ field }) => (
-                <FormItem className="flex items-center justify-between rounded-xl border border-border/80 bg-card px-3.5 py-3">
+                <FormItem className="flex items-center justify-between rounded-2xl bg-background px-3.5 py-3">
                   <div className="space-y-0.5">
                     <FormLabel>Active</FormLabel>
                   </div>

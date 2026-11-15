@@ -9,7 +9,7 @@ import { fieldClasses } from "./input"
 
 // Shared look for floating panels (select lists, menus, popovers)
 export const floatingPanelClasses = [
-  "z-50 overflow-hidden rounded-xl border border-border/80 bg-popover text-popover-foreground shadow-float",
+  "z-50 overflow-hidden rounded-2xl bg-popover text-popover-foreground shadow-float ring-1 ring-black/[0.04]",
   "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
   "data-[state=closed]:zoom-out-[0.97] data-[state=open]:zoom-in-[0.97] duration-150",
   "data-[side=bottom]:slide-in-from-top-1 data-[side=left]:slide-in-from-right-1 data-[side=right]:slide-in-from-left-1 data-[side=top]:slide-in-from-bottom-1",
@@ -30,7 +30,7 @@ const SelectTrigger = React.forwardRef<
     className={cn(
       fieldClasses,
       "flex h-10 items-center justify-between gap-2 py-2 text-left data-[placeholder]:text-muted-foreground/80 [&>span]:line-clamp-1",
-      "focus:border-primary/60 focus:outline-none focus:ring-[3px] focus:ring-primary/15",
+      "focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/70",
       className,
     )}
     {...props}

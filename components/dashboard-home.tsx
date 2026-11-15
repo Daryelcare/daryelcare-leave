@@ -191,7 +191,7 @@ export function DashboardHome() {
       )}
 
       {/* Headline numbers */}
-      <div className={cn("grid grid-cols-2 gap-3 sm:gap-4", isAdmin ? "lg:grid-cols-4" : "lg:grid-cols-3")}>
+      <div className={cn("tile-tray grid-cols-2", isAdmin ? "lg:grid-cols-4" : "lg:grid-cols-3")}>
         <StatCard
           label="Off today"
           icon={Plane}
@@ -264,7 +264,7 @@ export function DashboardHome() {
             <ListSkeleton rows={3} />
           ) : offList.length ? (
             <>
-              <ul className="divide-y divide-border/70 border-t border-border/70">
+              <ul className="flex flex-col gap-1.5 px-3 pb-3 [&>li]:rounded-2xl [&>li]:bg-background [&>li>*]:rounded-2xl">
                 {offList.slice(0, LIST_LIMIT).map((leave) => (
                   <LeaveRow key={leave.id} leave={leave} color={typeColor(leave.type)} />
                 ))}
@@ -281,7 +281,7 @@ export function DashboardHome() {
               title={range === "today" ? "Everyone is in today" : "No leave this week"}
               description="Approved leave will appear here."
               compact
-              className="border-t border-border/70"
+              
             />
           )}
         </section>
@@ -295,7 +295,7 @@ export function DashboardHome() {
                 description="Leave waiting to be approved or rejected"
                 count={pending.length}
               />
-              <ul className="divide-y divide-border/70 border-t border-border/70">
+              <ul className="flex flex-col gap-1.5 px-3 pb-3 [&>li]:rounded-2xl [&>li]:bg-background [&>li>*]:rounded-2xl">
                 {pending.slice(0, LIST_LIMIT).map((l) => (
                   <li key={l.id}>
                     <Link
@@ -332,7 +332,7 @@ export function DashboardHome() {
                 <ListSkeleton rows={2} />
               ) : documentItems.length ? (
                 <>
-                  <ul className="divide-y divide-border/70 border-t border-border/70">
+                  <ul className="flex flex-col gap-1.5 px-3 pb-3 [&>li]:rounded-2xl [&>li]:bg-background [&>li>*]:rounded-2xl">
                     {documentItems.slice(0, LIST_LIMIT).map((doc) => (
                       <li key={`${doc.id}-${doc.document}`} className="flex items-center gap-3 px-5 py-3 sm:px-6">
                         <Avatar name={doc.employeeName} className="h-8 w-8 text-xs" />
@@ -368,14 +368,14 @@ export function DashboardHome() {
                   icon={ShieldCheck}
                   title="Right to work all in date"
                   compact
-                  className="border-t border-border/70"
+                  
                 />
               )}
               {/* Other documents: a quiet one-line summary */}
               {!isLoading && otherDocumentItems.length > 0 && (
                 <Link
                   href="/dashboard/document-tracker?type=all&expiry=within30"
-                  className="flex items-center justify-between gap-3 border-t border-border/70 bg-muted/40 px-5 py-2.5 text-xs text-muted-foreground transition-colors hover:text-foreground sm:px-6"
+                  className="flex items-center justify-between gap-3 px-5 py-2.5 text-xs text-muted-foreground transition-colors hover:text-foreground sm:px-6"
                 >
                   <span>
                     Other documents: {otherDocumentItems.filter((d) => d.daysLeft <= 0).length} expired ·{" "}
@@ -397,7 +397,7 @@ export function DashboardHome() {
               <ListSkeleton rows={3} />
             ) : balanceItems.length ? (
               <>
-                <ul className="divide-y divide-border/70 border-t border-border/70">
+                <ul className="flex flex-col gap-1.5 px-3 pb-3 [&>li]:rounded-2xl [&>li]:bg-background [&>li>*]:rounded-2xl">
                   {balanceItems.slice(0, LIST_LIMIT).map((emp) => (
                     <li key={emp.id} className="flex items-center gap-3 px-5 py-3 sm:px-6">
                       <Avatar name={emp.name} className="h-8 w-8 text-xs" />
@@ -424,7 +424,7 @@ export function DashboardHome() {
                 </PanelFooter>
               </>
             ) : (
-              <EmptyState icon={Scale} title="Nobody is low on leave" compact className="border-t border-border/70" />
+              <EmptyState icon={Scale} title="Nobody is low on leave" compact  />
             )}
           </section>
         </div>
@@ -481,7 +481,7 @@ function PanelFooter({ href, children }: { href: string; children: ReactNode }) 
   return (
     <Link
       href={href}
-      className="group flex items-center justify-between border-t border-border/70 px-5 py-3 text-sm font-semibold text-primary transition-colors hover:bg-primary-soft/50 sm:px-6"
+      className="group flex items-center justify-between px-5 py-3 text-sm font-semibold text-primary transition-colors hover:bg-primary-soft/50 sm:px-6"
     >
       {children}
       <ArrowRight className="h-4 w-4 transition-transform duration-200 ease-smooth group-hover:translate-x-0.5" />

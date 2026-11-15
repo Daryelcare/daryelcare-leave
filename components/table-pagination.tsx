@@ -31,7 +31,7 @@ export function TablePagination({
   onPageSizeChange: (size: PageSize) => void
 }) {
   return (
-    <div className="flex flex-col gap-2 border-t border-border/70 px-4 py-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-5">
+    <div className="flex flex-col gap-2 px-4 py-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-5">
       <p className="tabular">{total === 0 ? `No ${label}` : `${from}–${to} of ${total} ${label}`}</p>
       <div className="flex items-center gap-2">
         <span className="hidden sm:inline">Rows per page</span>

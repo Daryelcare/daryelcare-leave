@@ -135,7 +135,7 @@ export function LeavePeriodManager() {
             description="Create your first period to start the leave year."
           />
         ) : (
-          <ul className="divide-y divide-border/70">
+          <ul className="flex flex-col gap-1.5 p-2 sm:p-3 [&>li]:rounded-2xl [&>li]:bg-background [&>li>*]:rounded-2xl">
             {periods.map((period) => (
               <li
                 key={period.id}

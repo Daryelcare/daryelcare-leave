@@ -15,14 +15,14 @@ const DialogPortal = DialogPrimitive.Portal
 const DialogClose = DialogPrimitive.Close
 
 export const overlayClasses =
-  "fixed inset-0 z-50 bg-slate-950/30 backdrop-blur-[3px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-200"
+  "fixed inset-0 z-50 bg-zinc-950/25 backdrop-blur-[2px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-200"
 
 // On phones a dialog is a bottom sheet; from `sm` up it is a centred card.
 // Long content scrolls inside the dialog rather than the page.
 export const dialogPanelClasses = [
-  "fixed z-50 grid w-full gap-5 border border-border/80 bg-card p-5 shadow-dialog outline-none sm:p-6",
-  "inset-x-0 bottom-0 max-h-[92dvh] overflow-y-auto rounded-t-2xl pb-[max(1.25rem,env(safe-area-inset-bottom))]",
-  "sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:max-h-[88dvh] sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:pb-6",
+  "fixed z-50 grid w-full gap-5 bg-card p-5 shadow-dialog outline-none sm:p-6",
+  "inset-x-0 bottom-0 max-h-[92dvh] overflow-y-auto rounded-t-[28px] pb-[max(1.25rem,env(safe-area-inset-bottom))]",
+  "sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:max-h-[88dvh] sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[28px] sm:pb-6",
   "duration-300 ease-smooth data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
   "data-[state=closed]:slide-out-to-bottom-6 data-[state=open]:slide-in-from-bottom-6",
   "sm:data-[state=closed]:slide-out-to-bottom-2 sm:data-[state=open]:slide-in-from-bottom-2 sm:data-[state=closed]:zoom-out-[0.98] sm:data-[state=open]:zoom-in-[0.98]",

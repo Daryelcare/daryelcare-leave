@@ -463,6 +463,26 @@ export function EmployeeDirectory() {
             ? "Loading…"
             : `${plural(summary.current, "current employee")}${summary.leavers ? ` · ${plural(summary.leavers, "leaver")}` : ""}${branch !== "all" ? ` in ${branch}` : ""}.`
         }
+        actions={
+          <>
+            <Button variant="outline" onClick={() => setImportOpen(true)}>
+              <Upload />
+              Import
+            </Button>
+            <ExportButton
+              endpoint="employees"
+              filters={{ branch, search: q, exportAll: "true" }}
+              sortColumn="name"
+              sortOrder="asc"
+              size="default"
+            />
+            <Button onClick={() => setAddOpen(true)}>
+              <Plus />
+              <span className="sm:hidden">Add</span>
+              <span className="hidden sm:inline">Add employee</span>
+            </Button>
+          </>
+        }
       />
 
       {isError && (
@@ -470,7 +490,7 @@ export function EmployeeDirectory() {
       )}
 
       {/* Tiles: each filters the list to the people behind its number */}
-      <section aria-label="Employees at a glance" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section aria-label="Employees at a glance" className="tile-tray grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Away today"
           icon={CalendarClock}
@@ -518,7 +538,7 @@ export function EmployeeDirectory() {
 
       <div className="surface overflow-hidden">
         {/* Search, filters and page actions */}
-        <div className="grid grid-cols-2 gap-2 border-b border-border/70 p-3 sm:p-4 lg:flex lg:flex-wrap lg:items-center">
+        <div className="grid grid-cols-2 gap-2 p-3 sm:p-4 lg:flex lg:flex-wrap lg:items-center">
           <div className="relative col-span-2 lg:w-64">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -539,7 +559,7 @@ export function EmployeeDirectory() {
             )}
           </div>
           <Select value={branch} onValueChange={(v) => setParam({ branch: v })}>
-            <SelectTrigger className="lg:w-[160px]" aria-label="Branch">
+            <SelectTrigger className="lg:w-auto lg:min-w-[140px]" aria-label="Branch">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -552,7 +572,7 @@ export function EmployeeDirectory() {
             </SelectContent>
           </Select>
           <Select value={status} onValueChange={(v) => setParam({ status: v })}>
-            <SelectTrigger className="lg:w-[160px]" aria-label="Current or leavers">
+            <SelectTrigger className="lg:w-auto lg:min-w-[140px]" aria-label="Current or leavers">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -562,7 +582,7 @@ export function EmployeeDirectory() {
             </SelectContent>
           </Select>
           <Select value={show} onValueChange={(v) => setParam({ show: v })}>
-            <SelectTrigger className="lg:w-[200px]" aria-label="Show">
+            <SelectTrigger className="lg:w-auto lg:min-w-[140px]" aria-label="Show">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -574,7 +594,7 @@ export function EmployeeDirectory() {
             </SelectContent>
           </Select>
           <Select value={sort} onValueChange={(v) => setParam({ sort: v })}>
-            <SelectTrigger className="lg:w-[180px]" aria-label="Sort">
+            <SelectTrigger className="lg:w-auto lg:min-w-[140px]" aria-label="Sort">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -585,29 +605,11 @@ export function EmployeeDirectory() {
               ))}
             </SelectContent>
           </Select>
-          <div className="col-span-2 flex flex-wrap items-center gap-2 lg:ml-auto [&>*]:flex-1 lg:[&>*]:flex-none">
-            <Button variant="outline" onClick={() => setImportOpen(true)}>
-              <Upload />
-              Import
-            </Button>
-            <ExportButton
-              endpoint="employees"
-              filters={{ branch, search: q, exportAll: "true" }}
-              sortColumn="name"
-              sortOrder="asc"
-              size="default"
-            />
-            <Button onClick={() => setAddOpen(true)}>
-              <Plus />
-              <span className="sm:hidden">Add</span>
-              <span className="hidden sm:inline">Add employee</span>
-            </Button>
-          </div>
         </div>
 
         {/* What's showing */}
         <div
-          className="flex min-h-12 flex-wrap items-center gap-2 border-b border-border/70 bg-muted/40 px-4 py-2.5 text-sm sm:px-5"
+          className="flex min-h-12 flex-wrap items-center gap-2 px-4 py-2.5 text-sm sm:px-5"
           aria-live="polite"
         >
           <span className="mr-1 text-muted-foreground">
@@ -643,7 +645,7 @@ export function EmployeeDirectory() {
         </div>
 
         {allOnPage && visible.length > paged.items.length && (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-border/70 bg-primary-soft px-4 py-2.5 text-sm font-medium text-primary sm:px-5">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-primary-soft px-4 py-2.5 text-sm font-medium text-primary sm:px-5">
             {allMatching ? (
               <>
                 <span>All {visible.length} matching people are selected.</span>
@@ -740,7 +742,7 @@ export function EmployeeDirectory() {
           {isLoading ? (
             <ListSkeleton rows={5} />
           ) : paged.items.length ? (
-            <ul className="divide-y divide-border/70">
+            <ul className="flex flex-col gap-1.5 p-2 sm:p-3 [&>li]:rounded-2xl [&>li]:bg-background [&>li>*]:rounded-2xl">
               {paged.items.map((e) => (
                 <li
                   key={e.id}
@@ -826,7 +828,7 @@ export function EmployeeDirectory() {
             <div
               role="toolbar"
               aria-label="Selected employees"
-              className="flex max-w-full flex-wrap items-center justify-center gap-2 rounded-2xl border border-border/80 bg-card px-3 py-2.5 shadow-dialog"
+              className="flex max-w-full flex-wrap items-center justify-center gap-2 rounded-full bg-card px-3 py-2 shadow-dialog"
             >
               <span className="px-1 text-sm font-semibold" aria-live="polite">
                 {selected.size} selected

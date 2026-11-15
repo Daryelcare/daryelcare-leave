@@ -11,36 +11,41 @@
  */
 @layer base {
   :root {
-    --background: 220 20% 97.5%;
-    --foreground: 222 22% 12%;
+    /* CarerHR client-admin palette: zinc neutrals, one blue accent */
+    --background: 0 0% 98%;          /* canvas #fafafa */
+    --foreground: 240 6% 10%;        /* ink #18181b */
     --card: 0 0% 100%;
-    --card-foreground: 222 22% 12%;
+    --card-foreground: 240 6% 10%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 22% 12%;
+    --popover-foreground: 240 6% 10%;
 
-    --primary: 204 82% 38%;
+    --primary: 221 83% 53%;          /* accent #2563eb */
     --primary-foreground: 0 0% 100%;
-    --primary-soft: 204 90% 96%;
+    --primary-soft: 214 100% 97%;    /* #eff6ff */
+    --primary-text: 224 76% 48%;     /* #1d4ed8 */
 
-    --secondary: 220 16% 94.5%;
-    --secondary-foreground: 222 22% 16%;
-    --muted: 220 16% 95.5%;
-    --muted-foreground: 220 9% 44%;
-    --accent: 220 16% 95%;
-    --accent-foreground: 222 22% 12%;
+    --secondary: 240 5% 96%;         /* subtle #f4f4f5 */
+    --secondary-foreground: 240 5% 26%; /* ink-2 #3f3f46 */
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 46%;  /* #71717a */
+    --accent: 240 5% 96%;
+    --accent-foreground: 240 6% 10%;
 
-    --destructive: 357 72% 50%;
+    --destructive: 0 72% 42%;        /* #b91c1c */
     --destructive-foreground: 0 0% 100%;
-    --success: 152 58% 34%;
-    --success-soft: 145 60% 95%;
-    --warning: 30 92% 42%;
-    --warning-soft: 40 100% 95%;
-    --danger-soft: 356 100% 97%;
+    --success: 163 94% 24%;          /* #047857 */
+    --success-soft: 152 81% 96%;     /* #ecfdf5 */
+    --warning: 26 90% 37%;           /* #b45309 */
+    --warning-soft: 48 100% 96%;     /* #fffbeb */
+    --danger-soft: 0 86% 97%;        /* #fef2f2 */
 
-    --border: 220 14% 90%;
-    --input: 220 13% 87%;
-    --ring: 204 82% 45%;
-    --radius: 0.75rem;
+    --border: 240 6% 92%;
+    --input: 240 6% 90%;
+    --ring: 221 83% 53%;
+    --radius: 0.875rem;
+
+    --shadow-soft: 0 0 0 1px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.03), 0 8px 24px -8px rgba(30, 41, 59, 0.1);
+    --shadow-soft-hover: 0 0 0 1px rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.04), 0 14px 32px -10px rgba(30, 41, 59, 0.16);
   }
 
   .dark {
@@ -50,9 +55,12 @@
     --card-foreground: 220 14% 96%;
     --popover: 222 16% 12%;
     --popover-foreground: 220 14% 96%;
-    --primary: 204 80% 56%;
+    --primary: 217 91% 60%;
     --primary-foreground: 222 30% 8%;
-    --primary-soft: 204 50% 16%;
+    --primary-soft: 221 50% 16%;
+    --primary-text: 213 94% 68%;
+    --shadow-soft: 0 0 0 1px rgba(255, 255, 255, 0.05), 0 8px 24px -8px rgba(0, 0, 0, 0.5);
+    --shadow-soft-hover: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 14px 32px -10px rgba(0, 0, 0, 0.6);
     --secondary: 222 12% 17%;
     --secondary-foreground: 220 14% 96%;
     --muted: 222 12% 15%;
@@ -68,7 +76,7 @@
     --danger-soft: 357 40% 15%;
     --border: 222 12% 19%;
     --input: 222 12% 22%;
-    --ring: 204 80% 56%;
+    --ring: 217 91% 60%;
   }
 }
 
@@ -122,7 +130,17 @@
 @layer components {
   /* A white surface with a hairline border and soft elevation */
   .surface {
-    @apply rounded-xl border border-border/80 bg-card shadow-card;
+    @apply rounded-[28px] bg-card shadow-soft;
+  }
+
+  /* Grey tray holding white 16px tiles (summary figures) */
+  .tile-tray {
+    @apply grid gap-2.5 rounded-[28px] bg-secondary p-2.5;
+  }
+
+  /* Soft rounded row on the canvas colour, used instead of dividers */
+  .soft-row {
+    @apply rounded-2xl bg-background;
   }
 
   /* Small all-caps label used above groups of content */

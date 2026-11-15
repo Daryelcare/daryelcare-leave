@@ -3,6 +3,7 @@
 import Image from "next/image"
 import type React from "react"
 import { TopNav } from "@/components/top-nav"
+import { SidebarContent } from "@/components/app-sidebar"
 import { MobileTabBar } from "@/components/mobile-tab-bar"
 import { Toaster } from "@/components/ui/toaster"
 import { useApp } from "@/components/app-provider"
@@ -16,13 +17,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <>
       <AuthCheck>
-        {/* min-w-0 lets wide tables scroll inside their card instead of stretching the page */}
-        <div className="flex min-h-svh min-w-0 flex-col bg-background">
+        {/* Floating sidebar from lg up; below that a compact top bar with a menu button */}
+        <div className="min-h-svh min-w-0 bg-background">
+          <aside className="fixed inset-y-3 left-3 z-30 hidden w-[248px] overflow-y-auto rounded-[28px] bg-card shadow-soft lg:block">
+            <SidebarContent />
+          </aside>
           <TopNav />
-          <main className="flex-1">
+          {/* min-w-0 lets wide tables scroll inside their card instead of stretching the page */}
+          <main className="min-w-0 lg:pl-[272px]">
             <div
               key={pathname}
-              className="page-enter mx-auto w-full max-w-[1360px] px-4 pb-28 pt-6 sm:px-6 sm:pt-8 md:pb-12 lg:px-10 lg:pt-9"
+              className="page-enter mx-auto w-full max-w-[1240px] px-4 pb-28 pt-5 sm:px-6 sm:pt-7 md:pb-12 lg:px-8 lg:pt-8"
             >
               {children}
             </div>

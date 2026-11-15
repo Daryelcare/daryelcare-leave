@@ -26,7 +26,7 @@ export function MobileTabBar() {
   return (
     <nav
       aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-border/70 bg-card/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl supports-[backdrop-filter]:bg-card/75 md:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 bg-card/90 shadow-[0_-8px_24px_-12px_rgba(30,41,59,0.18)] pb-[env(safe-area-inset-bottom)] backdrop-blur-xl supports-[backdrop-filter]:bg-card/75 md:hidden"
     >
       <ul className="mx-auto grid h-16 max-w-md grid-cols-5">
         {TAB_BAR.map((tab) => {
@@ -63,7 +63,7 @@ export function MobileTabBar() {
       </ul>
 
       <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
-        <SheetContent side="bottom" className="rounded-t-2xl px-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-5">
+        <SheetContent side="bottom" className="rounded-t-[28px] px-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-5">
           <SheetTitle className="px-2 text-lg">All pages</SheetTitle>
           <SheetDescription className="sr-only">Every page in DaryelCare, grouped</SheetDescription>
           <div className="mt-3 space-y-4">
@@ -80,13 +80,13 @@ export function MobileTabBar() {
                           aria-current={active ? "page" : undefined}
                           onClick={() => setMoreOpen(false)}
                           className={cn(
-                            "flex h-12 items-center gap-3 rounded-xl px-3 text-[15px] font-medium transition-colors",
+                            "flex h-12 items-center gap-3 rounded-full px-3 text-[15px] font-medium transition-colors",
                             active
-                              ? "bg-primary-soft font-semibold text-primary"
+                              ? "bg-primary font-semibold text-primary-foreground"
                               : "text-foreground active:bg-secondary",
                           )}
                         >
-                          <item.icon className={cn("h-5 w-5", active ? "text-primary" : "text-muted-foreground")} />
+                          <item.icon className={cn("h-5 w-5", active ? "text-primary-foreground" : "text-muted-foreground")} />
                           {item.title}
                         </Link>
                       </li>
@@ -98,7 +98,7 @@ export function MobileTabBar() {
             <div className="mx-2 h-px bg-border/70" aria-hidden />
             <button
               onClick={handleLogout}
-              className="flex h-12 w-full items-center gap-3 rounded-xl px-3 text-[15px] font-medium text-destructive active:bg-danger-soft"
+              className="flex h-12 w-full items-center gap-3 rounded-full px-3 text-[15px] font-medium text-destructive active:bg-danger-soft"
             >
               <LogOut className="h-5 w-5" />
               Log out

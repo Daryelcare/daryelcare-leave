@@ -138,7 +138,7 @@ export function BalanceCheckPanel() {
         <ErrorState title="Couldn't check the balances" message={handleApiError(error)} onRetry={() => refetch()} />
       ) : data ? (
         <>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="tile-tray grid-cols-2 lg:grid-cols-4">
             <StatCard
               label="Need correcting"
               icon={Scale}
@@ -171,7 +171,7 @@ export function BalanceCheckPanel() {
           )}
 
           <div className="surface overflow-hidden">
-            <div className="flex flex-wrap items-center gap-2 border-b border-border/70 px-4 py-3 text-sm sm:px-5">
+            <div className="flex flex-wrap items-center gap-2 px-4 py-3 text-sm sm:px-5">
               <span className="mr-auto text-muted-foreground">
                 {data.year.range} ·{" "}
                 {showAll
