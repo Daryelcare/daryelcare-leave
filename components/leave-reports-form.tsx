@@ -160,10 +160,10 @@ export function LeaveReportsForm() {
                   onClick={() => setPreset(p.id)}
                   aria-pressed={preset === p.id}
                   className={cn(
-                    "h-9 rounded-full border px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30",
+                    "h-9 rounded-full px-3.5 text-[13px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70",
                     preset === p.id
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border bg-card text-foreground/80 hover:border-foreground/25",
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-background text-secondary-foreground hover:bg-secondary hover:text-foreground",
                   )}
                 >
                   {p.label}
@@ -289,7 +289,7 @@ export function LeaveReportsForm() {
             <StatCard label="Sickness" value={figures.sickDays} detail="Days off sick" />
           </section>
 
-          <div className="grid gap-4 sm:gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start [&>*]:min-w-0">
+          <div className="grid gap-4 sm:gap-6 2xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] 2xl:items-start [&>*]:min-w-0">
             <section className="surface overflow-hidden">
               <div className="p-5 pb-3 sm:p-6 sm:pb-3">
                 <h2 className="text-[17px] font-semibold">By branch</h2>

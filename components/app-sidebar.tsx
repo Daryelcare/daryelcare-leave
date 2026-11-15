@@ -4,12 +4,14 @@ import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
-import { ChevronsUpDown, KeyRound, LogOut, Settings } from "lucide-react"
+import { ChevronsUpDown, KeyRound, LogOut, Search, Settings } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
@@ -19,6 +21,8 @@ import { useLogout } from "@/hooks/use-logout"
 import { cn } from "@/lib/utils"
 import { useApp } from "./app-provider"
 import { Avatar } from "./page-kit"
+import { THEME_OPTIONS, useThemeChoice } from "./theme-switch"
+import { openQuickSearch, useShortcutLabel } from "./quick-search"
 
 /** Leave requests waiting for a decision (same query the dashboard uses). */
 export function usePendingCount() {
@@ -43,6 +47,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const isAdmin = user?.role === "admin"
   const activeHref = findNavItem(pathname)?.href
   const pending = usePendingCount()
+  const shortcut = useShortcutLabel()
 
   return (
     <div className="flex h-full flex-col gap-1 px-3.5 py-5">
@@ -58,6 +63,21 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <span className="text-xs font-medium text-muted-foreground">Leave &amp; compliance</span>
         </span>
       </Link>
+
+      <button
+        type="button"
+        onClick={() => {
+          onNavigate?.()
+          openQuickSearch()
+        }}
+        className="mb-4 flex h-10 items-center gap-2.5 rounded-full bg-background pl-3.5 pr-2 text-sm text-muted-foreground outline-none transition-colors hover:bg-secondary hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/70"
+      >
+        <Search className="h-4 w-4" />
+        <span className="flex-1 text-left">Search</span>
+        <kbd className="rounded-md bg-card font-sans px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground shadow-soft">
+          {shortcut}
+        </kbd>
+      </button>
 
       <nav aria-label="Main" className="flex flex-col gap-4">
         {visibleGroups(isAdmin).map((group) => (
@@ -156,6 +176,7 @@ export function AccountMenuItems({ side = "bottom" }: { side?: "top" | "bottom" 
   const { user } = useApp()
   const handleLogout = useLogout()
   const isAdmin = user?.role === "admin"
+  const { theme, setTheme } = useThemeChoice()
   return (
     <DropdownMenuContent side={side} align={side === "top" ? "start" : "end"} sideOffset={8} className="w-64">
       <DropdownMenuLabel className="space-y-0.5">
@@ -179,6 +200,16 @@ export function AccountMenuItems({ side = "bottom" }: { side?: "top" | "bottom" 
           Change password
         </Link>
       </DropdownMenuItem>
+      <DropdownMenuSeparator />
+      <DropdownMenuLabel className="pb-1 pt-1.5 text-xs font-semibold text-muted-foreground">Appearance</DropdownMenuLabel>
+      <DropdownMenuRadioGroup value={theme} onValueChange={setTheme}>
+        {THEME_OPTIONS.map((o) => (
+          <DropdownMenuRadioItem key={o.value} value={o.value}>
+            <o.icon />
+            {o.label}
+          </DropdownMenuRadioItem>
+        ))}
+      </DropdownMenuRadioGroup>
       <DropdownMenuSeparator />
       <DropdownMenuItem
         onClick={handleLogout}

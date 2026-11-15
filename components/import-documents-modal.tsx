@@ -338,7 +338,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
     if (daysLeft <= 0) return "text-destructive"
     if (daysLeft <= 7) return "text-destructive"
     if (daysLeft <= 30) return "text-warning"
-    if (daysLeft <= 90) return "text-primary"
+    if (daysLeft <= 90) return "text-primary-text"
     return "text-success"
   }
 
@@ -529,7 +529,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                                   <Badge
                                     className={
                                       doc.isSponsored
-                                        ? "bg-primary-soft text-primary"
+                                        ? "bg-primary-soft text-primary-text"
                                         : "bg-secondary text-muted-foreground"
                                     }
                                   >
@@ -539,7 +539,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                                     <Badge
                                       className={
                                         doc.is20Hrs
-                                          ? "bg-primary-soft text-primary"
+                                          ? "bg-primary-soft text-primary-text"
                                           : "bg-secondary text-muted-foreground"
                                       }
                                     >
@@ -679,7 +679,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                     Drag and drop your file here, or{" "}
                     <button
                       type="button"
-                      className="text-primary hover:underline focus:outline-none"
+                      className="text-primary-text hover:underline focus:outline-none"
                       onClick={handleFileInputClick}
                     >
                       browse

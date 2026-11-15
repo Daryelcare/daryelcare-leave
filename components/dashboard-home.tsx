@@ -481,7 +481,7 @@ function PanelFooter({ href, children }: { href: string; children: ReactNode }) 
   return (
     <Link
       href={href}
-      className="group flex items-center justify-between px-5 py-3 text-sm font-semibold text-primary transition-colors hover:bg-primary-soft/50 sm:px-6"
+      className="group flex items-center justify-between px-5 py-3 text-sm font-semibold text-primary-text transition-colors hover:bg-primary-soft/50 sm:px-6"
     >
       {children}
       <ArrowRight className="h-4 w-4 transition-transform duration-200 ease-smooth group-hover:translate-x-0.5" />

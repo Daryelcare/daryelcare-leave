@@ -171,7 +171,7 @@ export function BranchManagementTable() {
           <ul className="flex flex-col gap-1.5 p-2 sm:p-3 [&>li]:rounded-2xl [&>li]:bg-background [&>li>*]:rounded-2xl">
             {branches.map((branch: Branch) => (
               <li key={branch.id} className="flex items-center gap-3 px-5 py-3 sm:px-6">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary-text">
                   <Building2 className="h-4 w-4" />
                 </span>
                 <div className="min-w-0 flex-1">

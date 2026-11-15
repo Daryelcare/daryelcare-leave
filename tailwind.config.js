@@ -22,8 +22,8 @@ module.exports = {
         "soft-hover": "var(--shadow-soft-hover)",
         card: "var(--shadow-soft)",
         raised: "0 1px 2px 0 rgb(16 24 40 / 0.06), 0 2px 6px -2px rgb(16 24 40 / 0.06)",
-        float: "0 12px 32px -8px rgb(16 24 40 / 0.16), 0 4px 10px -4px rgb(16 24 40 / 0.08)",
-        dialog: "0 24px 64px -16px rgb(16 24 40 / 0.28), 0 8px 20px -8px rgb(16 24 40 / 0.12)",
+        float: "var(--shadow-float)",
+        dialog: "var(--shadow-dialog)",
       },
       transitionTimingFunction: {
         smooth: "cubic-bezier(0.22, 1, 0.36, 1)",

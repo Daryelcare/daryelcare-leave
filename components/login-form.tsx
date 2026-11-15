@@ -255,7 +255,7 @@ export function LoginForm() {
               setResetMode(true)
               setError("")
             }}
-            className="font-semibold text-primary hover:underline"
+            className="-my-2 inline-block py-2 font-semibold text-primary-text hover:underline"
           >
             Forgotten your password?
           </button>

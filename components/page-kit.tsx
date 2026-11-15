@@ -27,7 +27,7 @@ export function PageHeader({
 }) {
   return (
     <div className={cn("flex flex-wrap items-end justify-between gap-x-6 gap-y-4", className)}>
-      <div className="flex min-w-0 flex-[1_1_260px] items-center gap-3.5">
+      <div className="flex min-w-0 max-w-full flex-[1_0_auto] items-center gap-3.5">
         {Icon && (
           <span className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground sm:flex">
             <Icon className="h-5 w-5" />

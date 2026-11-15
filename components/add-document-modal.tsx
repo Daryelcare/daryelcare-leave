@@ -584,7 +584,7 @@ export function AddDocumentModal({ open, onOpenChange, initialEmployeeId }: AddD
               <div>
                 <div className="mb-1.5 flex items-center justify-between gap-2">
                   <h4 className="flex items-center gap-2 text-sm font-semibold">
-                    <ShieldCheck className="h-4 w-4 text-primary" />
+                    <ShieldCheck className="h-4 w-4 text-primary-text" />
                     Right to work
                   </h4>
                   {existingDocument?.rightToWorkExpiry && (

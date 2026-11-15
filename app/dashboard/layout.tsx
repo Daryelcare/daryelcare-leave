@@ -4,6 +4,7 @@ import Image from "next/image"
 import type React from "react"
 import { TopNav } from "@/components/top-nav"
 import { SidebarContent } from "@/components/app-sidebar"
+import { QuickSearch } from "@/components/quick-search"
 import { MobileTabBar } from "@/components/mobile-tab-bar"
 import { Toaster } from "@/components/ui/toaster"
 import { useApp } from "@/components/app-provider"
@@ -36,6 +37,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <Suspense fallback={null}>
           <MobileTabBar />
         </Suspense>
+        <QuickSearch />
       </AuthCheck>
       <Toaster />
     </>

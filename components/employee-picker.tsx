@@ -133,7 +133,7 @@ export const EmployeePicker = forwardRef<
                     {e.employeeCode ? ` · ${e.employeeCode}` : ""}
                   </span>
                 </span>
-                {e.id === value && <Check className="h-4 w-4 text-primary" />}
+                {e.id === value && <Check className="h-4 w-4 text-primary-text" />}
               </li>
             ))
           )}
