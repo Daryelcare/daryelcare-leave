@@ -284,7 +284,7 @@ export function TeamCalendar({
   }
 
   const pill =
-    "inline-flex h-9 items-center justify-center rounded-full border border-border/80 bg-card text-foreground/80 shadow-card transition-[color,box-shadow] duration-150 hover:text-primary hover:shadow-raised focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30"
+    "inline-flex h-9 items-center justify-center rounded-full bg-secondary text-secondary-foreground transition-colors duration-150 hover:bg-secondary/70 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
 
   return (
     <div className="surface p-4 sm:p-5">
@@ -427,7 +427,7 @@ export function TeamCalendar({
               type="button"
               onClick={() => setShowBusyDays((v) => !v)}
               aria-expanded={showBusyDays}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-warning hover:underline"
+              className="-my-2 inline-flex items-center gap-1 py-2 text-xs font-semibold text-warning hover:underline"
             >
               {showBusyDays ? "Hide days" : "Show days"}
               <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", showBusyDays && "rotate-180")} />
@@ -475,7 +475,7 @@ export function TeamCalendar({
               }}
             >
               {/* Names, pinned while the days scroll */}
-              <div className="sticky left-0 z-20 flex flex-col bg-card shadow-[8px_0_12px_-10px_rgb(16_24_40_/_0.25)]">
+              <div className="sticky left-0 z-20 flex flex-col bg-card shadow-[10px_0_12px_-12px_rgb(16_24_40_/_0.18)]">
                 <div className="h-11" />
                 {items.map((item) =>
                   item.kind === "group" ? (
@@ -484,7 +484,7 @@ export function TeamCalendar({
                       key={`g-${item.branch}`}
                       onClick={() => toggleGroup(item.branch)}
                       aria-expanded={!collapsed.has(item.branch)}
-                      className="flex w-full items-center gap-1.5 border-t border-border/60 bg-muted/40 px-1 text-left text-xs font-semibold text-foreground/80 hover:bg-muted"
+                      className="flex w-full items-center gap-1.5 rounded-l-xl bg-background px-2 text-left text-xs font-bold text-secondary-foreground hover:bg-secondary"
                       style={{ height: GROUP_ROW }}
                     >
                       <ChevronDown
@@ -501,7 +501,7 @@ export function TeamCalendar({
                       key={item.r.leave.id}
                       onClick={() => onOpen?.(item.r.leave.id)}
                       tabIndex={-1}
-                      className="flex w-full items-center gap-2 border-t border-border/60 pr-2 text-left transition-colors hover:bg-muted/50 sm:gap-2.5"
+                      className="flex w-full items-center gap-2 rounded-l-xl pl-1 pr-2 text-left transition-colors hover:bg-background sm:gap-2.5"
                       style={{ height: ROW }}
                     >
                       <Avatar name={item.r.leave.employeeName} className="hidden h-7 w-7 text-[11px] sm:flex" />
@@ -524,7 +524,7 @@ export function TeamCalendar({
                       key={d.n}
                       className={cn(
                         "flex flex-col items-center justify-center gap-0.5",
-                        d.weekend && "bg-muted/60",
+                        d.weekend && "bg-background",
                         d.busy && "bg-warning-soft",
                       )}
                       title={
@@ -572,17 +572,17 @@ export function TeamCalendar({
                     item.kind === "group" ? (
                       <div
                         key={`gbg-${item.branch}`}
-                        className="border-t border-border/60 bg-muted/40"
+                        className="rounded-r-xl bg-background"
                         style={{ height: GROUP_ROW }}
                       />
                     ) : (
                       <div
                         key={`bg-${item.r.leave.id}`}
-                        className="grid border-t border-border/60"
+                        className="grid"
                         style={{ height: ROW, gridTemplateColumns: `repeat(${numDays}, 1fr)` }}
                       >
                         {days.map((d) => (
-                          <div key={d.n} className={cn(d.weekend && "bg-muted/60", d.busy && "bg-warning-soft/60")} />
+                          <div key={d.n} className={cn(d.weekend && "bg-background", d.busy && "bg-warning-soft/60")} />
                         ))}
                       </div>
                     ),

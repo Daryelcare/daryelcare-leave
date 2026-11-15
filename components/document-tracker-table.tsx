@@ -118,7 +118,7 @@ const TONE: Record<Urgency, { bar: string; text: string; soft: string; stripe: s
     stripe: "before:bg-destructive/60",
   },
   d30: { bar: "bg-warning", text: "text-warning", soft: "bg-warning-soft", stripe: "before:bg-warning" },
-  d90: { bar: "bg-primary", text: "text-primary", soft: "bg-primary-soft", stripe: "before:bg-primary" },
+  d90: { bar: "bg-primary", text: "text-primary-text", soft: "bg-primary-soft", stripe: "before:bg-primary" },
   valid: { bar: "bg-success", text: "text-success", soft: "bg-success-soft", stripe: "before:bg-transparent" },
   none: { bar: "bg-border", text: "text-muted-foreground", soft: "bg-muted", stripe: "before:bg-transparent" },
 }
@@ -460,7 +460,8 @@ export function DocumentTrackerTable() {
           <Link
             href={personHref(doc.employeeId)}
             scroll={false}
-            className="truncate text-left font-semibold text-foreground hover:underline focus-visible:underline focus-visible:outline-none"
+            // Taller hit area on phones without changing the row's layout
+            className="-my-1.5 truncate py-1.5 text-left font-semibold text-foreground hover:underline focus-visible:underline focus-visible:outline-none max-sm:-my-2 max-sm:py-2"
           >
             {doc.employeeName || "—"}
           </Link>
@@ -770,7 +771,7 @@ export function DocumentTrackerTable() {
                 className={cn(
                   "h-9 whitespace-nowrap rounded-full px-3 transition-colors sm:h-7 sm:px-2.5",
                   comingUpAll === o.all
-                    ? "bg-card text-foreground shadow-raised"
+                    ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
@@ -1015,7 +1016,7 @@ export function DocumentTrackerTable() {
             </span>
           ))}
           {chips.length > 0 && (
-            <button onClick={clearFilters} className="ml-1 text-xs font-semibold text-primary hover:underline">
+            <button onClick={clearFilters} className="ml-1 text-xs font-semibold text-primary-text hover:underline">
               Clear all
             </button>
           )}
@@ -1024,7 +1025,7 @@ export function DocumentTrackerTable() {
         {/* Everyone on the page is ticked: offer everyone matching */}
         {allOnPage && visible.length > paged.items.length && (
           <div
-            className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-primary-soft px-4 py-2.5 text-sm font-medium text-primary sm:px-5"
+            className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-primary-soft px-4 py-2.5 text-sm font-medium text-primary-text sm:px-5"
             aria-live="polite"
           >
             {allMatching ? (
@@ -1072,7 +1073,7 @@ export function DocumentTrackerTable() {
                   >
                     <span className="inline-flex items-center gap-1.5">
                       {c.id === "rightToWork" && c.id === focusKind && (
-                        <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                        <ShieldCheck className="h-3.5 w-3.5 text-primary-text" />
                       )}
                       {c.label}
                     </span>
@@ -1167,7 +1168,7 @@ export function DocumentTrackerTable() {
                         {focusMissing && (
                           <button
                             onClick={() => setCellTarget({ doc, kind: focusKind })}
-                            className="text-xs font-medium text-muted-foreground underline-offset-2 hover:underline"
+                            className="-my-2 self-start py-2 text-left text-xs font-medium text-muted-foreground underline-offset-2 hover:underline"
                           >
                             {focusLabel}: no expiry recorded · Add
                           </button>
@@ -1194,7 +1195,7 @@ export function DocumentTrackerTable() {
                                   <dt
                                     className={cn(
                                       "flex items-center gap-1.5 truncate text-[11px] font-semibold uppercase tracking-wide",
-                                      focus ? "text-primary" : "text-muted-foreground",
+                                      focus ? "text-primary-text" : "text-muted-foreground",
                                     )}
                                   >
                                     {focus && item.kind === "rightToWork" && <ShieldCheck className="h-3.5 w-3.5" />}

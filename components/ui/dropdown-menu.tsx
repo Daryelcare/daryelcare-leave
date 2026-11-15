@@ -48,7 +48,12 @@ const DropdownMenuContent = React.forwardRef<
     <DropdownMenuPrimitive.Content
       ref={ref}
       sideOffset={sideOffset}
-      className={cn(floatingPanelClasses, "min-w-[11rem] p-1.5", className)}
+      className={cn(
+        floatingPanelClasses,
+        // Long menus scroll inside the space left on screen
+        "max-h-[var(--radix-dropdown-menu-content-available-height)] min-w-[11rem] overflow-y-auto p-1.5",
+        className,
+      )}
       {...props}
     />
   </DropdownMenuPrimitive.Portal>
@@ -75,7 +80,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
   >
     <span className="absolute left-2.5 flex h-4 w-4 items-center justify-center">
       <DropdownMenuPrimitive.ItemIndicator>
-        <Check className="!text-primary" />
+        <Check className="!text-primary-text" />
       </DropdownMenuPrimitive.ItemIndicator>
     </span>
     {children}
@@ -90,7 +95,7 @@ const DropdownMenuRadioItem = React.forwardRef<
   <DropdownMenuPrimitive.RadioItem ref={ref} className={cn(itemClasses, "pl-8", className)} {...props}>
     <span className="absolute left-2.5 flex h-4 w-4 items-center justify-center">
       <DropdownMenuPrimitive.ItemIndicator>
-        <Circle className="!size-2 fill-current !text-primary" />
+        <Circle className="!size-2 fill-current !text-primary-text" />
       </DropdownMenuPrimitive.ItemIndicator>
     </span>
     {children}

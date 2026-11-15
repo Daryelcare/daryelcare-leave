@@ -121,7 +121,7 @@ export function LeaveCell({ e, wrap }: { e: Pick<DirectoryEmployee, "awayNow" | 
   if (e.awayNow) {
     return (
       <span className="block">
-        <span className="block text-sm font-semibold text-primary">
+        <span className="block text-sm font-semibold text-primary-text">
           Away until {formatDisplayDate(e.awayNow.endDate)}
         </span>
         <span className="block text-xs text-muted-foreground">{e.awayNow.type}</span>
@@ -406,7 +406,7 @@ export function EmployeeDirectory() {
           <Link
             href={personHref(e.id)}
             scroll={false}
-            className="truncate font-semibold text-foreground hover:underline focus-visible:underline focus-visible:outline-none"
+            className="-my-1.5 truncate py-1.5 font-semibold text-foreground hover:underline focus-visible:underline focus-visible:outline-none max-sm:-my-2 max-sm:py-2"
           >
             {e.name}
           </Link>
@@ -638,14 +638,14 @@ export function EmployeeDirectory() {
             </span>
           ))}
           {chips.length > 0 && (
-            <button onClick={clearAll} className="ml-1 text-xs font-semibold text-primary hover:underline">
+            <button onClick={clearAll} className="ml-1 text-xs font-semibold text-primary-text hover:underline">
               Clear all
             </button>
           )}
         </div>
 
         {allOnPage && visible.length > paged.items.length && (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-primary-soft px-4 py-2.5 text-sm font-medium text-primary sm:px-5">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-primary-soft px-4 py-2.5 text-sm font-medium text-primary-text sm:px-5">
             {allMatching ? (
               <>
                 <span>All {visible.length} matching people are selected.</span>

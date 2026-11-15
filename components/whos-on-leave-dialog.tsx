@@ -140,7 +140,7 @@ export function WhosOnLeaveDialog({ open, onOpenChange }: { open: boolean; onOpe
                     "h-8 whitespace-nowrap rounded-full px-1.5 text-[13px] font-semibold transition-colors duration-150 sm:px-3.5",
                     "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30",
                     active
-                      ? "bg-primary text-primary-foreground shadow-raised"
+                      ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:text-foreground",
                   )}
                 >

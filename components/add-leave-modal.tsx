@@ -636,7 +636,7 @@ export function AddLeaveModal({ open, onOpenChange, initialEmployeeId }: AddLeav
               <div
                 role="radiogroup"
                 aria-label="Save as"
-                className="grid grid-cols-2 gap-1 rounded-xl bg-secondary p-1"
+                className="grid grid-cols-2 gap-[3px] rounded-full bg-background p-1"
               >
                 {(
                   [
@@ -651,9 +651,9 @@ export function AddLeaveModal({ open, onOpenChange, initialEmployeeId }: AddLeav
                     aria-checked={saveAs === o.value}
                     onClick={() => setSaveAs(o.value)}
                     className={cn(
-                      "h-9 rounded-lg text-sm font-semibold transition-colors",
+                      "h-9 rounded-full text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70",
                       saveAs === o.value
-                        ? "bg-card text-foreground shadow-raised"
+                        ? "bg-primary text-primary-foreground"
                         : "text-muted-foreground hover:text-foreground",
                     )}
                   >

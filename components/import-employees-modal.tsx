@@ -473,7 +473,7 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
                     Drag and drop your file here, or{" "}
                     <button
                       type="button"
-                      className="text-primary hover:underline focus:outline-none"
+                      className="text-primary-text hover:underline focus:outline-none"
                       onClick={handleFileInputClick}
                     >
                       browse

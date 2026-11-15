@@ -291,7 +291,7 @@ export function EmployeeProfile({ id, onClose }: { id: string; onClose: () => vo
               <Field label="Employee code">{employee.employeeCode || "—"}</Field>
               <Field label="Email">
                 {employee.email ? (
-                  <a href={`mailto:${employee.email}`} className="text-primary hover:underline">
+                  <a href={`mailto:${employee.email}`} className="text-primary-text hover:underline">
                     {employee.email}
                   </a>
                 ) : (
@@ -300,7 +300,7 @@ export function EmployeeProfile({ id, onClose }: { id: string; onClose: () => vo
               </Field>
               <Field label="Phone">
                 {employee.phone ? (
-                  <a href={`tel:${employee.phone}`} className="text-primary hover:underline">
+                  <a href={`tel:${employee.phone}`} className="text-primary-text hover:underline">
                     {employee.phone}
                   </a>
                 ) : (
@@ -351,7 +351,7 @@ export function EmployeeProfile({ id, onClose }: { id: string; onClose: () => vo
                     className={cn(
                       "h-8 rounded-full px-3 transition-colors",
                       allYears === o.all
-                        ? "bg-card text-foreground shadow-raised"
+                        ? "bg-primary text-primary-foreground"
                         : "text-muted-foreground hover:text-foreground",
                     )}
                   >
@@ -519,7 +519,16 @@ function friendlyStatus(status: string | null | undefined) {
 export function EmployeePanel({ id, onClose }: { id: string | null; onClose: () => void }) {
   return (
     <Sheet open={!!id} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" className="w-full overflow-y-auto p-5 sm:max-w-[640px] sm:p-6">
+      <SheetContent
+        side="right"
+        className="w-full overflow-y-auto p-5 outline-none sm:max-w-[640px] sm:p-6"
+        // Focus the panel itself, not the close button, so no focus ring shows on open.
+        // Keyboard users still start inside the panel and Tab reaches the close button.
+        onOpenAutoFocus={(e) => {
+          e.preventDefault()
+          ;(e.currentTarget as HTMLElement | null)?.focus()
+        }}
+      >
         {id && <EmployeeProfile key={id} id={id} onClose={onClose} />}
       </SheetContent>
     </Sheet>

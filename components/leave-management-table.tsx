@@ -35,7 +35,7 @@ import {
   X,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Input, fieldClasses } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -48,6 +48,9 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
@@ -554,7 +557,7 @@ export function LeaveManagementTable() {
   )
 
   const isMockData = branches.length > 0 && branches[0].id === "1" && branches[0].name === "London"
-  const filterSelect = "w-full sm:w-auto sm:min-w-[132px] sm:max-w-[200px]"
+  const filterSelect = "w-full sm:w-auto sm:min-w-[120px] sm:max-w-[190px]"
 
   return (
     // Room under the list while the bulk bar floats over the bottom
@@ -657,7 +660,7 @@ export function LeaveManagementTable() {
               <div className="space-y-2.5 p-3 sm:p-4">
                 <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center">
                   <div className="flex gap-2 sm:contents">
-                    <div className="relative min-w-0 flex-1 sm:min-w-[220px] sm:max-w-xs sm:flex-1">
+                    <div className="relative min-w-0 flex-1 sm:min-w-[180px] sm:max-w-xs sm:flex-1">
                       <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
                         placeholder="Search employee"
@@ -757,7 +760,7 @@ export function LeaveManagementTable() {
                         })
                       }
                     >
-                      <SelectTrigger className={filterSelect} aria-label="Dates">
+                      <SelectTrigger className={cn(filterSelect, "sm:hidden")} aria-label="Dates">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -769,7 +772,7 @@ export function LeaveManagementTable() {
                       </SelectContent>
                     </Select>
                     <Select value={sort} onValueChange={(v) => setParams({ sort: v === "upcoming" ? null : v })}>
-                      <SelectTrigger className={filterSelect} aria-label="Sort">
+                      <SelectTrigger className={cn(filterSelect, "sm:hidden")} aria-label="Sort">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -780,6 +783,58 @@ export function LeaveManagementTable() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {/* From sm up, dates and sort share one menu so the filters fit on one row */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className={cn(
+                            fieldClasses,
+                            "hidden h-10 w-auto items-center gap-2 whitespace-nowrap py-2 sm:inline-flex",
+                            (datePreset !== "any" || sort !== "upcoming") && "bg-primary-soft text-primary-text hover:bg-primary-soft",
+                          )}
+                          aria-label="More filters: dates and sort"
+                        >
+                          <SlidersHorizontal className="h-4 w-4" />
+                          More
+                          {(datePreset !== "any" ? 1 : 0) + (sort !== "upcoming" ? 1 : 0) > 0 && (
+                            <span className="rounded-full bg-primary px-1.5 text-[11px] font-bold leading-5 text-primary-foreground">
+                              {(datePreset !== "any" ? 1 : 0) + (sort !== "upcoming" ? 1 : 0)}
+                            </span>
+                          )}
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-60">
+                        <DropdownMenuLabel className="text-xs text-muted-foreground">Dates</DropdownMenuLabel>
+                        <DropdownMenuRadioGroup
+                          value={datePreset}
+                          onValueChange={(v) =>
+                            setParams({
+                              dates: v === "any" ? null : v,
+                              ...(v === "custom" ? {} : { from: null, to: null }),
+                            })
+                          }
+                        >
+                          {DATE_PRESETS.map((d) => (
+                            <DropdownMenuRadioItem key={d.value} value={d.value}>
+                              {d.label}
+                            </DropdownMenuRadioItem>
+                          ))}
+                        </DropdownMenuRadioGroup>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuLabel className="text-xs text-muted-foreground">Sort</DropdownMenuLabel>
+                        <DropdownMenuRadioGroup
+                          value={sort}
+                          onValueChange={(v) => setParams({ sort: v === "upcoming" ? null : v })}
+                        >
+                          {LEAVE_SORTS.map((o) => (
+                            <DropdownMenuRadioItem key={o.value} value={o.value}>
+                              {o.label}
+                            </DropdownMenuRadioItem>
+                          ))}
+                        </DropdownMenuRadioGroup>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     {filtersActive && (
                       <Button variant="ghost" onClick={resetFilters} className="col-span-2 sm:col-span-1">
                         <X />
@@ -872,7 +927,7 @@ export function LeaveManagementTable() {
                         </button>
                       </span>
                     ))}
-                  <button onClick={resetFilters} className="ml-1 text-xs font-semibold text-primary hover:underline">
+                  <button onClick={resetFilters} className="ml-1 text-xs font-semibold text-primary-text hover:underline">
                     Clear all
                   </button>
                 </div>

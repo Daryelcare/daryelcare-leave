@@ -14,6 +14,7 @@ import { UserManagementTable } from "./user-management-table"
 import { BranchManagementTable } from "./branch-management-table"
 import { LeavePeriodManager } from "./leave-period-manager"
 import { DataHealth } from "./data-health"
+import { ThemeSwitch } from "./theme-switch"
 import { AccountName } from "./account-name"
 import { AdminSettings } from "./admin-settings"
 import { Avatar, Field, PageHeader, SectionHeader } from "./page-kit"
@@ -194,6 +195,16 @@ export function SettingsForm() {
                   To change your role or branches, ask an administrator.
                 </p>
               )}
+            </div>
+            <div className="surface flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+              <div className="space-y-1">
+                <h3 className="text-[15px] font-bold">Appearance</h3>
+                <p className="text-sm text-muted-foreground">
+                  Dark uses true black, which is easier on the eyes at night and saves battery on OLED screens.
+                  Saved on this device.
+                </p>
+              </div>
+              <ThemeSwitch className="self-start sm:self-auto" />
             </div>
           </div>
         )

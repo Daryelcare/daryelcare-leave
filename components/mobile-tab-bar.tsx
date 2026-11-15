@@ -38,7 +38,7 @@ export function MobileTabBar() {
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex h-full flex-col items-center justify-center gap-1 text-[11px] font-semibold transition-colors",
-                  active ? "text-primary" : "text-muted-foreground active:text-foreground",
+                  active ? "text-primary-text" : "text-muted-foreground active:text-foreground",
                 )}
               >
                 <tab.icon className={cn("h-[22px] w-[22px]", active && "stroke-[2.25]")} />
@@ -53,7 +53,7 @@ export function MobileTabBar() {
             aria-expanded={moreOpen}
             className={cn(
               "flex h-full w-full flex-col items-center justify-center gap-1 text-[11px] font-semibold transition-colors",
-              !anyTabActive ? "text-primary" : "text-muted-foreground active:text-foreground",
+              !anyTabActive ? "text-primary-text" : "text-muted-foreground active:text-foreground",
             )}
           >
             <Menu className="h-[22px] w-[22px]" />

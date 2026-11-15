@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Menu } from "lucide-react"
+import { Menu, Search } from "lucide-react"
 import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet"
 import { pageTitle } from "@/lib/navigation"
@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils"
 import { useApp } from "./app-provider"
 import { AccountMenuItems, SidebarContent } from "./app-sidebar"
 import { Avatar } from "./page-kit"
+import { openQuickSearch } from "./quick-search"
 
 /**
  * Compact bar for screens narrower than `lg`, where the floating sidebar is
@@ -59,6 +60,14 @@ export function TopNav() {
         <p className="min-w-0 flex-1 truncate font-display text-[15px] font-bold tracking-[-0.01em]">
           {pageTitle(pathname)}
         </p>
+        <button
+          type="button"
+          onClick={openQuickSearch}
+          aria-label="Search people, pages and settings"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/70"
+        >
+          <Search className="h-[18px] w-[18px]" />
+        </button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
