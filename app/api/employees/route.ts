@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server"
+import { allowanceColumnExists } from "@/lib/column-probe"
+import { STANDARD_ENTITLEMENT } from "@/lib/balances"
 import { supabase } from "@/lib/supabase"
 import { allowedBranches, canAccessBranch, requireUser } from "@/lib/server-auth"
 
@@ -129,6 +131,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "You can only add employees to your own branches" }, { status: 403 })
     }
 
+    // Their yearly allowance (whole days; 28 unless set)
+    const raw = data.totalLeaveDays ?? data.annualAllowance
+    const allowance = raw === undefined || raw === null || raw === "" ? STANDARD_ENTITLEMENT : Number(raw)
+    if (!Number.isInteger(allowance) || allowance < 0 || allowance > 366) {
+      return NextResponse.json({ error: "The annual allowance must be a whole number of days from 0 to 366" }, { status: 400 })
+    }
+    const tracking = await allowanceColumnExists()
+
     // Insert into Supabase
     const { data: newEmployee, error } = await supabase
       .from("employees")
@@ -138,7 +148,8 @@ export async function POST(request: Request) {
         job_title: data.jobTitle,
         branch: data.branch,
         days_taken: 0,
-        days_remaining: data.totalLeaveDays || 28, // Use provided value or default
+        days_remaining: allowance, // A new starter has their full allowance
+        ...(tracking ? { annual_allowance: allowance === STANDARD_ENTITLEMENT ? null : allowance } : {}),
         hours: data.hours, // Store hours directly in employees table
         status: "active",
         email: data.email,

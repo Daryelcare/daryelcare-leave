@@ -36,6 +36,8 @@ export type EmployeeRow = {
   phone: string | null
   status: string
   created_at: string
+  // Added by 20261116_auto_leave_year.sql (missing until it's run). Null = 28.
+  annual_allowance?: number | null
 }
 
 export type LeaveRequestRow = {

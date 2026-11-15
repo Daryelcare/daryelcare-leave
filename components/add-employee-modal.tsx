@@ -27,7 +27,11 @@ const formSchema = z.object({
   employeeCode: z.string().min(2, { message: "Employee code is required." }),
   jobTitle: z.string().min(2, { message: "Job title is required." }),
   branch: z.string().min(1, { message: "Branch is required." }),
-  totalLeaveDays: z.coerce.number<number>().min(0, { message: "Total leave days must be a positive number." }),
+  totalLeaveDays: z.coerce
+    .number<number>()
+    .int({ message: "Whole days only." })
+    .min(0, { message: "Can't be below 0." })
+    .max(366, { message: "Can't be more than 366." }),
   hours: z.coerce.number<number>().optional(),
   email: z.string().email({ message: "Invalid email address" }).optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
@@ -184,7 +188,7 @@ export function AddEmployeeModal({ open, onOpenChange }: AddEmployeeModalProps) 
                 name="totalLeaveDays"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Total leave days</FormLabel>
+                    <FormLabel>Annual allowance (days)</FormLabel>
                     <FormControl>
                       <Input type="number" {...field} />
                     </FormControl>

@@ -16,7 +16,6 @@ import { LeavePeriodManager } from "./leave-period-manager"
 import { DataHealth } from "./data-health"
 import { ThemeSwitch } from "./theme-switch"
 import { AccountName } from "./account-name"
-import { AdminSettings } from "./admin-settings"
 import { Avatar, Field, PageHeader, SectionHeader } from "./page-kit"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
@@ -257,13 +256,6 @@ export function SettingsForm() {
         return <LeavePeriodManager />
       case "data-health":
         return <DataHealth />
-      case "advanced":
-        return (
-          <div className="space-y-4">
-            <SectionHeader title={current.title} description={current.description} />
-            <AdminSettings />
-          </div>
-        )
       default:
         return null
     }

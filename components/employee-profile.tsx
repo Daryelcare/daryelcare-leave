@@ -231,7 +231,7 @@ export function EmployeeProfile({ id, onClose }: { id: string; onClose: () => vo
           label="Leave left"
           icon={CalendarDays}
           value={<LeaveLeft days={employee.daysRemaining} large />}
-          detail={`of ${STANDARD_ENTITLEMENT} days this leave year`}
+          detail={`of ${employee.annualAllowance ?? STANDARD_ENTITLEMENT} days this leave year`}
           tone={employee.daysRemaining < 0 ? "danger" : "default"}
         />
         <StatCard
