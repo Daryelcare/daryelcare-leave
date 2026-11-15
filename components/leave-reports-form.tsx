@@ -340,7 +340,7 @@ export function LeaveReportsForm() {
               <p className="mb-4 text-sm text-muted-foreground">Days of approved leave</p>
               <ul className="space-y-2" aria-label="Days of leave by month">
                 {figures.months.map((m) => (
-                  <li key={m.key} className="grid grid-cols-[56px_minmax(0,1fr)_40px] items-center gap-2 text-sm">
+                  <li key={m.key} className="grid grid-cols-[72px_minmax(0,1fr)_40px] items-center gap-2 text-sm">
                     <span className="text-muted-foreground">{m.label}</span>
                     <span className="h-2.5 overflow-hidden rounded-full bg-muted">
                       <span

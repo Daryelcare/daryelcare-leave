@@ -84,6 +84,54 @@ export function maskUkDate(raw: string): string {
   return out
 }
 
+/** Index in a masked date just after its nth digit (0 = start). */
+function caretAfterDigits(masked: string, n: number): number {
+  if (n <= 0) return 0
+  let seen = 0
+  for (let i = 0; i < masked.length; i++) {
+    if (/\d/.test(masked[i]) && ++seen === n) return i + 1
+  }
+  return masked.length
+}
+
+/**
+ * One keystroke in the dd/mm/yyyy box, wherever the cursor is. Returns the
+ * tidied text and where the cursor belongs, so editing the day, month or year
+ * in the middle of a full date works:
+ * - a digit typed into a full date overwrites the digit after the cursor
+ *   ("23/|01/2026" + 0 -> "23/0|1/2026", then 2 -> "23/02|/2026")
+ * - the cursor stays next to what was typed, and skips over a slash
+ * - "/" typed after a single digit still pads it ("1/" -> "01/")
+ */
+export function editUkDate(prev: string, raw: string, caret: number): { value: string; caret: number } {
+  const typedSlash = raw.length === prev.length + 1 && raw[caret - 1] === "/"
+  if (typedSlash) {
+    const value = maskUkDate(raw)
+    // Typed at the end (the usual case): the cursor follows the padded text
+    if (caret === raw.length) return { value, caret: value.length }
+    // Padding or a dropped slash: keep the cursor after the same digits
+    const digitsBefore = raw.slice(0, caret).replace(/\D/g, "").length
+    const at = caretAfterDigits(value, digitsBefore)
+    return { value, caret: value[at] === "/" ? at + 1 : at }
+  }
+  let digits = raw.replace(/\D/g, "")
+  let digitsBefore = raw.slice(0, caret).replace(/\D/g, "").length
+  const inserted = raw.length > prev.length
+  // Typing into a full date: overwrite the next digit instead of pushing the rest along
+  if (digits.length > 8 && inserted) {
+    digits = digits.slice(0, digitsBefore) + digits.slice(digitsBefore + 1)
+  }
+  digits = digits.slice(0, 8)
+  digitsBefore = Math.min(digitsBefore, digits.length)
+  let value = digits.slice(0, 2)
+  if (digits.length > 2) value += "/" + digits.slice(2, 4)
+  if (digits.length > 4) value += "/" + digits.slice(4, 8)
+  let at = caretAfterDigits(value, digitsBefore)
+  // Moving forward: hop over the slash so the next digit lands in the next part
+  if (inserted && value[at] === "/") at += 1
+  return { value, caret: at }
+}
+
 /**
  * The one date field used across the app. Dates always read and type as
  * dd/mm/yyyy (e.g. 12/09/2026), whatever the device's language. The calendar
@@ -112,12 +160,33 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
     const [draft, setDraft] = React.useState(committed)
     const [focused, setFocused] = React.useState(false)
     const nativeRef = React.useRef<HTMLInputElement>(null)
+    const textRef = React.useRef<HTMLInputElement | null>(null)
+    // Where the cursor goes after the next render (React would otherwise put it at the end)
+    const pendingCaret = React.useRef<number | null>(null)
+    React.useLayoutEffect(() => {
+      if (pendingCaret.current === null || !textRef.current) return
+      const at = pendingCaret.current
+      pendingCaret.current = null
+      if (document.activeElement === textRef.current) textRef.current.setSelectionRange(at, at)
+    })
+    const setRefs = (node: HTMLInputElement | null) => {
+      textRef.current = node
+      if (typeof ref === "function") ref(node)
+      else if (ref) ref.current = node
+    }
 
-    // Follow the value when it changes from outside (form reset, a new tab),
-    // but never while someone is typing
+    // The value this field last sent up, so only outside changes (form reset,
+    // a new tab) replace what's typed, and never while someone is typing
+    const lastSent = React.useRef(committed)
     React.useEffect(() => {
-      if (!focused) setDraft(committed)
+      if (focused || committed === lastSent.current) return
+      lastSent.current = committed
+      setDraft(committed)
     }, [committed, focused])
+    const send = (date: Date | undefined) => {
+      lastSent.current = date ? formatLocalDate(date) : ""
+      onChange(date)
+    }
 
     const minIso = toInputDate(min)
     const maxIso = toInputDate(max)
@@ -135,12 +204,16 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
             ? `Can't be after ${formatLocalDate(max)}`
             : null
 
-    const handleType = (raw: string) => {
-      const next = maskUkDate(raw)
+    const handleType = (raw: string, caret: number) => {
+      const { value: next, caret: at } = editUkDate(draft, raw, caret)
+      pendingCaret.current = at
       setDraft(next)
-      if (next === "") return onChange(undefined)
-      const date = next.length === 10 ? fromUkDate(next) : undefined
-      if (date && !before(date) && !after(date)) onChange(date)
+      if (next === "") return send(undefined)
+      if (next.length < 10) return
+      const date = fromUkDate(next)
+      // A complete date that can't be used clears the value, so nothing (like
+      // a day count) is worked out from the old date while this one shows
+      send(date && !before(date) && !after(date) ? date : undefined)
     }
 
     // A date chosen in the device's picker
@@ -148,7 +221,7 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
       const date = fromInputDate(iso)
       if (!date) return
       setDraft(formatLocalDate(date))
-      onChange(date)
+      send(date)
     }
 
     const openPicker = () => {
@@ -166,23 +239,23 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
       <div className="space-y-1">
         <div className="relative">
           <input
-            ref={ref}
+            ref={setRefs}
             type="text"
             inputMode="numeric"
             autoComplete="off"
-            maxLength={10}
             placeholder={placeholder}
             value={draft}
             disabled={disabled}
-            onChange={(e) => handleType(e.target.value)}
+            onChange={(e) => handleType(e.target.value, e.target.selectionStart ?? e.target.value.length)}
             onFocus={(e) => {
               setFocused(true)
               onFocus?.(e)
             }}
             onBlur={(e) => {
               setFocused(false)
-              // Leaving a half-typed or impossible date: go back to the last good one
-              if (draft !== committed && (draft.length < 10 || problem)) setDraft(committed)
+              // Leaving a half-typed date: go back to the last good one. A complete
+              // date with a problem stays, with its message, so it can be fixed.
+              if (draft !== committed && draft.length < 10) setDraft(committed)
               onBlur?.(e)
             }}
             className={cn(
@@ -201,7 +274,7 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
               type="button"
               onClick={() => {
                 setDraft("")
-                onChange(undefined)
+                send(undefined)
               }}
               className="absolute right-10 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
               aria-label="Clear date"
