@@ -63,6 +63,10 @@ export interface Employee {
   email?: string
   phone?: string
   status: string
+  /** True once the automatic leave year update has been run */
+  allowanceTracking?: boolean
+  /** Their yearly allowance in days (28 unless set) */
+  annualAllowance?: number
 }
 
 // One employee's document record (row in the `documents` table).

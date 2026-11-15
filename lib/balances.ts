@@ -3,7 +3,8 @@
 //
 // - Only approved Annual Leave and Working Holiday use the balance.
 // - Only the days inside the leave year count (leave crossing 31 March is split).
-// - Everyone's entitlement is the standard 28 days, as when a year starts.
+// - Each person's entitlement is their annual allowance, or the standard 28
+//   days when none is set. Unused days don't carry over.
 
 import { shouldDeductFromBalance } from "./utils"
 import { daysInYear, type LeaveYear } from "./leave-years"
@@ -21,7 +22,19 @@ export type BalanceLeave = {
   duration: number
 }
 
-export type BalancePerson = { id: string; name: string; branch: string; daysTaken: number; daysRemaining: number }
+export type BalancePerson = {
+  id: string
+  name: string
+  branch: string
+  daysTaken: number
+  daysRemaining: number
+  /** Yearly allowance; null or missing means the standard 28 */
+  allowance?: number | null
+}
+
+/** A person's yearly allowance: their own if set, else the standard 28 */
+export const allowanceOf = (p: { allowance?: number | null }) =>
+  typeof p.allowance === "number" && Number.isFinite(p.allowance) && p.allowance >= 0 ? p.allowance : STANDARD_ENTITLEMENT
 
 export type BalanceRow = BalancePerson & {
   /** Days used this year according to the leave records */
@@ -48,13 +61,13 @@ export function balanceCheck(people: BalancePerson[], leaves: BalanceLeave[], ye
   const used = daysUsedInYear(leaves, year)
   const rows: BalanceRow[] = people.map((p) => {
     const u = used.get(p.id) ?? { days: 0, entries: 0 }
-    const remaining = STANDARD_ENTITLEMENT - u.days
+    const remaining = allowanceOf(p) - u.days
     return {
       ...p,
       taken: u.days,
       remaining,
       changed: p.daysTaken !== u.days || p.daysRemaining !== remaining,
-      suspicious: u.days > SUSPICIOUS_DAYS,
+      suspicious: u.days > Math.max(SUSPICIOUS_DAYS, allowanceOf(p) * 2),
       entries: u.entries,
     }
   })

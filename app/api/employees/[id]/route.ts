@@ -1,6 +1,39 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
 import { canAccessBranch, requireUser, type RequestUser } from "@/lib/server-auth"
+import { allowanceColumnExists } from "@/lib/column-probe"
+import { applyBalanceCheck } from "@/lib/balance-server"
+import { STANDARD_ENTITLEMENT } from "@/lib/balances"
+
+/** A whole-day allowance from the request, or null for the standard 28; undefined when not sent */
+function parseAllowance(value: unknown): number | null | undefined | "bad" {
+  if (value === undefined) return undefined
+  if (value === null || value === "") return null
+  const n = Number(value)
+  if (!Number.isInteger(n) || n < 0 || n > 366) return "bad"
+  return n === STANDARD_ENTITLEMENT ? null : n
+}
+
+/** The frontend shape of an employees row */
+function toEmployee(row: Record<string, unknown>) {
+  return {
+    id: row.id,
+    name: row.name,
+    employeeCode: row.employee_code,
+    jobTitle: row.job_title,
+    branch: row.branch,
+    daysTaken: row.days_taken,
+    daysRemaining: row.days_remaining,
+    hours: row.hours,
+    email: row.email || undefined,
+    phone: row.phone || undefined,
+    status: row.status,
+    // Present once the automatic leave year update has been run
+    ...("annual_allowance" in row
+      ? { allowanceTracking: true, annualAllowance: (row.annual_allowance as number | null) ?? STANDARD_ENTITLEMENT }
+      : { allowanceTracking: false }),
+  }
+}
 
 /** The employee's branch check: a response to send instead, or null when allowed */
 async function branchCheck(id: string, user: RequestUser) {
@@ -32,22 +65,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: "Employee not found" }, { status: 404 })
     }
 
-    // Transform the data to match our frontend types
-    const employee = {
-      id: data.id,
-      name: data.name,
-      employeeCode: data.employee_code,
-      jobTitle: data.job_title,
-      branch: data.branch,
-      daysTaken: data.days_taken,
-      daysRemaining: data.days_remaining,
-      hours: data.hours, // Get hours directly from employees table
-      email: data.email || undefined,
-      phone: data.phone || undefined,
-      status: data.status,
-    }
-
-    return NextResponse.json(employee)
+    return NextResponse.json(toEmployee(data))
   } catch (error) {
     console.error("Error fetching employee:", error)
     return NextResponse.json({ error: "Failed to fetch employee" }, { status: 500 })
@@ -71,28 +89,45 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: "You can only move employees to your own branches" }, { status: 403 })
     }
 
+    // The yearly allowance: once it's tracked, balances are worked out from it
+    // and the leave on record, so the days taken / remaining aren't typed in
+    const allowance = parseAllowance(data.annualAllowance)
+    if (allowance === "bad") {
+      return NextResponse.json({ error: "The annual allowance must be a whole number of days from 0 to 366" }, { status: 400 })
+    }
+    const tracking = allowance !== undefined && (await allowanceColumnExists())
+    const update: Record<string, unknown> = {
+      name: data.name,
+      employee_code: data.employeeCode,
+      job_title: data.jobTitle,
+      branch: data.branch,
+      hours: data.hours, // Store hours directly in employees table
+      email: data.email || null,
+      phone: data.phone || null,
+      status: data.status,
+    }
+    if (tracking) update.annual_allowance = allowance
+    else {
+      if (data.daysTaken !== undefined) update.days_taken = data.daysTaken
+      if (data.daysRemaining !== undefined) update.days_remaining = data.daysRemaining
+    }
+
     // Update the employee in Supabase
-    const { data: updatedEmployee, error } = await supabase
-      .from("employees")
-      .update({
-        name: data.name,
-        employee_code: data.employeeCode,
-        job_title: data.jobTitle,
-        branch: data.branch,
-        days_taken: data.daysTaken,
-        days_remaining: data.daysRemaining,
-        hours: data.hours, // Store hours directly in employees table
-        email: data.email || null,
-        phone: data.phone || null,
-        status: data.status,
-      })
-      .eq("id", id)
-      .select()
-      .single()
+    const saved = await supabase.from("employees").update(update).eq("id", id).select().single()
+    const { error } = saved
+    let updatedEmployee = saved.data
 
     if (error) {
       throw error
     }
+    // A changed allowance shows in their balance straight away
+    if (tracking) {
+      await applyBalanceCheck(undefined, { only: [id] })
+      const fresh = await supabase.from("employees").select("*").eq("id", id).single()
+      if (fresh.error) throw fresh.error
+      updatedEmployee = fresh.data
+    }
+    if (!updatedEmployee) return NextResponse.json({ error: "Employee not found" }, { status: 404 })
     // Their documents record follows a branch move, so it shows in the right place
     const { error: docError } = await supabase
       .from("documents")
@@ -100,22 +135,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       .eq("employee_id", id)
     if (docError) console.error("Couldn't update the documents record with the employee:", docError)
 
-    // Transform to match frontend types
-    const transformedEmployee = {
-      id: updatedEmployee.id,
-      name: updatedEmployee.name,
-      employeeCode: updatedEmployee.employee_code,
-      jobTitle: updatedEmployee.job_title,
-      branch: updatedEmployee.branch,
-      daysTaken: updatedEmployee.days_taken,
-      daysRemaining: updatedEmployee.days_remaining,
-      hours: updatedEmployee.hours, // Get hours directly from employees table
-      email: updatedEmployee.email || undefined,
-      phone: updatedEmployee.phone || undefined,
-      status: updatedEmployee.status,
-    }
-
-    return NextResponse.json(transformedEmployee)
+    return NextResponse.json(toEmployee(updatedEmployee))
   } catch (error) {
     console.error("Error updating employee:", error)
     return NextResponse.json({ error: "Failed to update employee" }, { status: 500 })

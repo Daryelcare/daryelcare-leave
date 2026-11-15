@@ -6,6 +6,7 @@ import { fetchAllRows } from "./fetch-all"
 import { buildLeaveYears, type LeaveYear } from "./leave-years"
 import { fetchLeavePeriods } from "./leave-server"
 import { balanceCheck, type BalanceLeave, type BalancePerson } from "./balances"
+import { allowanceColumnExists } from "./column-probe"
 
 /** The leave year balances belong to: the active one in Settings, else the one containing today */
 export async function currentLeaveYear(): Promise<LeaveYear> {
@@ -15,8 +16,15 @@ export async function currentLeaveYear(): Promise<LeaveYear> {
   return (active && years.find((y) => y.key === active.startDate)) || years.find((y) => y.isCurrent) || years[0]
 }
 
+const EMPLOYEE_COLUMNS = "id, name, branch, status, days_taken, days_remaining"
+// A variable, so the typed query builder doesn't try to check a column the
+// generated types only know as optional
+const EMPLOYEE_COLUMNS_WITH_ALLOWANCE: string = `${EMPLOYEE_COLUMNS}, annual_allowance`
+
 export async function loadBalanceCheck(year?: LeaveYear) {
   const leaveYear = year ?? (await currentLeaveYear())
+  // Per-person allowances, once the database update adding them has been run
+  const withAllowance = await allowanceColumnExists()
   const employees = await fetchAllRows<{
     id: string
     name: string
@@ -24,10 +32,12 @@ export async function loadBalanceCheck(year?: LeaveYear) {
     status: string | null
     days_taken: number | null
     days_remaining: number | null
+    annual_allowance?: number | null
   }>((from, to) =>
-    supabase
-      .from("employees")
-      .select("id, name, branch, status, days_taken, days_remaining")
+    // Untyped here: annual_allowance only exists once the update has been run
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase.from("employees") as any)
+      .select(withAllowance ? EMPLOYEE_COLUMNS_WITH_ALLOWANCE : EMPLOYEE_COLUMNS)
       .order("id")
       .range(from, to),
   )
@@ -53,6 +63,7 @@ export async function loadBalanceCheck(year?: LeaveYear) {
       branch: e.branch,
       daysTaken: e.days_taken ?? 0,
       daysRemaining: e.days_remaining ?? 0,
+      allowance: e.annual_allowance ?? null,
     }))
   const leaves: BalanceLeave[] = leave.map((l) => ({
     employeeId: l.employee_id,
@@ -65,10 +76,17 @@ export async function loadBalanceCheck(year?: LeaveYear) {
   return { year: leaveYear, ...balanceCheck(people, leaves, leaveYear) }
 }
 
-/** Writes the worked-out balance for everyone whose stored one differs. Returns how many changed. */
-export async function applyBalanceCheck(year?: LeaveYear) {
+/**
+ * Writes the worked-out balance for everyone whose stored one differs. Returns
+ * how many changed. `skipSuspicious` (the nightly job) leaves alone anyone with
+ * an implausible amount of leave used, so a bad record is reviewed by a person
+ * rather than silently applied.
+ */
+export async function applyBalanceCheck(year?: LeaveYear, opts: { skipSuspicious?: boolean; only?: string[] } = {}) {
   const check = await loadBalanceCheck(year)
-  const changed = check.rows.filter((r) => r.changed)
+  const candidates = check.rows.filter((r) => r.changed && (!opts.only || opts.only.includes(r.id)))
+  const skipped = opts.skipSuspicious ? candidates.filter((r) => r.suspicious) : []
+  const changed = candidates.filter((r) => !skipped.includes(r))
   for (const row of changed) {
     const { error } = await supabase
       .from("employees")
@@ -76,5 +94,5 @@ export async function applyBalanceCheck(year?: LeaveYear) {
       .eq("id", row.id)
     if (error) throw error
   }
-  return { year: check.year, changed: changed.length, summary: check.summary }
+  return { year: check.year, changed: changed.length, skipped: skipped.map((r) => r.name), summary: check.summary }
 }

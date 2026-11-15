@@ -1,5 +1,6 @@
 "use client"
 
+import { LeaveYearJobCard } from "./leave-year-job-card"
 import { formatLocalDate } from "@/lib/dates"
 import { useState } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
@@ -114,7 +115,7 @@ export function LeavePeriodManager() {
     <div className="space-y-4">
       <SectionHeader
         title="Leave periods"
-        description="Each leave year runs between two dates. Starting a new one gives everyone 28 days, less any leave they've already taken in it."
+        description="Each leave year runs between two dates. The next one starts by itself; you only need New period to start one early or on different dates."
         actions={
           <Button onClick={() => setIsDialogOpen(true)}>
             <Plus />
@@ -122,6 +123,8 @@ export function LeavePeriodManager() {
           </Button>
         }
       />
+
+      <LeaveYearJobCard />
 
       <div className="surface overflow-hidden">
         {isLoading ? (

@@ -11,7 +11,6 @@ import {
   Palette,
   Settings,
   ShieldCheck,
-  SlidersHorizontal,
   UserRound,
   Users, Stethoscope } from "lucide-react"
 
@@ -115,7 +114,7 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
   {
     id: "leave-periods",
     title: "Leave periods",
-    description: "Each leave year runs between two dates. Starting a new one gives everyone 28 days, less leave already taken in it.",
+    description: "Each leave year runs between two dates. The next one starts by itself, and balances are kept up to date every night.",
     icon: CalendarCheck2,
     group: "Organisation",
     adminOnly: true,
@@ -125,14 +124,6 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     title: "Data health",
     description: "Problems in your records that make screens and reports wrong, and one-click tidy-ups.",
     icon: Stethoscope,
-    group: "Organisation",
-    adminOnly: true,
-  },
-  {
-    id: "advanced",
-    title: "Advanced",
-    description: "Organisation-wide maintenance actions.",
-    icon: SlidersHorizontal,
     group: "Organisation",
     adminOnly: true,
   },

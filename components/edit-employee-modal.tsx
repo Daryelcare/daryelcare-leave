@@ -33,6 +33,11 @@ const formSchema = z.object({
   // Can be negative: leave can be booked beyond the allowance
   daysRemaining: z.coerce.number<number>(),
   daysTaken: z.coerce.number<number>().min(0, { message: "Taken leave days must be a positive number." }),
+  annualAllowance: z.coerce
+    .number<number>()
+    .int({ message: "Whole days only." })
+    .min(0, { message: "Can't be below 0." })
+    .max(366, { message: "Can't be more than 366." }),
   hours: z.coerce.number<number>().optional(),
   email: z.string().email({ message: "Invalid email address" }).optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
@@ -85,6 +90,7 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
       branch: "",
       daysRemaining: 0,
       daysTaken: 0,
+      annualAllowance: 28,
       hours: undefined,
       email: "",
       phone: "",
@@ -98,6 +104,7 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
           branch: employee.branch,
           daysRemaining: employee.daysRemaining,
           daysTaken: employee.daysTaken,
+          annualAllowance: employee.annualAllowance ?? 28,
           hours: employee.hours ?? undefined,
           email: employee.email || "",
           phone: employee.phone || "",
@@ -110,9 +117,13 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
   const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true)
     try {
+      // Once the allowance is tracked, balances are worked out from it and the
+      // leave on record, so only the allowance is sent, not the day counts
+      const { annualAllowance, daysTaken, daysRemaining, ...rest } = data
+      const body = employee?.allowanceTracking ? { ...rest, annualAllowance } : { ...rest, daysTaken, daysRemaining }
       await fetchWithAuth(`/api/employees/${employeeId}`, {
         method: "PUT",
-        body: JSON.stringify(data),
+        body: JSON.stringify(body),
       })
 
       toast({
@@ -126,6 +137,7 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
       // Refresh employee list and details
       queryClient.invalidateQueries({ queryKey: ["employees"] })
       queryClient.invalidateQueries({ queryKey: ["employee", employeeId] })
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] })
     } catch (error) {
       toast({
         title: "Error",
@@ -253,6 +265,30 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
               )}
             />
             <div className="grid grid-cols-3 gap-4">
+              {employee?.allowanceTracking ? (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="annualAllowance"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Annual allowance</FormLabel>
+                        <FormControl>
+                          <Input type="number" min={0} max={366} step={1} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">This year</p>
+                    <p className="flex h-10 items-center text-sm text-muted-foreground tabular">
+                      {employee.daysTaken} used · {employee.daysRemaining} left
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
               <FormField
                 control={form.control}
                 name="daysTaken"
@@ -279,6 +315,8 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
                   </FormItem>
                 )}
               />
+                </>
+              )}
               <FormField
                 control={form.control}
                 name="hours"
@@ -349,6 +387,12 @@ export function EditEmployeeModal({ employeeId, isOpen, onClose }: EditEmployeeM
                 </FormItem>
               )}
             />
+            {employee?.allowanceTracking && (
+              <p className="text-xs text-muted-foreground">
+                Days used and left are worked out from the approved leave on record and kept up to date automatically.
+                Unused days don&apos;t carry over to the next leave year.
+              </p>
+            )}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
                 Cancel
