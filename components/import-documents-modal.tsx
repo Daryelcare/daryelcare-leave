@@ -374,7 +374,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
             {/* Invalid Records Section - Show only if there are invalid records */}
             {previewData.filter((doc) => !doc.isValid).length > 0 && (
               <div className="mb-4">
-                <div className="mb-2 rounded-xl border border-destructive/20 bg-destructive-soft p-3">
+                <div className="mb-2 rounded-2xl bg-destructive-soft p-3">
                   <h3 className="flex items-center text-sm font-semibold text-destructive">
                     <AlertCircle className="h-4 w-4 mr-2" />
                     Invalid Records ({previewData.filter((doc) => !doc.isValid).length})
@@ -382,7 +382,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                   </h3>
                 </div>
 
-                <div className="overflow-hidden rounded-xl border border-destructive/20">
+                <div className="overflow-hidden rounded-2xl bg-background">
                   <div className="max-h-[200px] overflow-auto">
                     <Table>
                       <TableHeader className="bg-destructive-soft">
@@ -448,7 +448,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
 
             {/* Valid Records Section */}
             <div>
-              <div className="mb-2 rounded-xl border border-success/20 bg-success-soft p-3">
+              <div className="mb-2 rounded-2xl bg-success-soft p-3">
                 <h3 className="flex items-center text-sm font-semibold text-success">
                   <CheckCircle className="h-4 w-4 mr-2" />
                   Valid Records ({previewData.filter((doc) => doc.isValid).length})
@@ -636,7 +636,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
               className={`rounded-xl border-2 border-dashed p-8 text-center transition-colors duration-200 ${
                 dragActive
                   ? "border-primary bg-primary-soft/60"
-                  : "border-border bg-muted/30 hover:border-foreground/20"
+                  : "border-border hover:border-foreground/20"
               }`}
               onDragEnter={handleDrag}
               onDragOver={handleDrag}

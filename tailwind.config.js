@@ -18,7 +18,9 @@ module.exports = {
       },
       boxShadow: {
         // Elevation scale: hairline cards, raised controls, floating menus, dialogs
-        card: "0 1px 2px 0 rgb(16 24 40 / 0.04), 0 1px 3px -1px rgb(16 24 40 / 0.04)",
+        soft: "var(--shadow-soft)",
+        "soft-hover": "var(--shadow-soft-hover)",
+        card: "var(--shadow-soft)",
         raised: "0 1px 2px 0 rgb(16 24 40 / 0.06), 0 2px 6px -2px rgb(16 24 40 / 0.06)",
         float: "0 12px 32px -8px rgb(16 24 40 / 0.16), 0 4px 10px -4px rgb(16 24 40 / 0.08)",
         dialog: "0 24px 64px -16px rgb(16 24 40 / 0.28), 0 8px 20px -8px rgb(16 24 40 / 0.12)",
@@ -36,6 +38,7 @@ module.exports = {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
           soft: "hsl(var(--primary-soft))",
+          text: "hsl(var(--primary-text))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",

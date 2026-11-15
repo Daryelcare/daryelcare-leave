@@ -15,7 +15,7 @@ const TabsList = React.forwardRef<
     ref={ref}
     className={cn(
       // Segmented control; scrolls sideways on narrow screens instead of overflowing
-      "inline-flex h-10 max-w-full items-center gap-0.5 overflow-x-auto rounded-[10px] bg-secondary p-1 text-muted-foreground [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+      "inline-flex h-10 max-w-full items-center gap-[3px] overflow-x-auto rounded-full bg-card p-1 text-muted-foreground shadow-soft [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
       className
     )}
     {...props}
@@ -30,7 +30,7 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-[7px] px-3 text-[13px] font-semibold transition-[color,background-color,box-shadow] duration-200 ease-smooth hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-raised [&_svg]:size-4",
+      "inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-4 text-[13px] font-bold transition-[color,background-color,box-shadow] duration-200 ease-smooth hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:hover:text-primary-foreground [&_svg]:size-4",
       className
     )}
     {...props}

@@ -671,14 +671,18 @@ export function DocumentTrackerTable() {
 
   return (
     <div className={cn("space-y-6 sm:space-y-8", selected.size > 0 && "pb-20")}>
-      <PageHeader title="Documents" description="Right-to-work, passport and visa expiry for every current employee." />
+      <PageHeader
+        title="Documents"
+        description="Right-to-work, passport and visa expiry for every current employee."
+        actions={pageActions}
+      />
 
       {isError && (
         <ErrorState title="Couldn't load documents" message={handleApiError(error)} onRetry={() => refetch()} />
       )}
 
       {/* Summary tiles: each filters the list to the people behind its number */}
-      <section aria-label="Documents at a glance" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <section aria-label="Documents at a glance" className="tile-tray grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
         <StatCard
           className="col-span-2 sm:col-span-1"
           label="In date"
@@ -798,7 +802,7 @@ export function DocumentTrackerTable() {
             </p>
           </div>
         ) : (
-          <ul className="grid border-t border-border/70 lg:grid-cols-2">
+          <ul className="grid lg:grid-cols-2">
             {upcoming.slice(0, 4).map((e, i) => {
               const chip = dateChip(e.date)
               const u = urgencyOf(e.days)
@@ -845,7 +849,7 @@ export function DocumentTrackerTable() {
 
       <div className="surface overflow-hidden">
         {/* Expiry filter */}
-        <div className="border-b border-border/70 px-3 pt-3 sm:px-4 sm:pt-4">
+        <div className=" px-3 pt-3 sm:px-4 sm:pt-4">
           <div className="-mx-3 overflow-x-auto px-3 pb-3 [scrollbar-width:none] sm:-mx-4 sm:px-4 sm:pb-4 [&::-webkit-scrollbar]:hidden">
             <div role="group" aria-label="Filter by expiry" className="flex w-max gap-1.5 sm:gap-2">
               {EXPIRY_FILTERS.filter((f) => f.id !== "none" || counts.none > 0 || expiry === "none").map((f) => {
@@ -858,18 +862,18 @@ export function DocumentTrackerTable() {
                     aria-pressed={active}
                     title={f.long}
                     className={cn(
-                      "flex h-10 shrink-0 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-[background-color,border-color,color,box-shadow] duration-150",
-                      "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30",
+                      "flex h-9 shrink-0 items-center gap-2 rounded-full px-3.5 text-[13px] font-bold transition-colors duration-150",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70",
                       active
-                        ? "border-foreground bg-foreground text-background shadow-raised"
-                        : "border-border bg-card text-foreground/80 hover:border-foreground/25 hover:text-foreground",
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background text-secondary-foreground hover:bg-secondary hover:text-foreground",
                     )}
                   >
                     {tone && <span className={cn("h-2 w-2 rounded-full", TONE[tone].bar)} aria-hidden />}
                     {f.id === "within7" || f.id === "within30" || f.id === "within90" ? (
                       <span>
                         <span
-                          className={cn("hidden sm:inline", active ? "text-background/70" : "text-muted-foreground")}
+                          className={cn("hidden sm:inline", active ? "text-primary-foreground/80" : "text-muted-foreground")}
                         >
                           Within{" "}
                         </span>
@@ -882,7 +886,7 @@ export function DocumentTrackerTable() {
                       className={cn(
                         "min-w-[22px] rounded-full px-1.5 text-center text-xs font-semibold tabular leading-5",
                         active
-                          ? "bg-background/20 text-background"
+                          ? "bg-white/20 text-primary-foreground"
                           : tone && counts[f.id] > 0 && f.id !== "valid" && f.id !== "none"
                             ? cn(TONE[tone].soft, TONE[tone].text)
                             : "bg-muted text-muted-foreground",
@@ -898,7 +902,7 @@ export function DocumentTrackerTable() {
         </div>
 
         {/* Search and refine */}
-        <div className="grid grid-cols-2 gap-2 border-b border-border/70 p-3 sm:p-4 lg:flex lg:flex-wrap lg:items-center">
+        <div className="grid grid-cols-2 gap-2 p-3 sm:p-4 lg:flex lg:flex-wrap lg:items-center">
           <div className="relative col-span-2 lg:w-64">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -919,7 +923,7 @@ export function DocumentTrackerTable() {
             )}
           </div>
           <Select value={status} onValueChange={(v) => setParam({ status: v })}>
-            <SelectTrigger className="col-span-2 sm:col-span-1 lg:w-[200px]" aria-label="Status">
+            <SelectTrigger className="col-span-2 sm:col-span-1 lg:w-auto lg:min-w-[140px]" aria-label="Status">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -931,7 +935,7 @@ export function DocumentTrackerTable() {
             </SelectContent>
           </Select>
           <Select value={kind} onValueChange={(v) => setParam({ type: v })}>
-            <SelectTrigger className="lg:w-[150px]" aria-label="Document type">
+            <SelectTrigger className="lg:w-auto lg:min-w-[140px]" aria-label="Document type">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -944,7 +948,7 @@ export function DocumentTrackerTable() {
             </SelectContent>
           </Select>
           <Select value={branch} onValueChange={(v) => setParam({ branch: v })} disabled={isLoadingBranches}>
-            <SelectTrigger className="lg:w-[150px]" aria-label="Branch">
+            <SelectTrigger className="lg:w-auto lg:min-w-[140px]" aria-label="Branch">
               <SelectValue placeholder="All branches" />
             </SelectTrigger>
             <SelectContent>
@@ -957,7 +961,7 @@ export function DocumentTrackerTable() {
             </SelectContent>
           </Select>
           <Select value={group} onValueChange={(v) => setParam({ group: v })}>
-            <SelectTrigger className="lg:w-[150px]" aria-label="Sponsorship">
+            <SelectTrigger className="lg:w-auto lg:min-w-[140px]" aria-label="Sponsorship">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -967,7 +971,7 @@ export function DocumentTrackerTable() {
             </SelectContent>
           </Select>
           <Select value={sort} onValueChange={(v) => setParam({ sort: v })}>
-            <SelectTrigger className="lg:w-[180px]" aria-label="Sort">
+            <SelectTrigger className="lg:w-auto lg:min-w-[140px]" aria-label="Sort">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -978,14 +982,11 @@ export function DocumentTrackerTable() {
               ))}
             </SelectContent>
           </Select>
-          <div className="col-span-2 flex flex-wrap items-center gap-2 lg:ml-auto [&>*]:flex-1 lg:[&>*]:flex-none">
-            {pageActions}
-          </div>
         </div>
 
         {/* What's showing, with a chip for each filter */}
         <div
-          className="flex min-h-12 flex-wrap items-center gap-x-2 gap-y-2 border-b border-border/70 bg-muted/40 px-4 py-2.5 text-sm sm:px-5"
+          className="flex min-h-12 flex-wrap items-center gap-x-2 gap-y-2 px-4 py-2.5 text-sm sm:px-5"
           aria-live="polite"
         >
           <span className="mr-1 text-muted-foreground">
@@ -1023,7 +1024,7 @@ export function DocumentTrackerTable() {
         {/* Everyone on the page is ticked: offer everyone matching */}
         {allOnPage && visible.length > paged.items.length && (
           <div
-            className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-border/70 bg-primary-soft px-4 py-2.5 text-sm font-medium text-primary sm:px-5"
+            className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-primary-soft px-4 py-2.5 text-sm font-medium text-primary sm:px-5"
             aria-live="polite"
           >
             {allMatching ? (
@@ -1135,7 +1136,7 @@ export function DocumentTrackerTable() {
           {isLoading ? (
             <ListSkeleton rows={5} />
           ) : paged.items.length > 0 ? (
-            <ul className="divide-y divide-border/70">
+            <ul className="flex flex-col gap-1.5 p-2 sm:p-3 [&>li]:rounded-2xl [&>li]:bg-background [&>li>*]:rounded-2xl">
               {paged.items.map((doc) => {
                 // Every document, right to work first; the focused type stands out
                 const items = entriesFor(doc)
@@ -1258,7 +1259,7 @@ export function DocumentTrackerTable() {
             <div
               role="toolbar"
               aria-label="Selected people"
-              className="flex max-w-full flex-wrap items-center justify-center gap-2 rounded-2xl border border-border/80 bg-card px-3 py-2.5 shadow-dialog"
+              className="flex max-w-full flex-wrap items-center justify-center gap-2 rounded-full bg-card px-3 py-2 shadow-dialog"
             >
               <span className="px-1 text-sm font-semibold" aria-live="polite">
                 {selected.size} selected

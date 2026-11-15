@@ -282,7 +282,7 @@ export function LeaveReportsForm() {
         </div>
       ) : (
         <div className="space-y-4 sm:space-y-6">
-          <section aria-label="Totals" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <section aria-label="Totals" className="tile-tray grid-cols-2 lg:grid-cols-4">
             <StatCard label="Days of leave" value={figures.days} detail={plural(figures.entries, "entry", "entries")} />
             <StatCard label="People" value={figures.people} detail="Took leave in the period" />
             <StatCard label="Annual leave" value={figures.annualDays} detail="Days, incl. working holiday" />
@@ -393,7 +393,7 @@ export function LeaveReportsForm() {
                 </TableBody>
               </Table>
               {figures.sickness.length > 10 && (
-                <p className="border-t border-border/70 px-5 py-2.5 text-xs text-muted-foreground sm:px-6">
+                <p className=" px-5 py-2.5 text-xs text-muted-foreground sm:px-6">
                   And {plural(figures.sickness.length - 10, "more person", "more people")}. Export for the full list.
                 </p>
               )}

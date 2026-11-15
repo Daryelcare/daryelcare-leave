@@ -269,7 +269,7 @@ export function UserManagementTable() {
       {isError && <ErrorState title="Couldn't load users" message={handleApiError(error)} onRetry={() => refetch()} />}
 
       <div className="surface overflow-hidden">
-        <div className="flex items-center gap-4 border-b border-border/70 px-4 py-3 text-sm text-muted-foreground sm:px-5">
+        <div className="flex items-center gap-4 px-4 py-3 text-sm text-muted-foreground sm:px-5">
           <span>
             <span className="font-semibold text-foreground tabular">{users.length}</span>{" "}
             {users.length === 1 ? "user" : "users"}
@@ -353,7 +353,7 @@ export function UserManagementTable() {
           {isLoading ? (
             <ListSkeleton rows={3} />
           ) : users.length > 0 ? (
-            <ul className="divide-y divide-border/70">
+            <ul className="flex flex-col gap-1.5 p-2 sm:p-3 [&>li]:rounded-2xl [&>li]:bg-background [&>li>*]:rounded-2xl">
               {users.map((user) => (
                 <li key={user.id} className="space-y-3 px-4 py-4">
                   <div className="flex items-center gap-3">

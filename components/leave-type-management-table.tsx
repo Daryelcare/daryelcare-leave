@@ -87,7 +87,7 @@ export function LeaveTypeManagementTable() {
         ) : leaveTypes.length === 0 ? (
           <EmptyState title="No leave types yet" />
         ) : (
-          <ul className="divide-y divide-border/70">
+          <ul className="flex flex-col gap-1.5 p-2 sm:p-3 [&>li]:rounded-2xl [&>li]:bg-background [&>li>*]:rounded-2xl">
             {leaveTypes.map((leaveType: LeaveType) => (
               <li key={leaveType.id} className="flex items-start gap-3 px-5 py-3.5 sm:items-center sm:px-6">
                 <span

@@ -118,7 +118,7 @@ export function EditBranchesModal({ user, open, onOpenChange }: EditBranchesModa
                     {!isLoadingBranches && branches.length === 0 && (
                       <p className="text-sm text-muted-foreground">No branches yet. Add them on the Branches page.</p>
                     )}
-                  <div className="divide-y divide-border/70 overflow-hidden rounded-xl border border-border/80">
+                  <div className="flex flex-col gap-1 overflow-hidden rounded-2xl bg-background p-1">
                     {branches.map((branch) => (
                       <div key={branch.id} className="flex items-center px-3.5 py-2.5 transition-colors hover:bg-muted/40">
                         <FormField

@@ -106,7 +106,7 @@ export const EmployeePicker = forwardRef<
         <ul
           id={listId}
           role="listbox"
-          className="absolute z-50 mt-1.5 max-h-64 w-full overflow-y-auto rounded-xl border border-border/80 bg-popover p-1 shadow-float"
+          className="absolute z-50 mt-1.5 max-h-64 w-full overflow-y-auto rounded-2xl bg-popover p-1 shadow-float ring-1 ring-black/[0.04]"
         >
           {matches.length === 0 ? (
             <li className="px-3 py-2.5 text-sm text-muted-foreground">No employees match “{query}”</li>

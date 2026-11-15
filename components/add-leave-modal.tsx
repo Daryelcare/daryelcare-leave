@@ -565,7 +565,7 @@ export function AddLeaveModal({ open, onOpenChange, initialEmployeeId }: AddLeav
             </div>
 
             {selectedEmployee && (
-              <div className="overflow-hidden rounded-xl border border-border/80 bg-muted/40 text-sm">
+              <div className="overflow-hidden rounded-2xl bg-background text-sm">
                 <div className="grid grid-cols-3 divide-x divide-border/70">
                   {[
                     { label: "Duration", value: startDate && endDate ? duration : "—" },
@@ -589,7 +589,7 @@ export function AddLeaveModal({ open, onOpenChange, initialEmployeeId }: AddLeav
                     </div>
                   ))}
                 </div>
-                <p className="border-t border-border/70 px-3.5 py-2.5 text-xs text-muted-foreground">
+                <p className=" px-3.5 py-2.5 text-xs text-muted-foreground">
                   {selectedEmployee.name} has used {selectedEmployee.daysTaken} and has {selectedEmployee.daysRemaining}{" "}
                   days remaining
                   {selectedEmployee.pendingDays > 0 && ` (${selectedEmployee.pendingDays} pending)`}. Only Annual Leave

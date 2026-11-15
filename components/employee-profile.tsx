@@ -225,7 +225,7 @@ export function EmployeeProfile({ id, onClose }: { id: string; onClose: () => vo
       </div>
 
       {/* At a glance */}
-      <section aria-label="At a glance" className="grid grid-cols-2 gap-3">
+      <section aria-label="At a glance" className="tile-tray grid-cols-2">
         <StatCard
           label="Leave left"
           icon={CalendarDays}
@@ -334,7 +334,7 @@ export function EmployeeProfile({ id, onClose }: { id: string; onClose: () => vo
         {/* Leave */}
         <TabsContent value="leave" className="mt-5">
           <div className="surface overflow-hidden">
-            <div className="flex flex-wrap items-center gap-2 border-b border-border/70 px-4 py-3 sm:px-5">
+            <div className="flex flex-wrap items-center gap-2 px-4 py-3 sm:px-5">
               <div
                 className="mr-auto flex rounded-full bg-secondary p-0.5 text-xs font-semibold"
                 role="group"
@@ -375,7 +375,7 @@ export function EmployeeProfile({ id, onClose }: { id: string; onClose: () => vo
                 description={allYears ? undefined : "Older leave is under All years."}
               />
             ) : (
-              <ul className="divide-y divide-border/70">
+              <ul className="flex flex-col gap-1.5 p-2 sm:p-3 [&>li]:rounded-2xl [&>li]:bg-background [&>li>*]:rounded-2xl">
                 {shownLeave.map((l) => (
                   <li key={l.id}>
                     <Link
@@ -431,7 +431,7 @@ export function EmployeeProfile({ id, onClose }: { id: string; onClose: () => vo
             </div>
           ) : (
             <div className="surface overflow-hidden">
-              <div className="flex items-center gap-2 border-b border-border/70 px-4 py-3 sm:px-5">
+              <div className="flex items-center gap-2 px-4 py-3 sm:px-5">
                 <p className="mr-auto text-sm text-muted-foreground">
                   {friendlyStatus(doc.status)}
                   {doc.country ? ` · ${doc.country}` : ""}
@@ -442,7 +442,7 @@ export function EmployeeProfile({ id, onClose }: { id: string; onClose: () => vo
                   Edit documents
                 </Button>
               </div>
-              <ul className="divide-y divide-border/70">
+              <ul className="flex flex-col gap-1.5 p-2 sm:p-3 [&>li]:rounded-2xl [&>li]:bg-background [&>li>*]:rounded-2xl">
                 {DOC_KINDS.map((k) => {
                   const entry = entriesFor(doc, k.id)[0]
                   const u = entry ? urgencyOf(entry.days) : null

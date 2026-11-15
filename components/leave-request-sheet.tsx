@@ -103,7 +103,7 @@ export function LeaveRequestSheet({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="flex w-full flex-col gap-0 overflow-y-auto p-0 sm:max-w-[480px]">
-        <SheetHeader className="space-y-3 border-b border-border/70 p-5 pr-12 text-left sm:p-6 sm:pr-12">
+        <SheetHeader className="space-y-3 p-5 pr-12 text-left sm:p-6 sm:pr-12">
           <div className="flex items-center gap-3">
             <Avatar name={leave.employee} className="h-11 w-11" />
             <div className="min-w-0">
@@ -229,7 +229,7 @@ export function LeaveRequestSheet({
 
         {/* Decision */}
         {!readOnly && (
-          <div className="space-y-3 border-t border-border/70 bg-muted/30 p-5 sm:p-6">
+          <div className="space-y-3 p-5 sm:p-6">
             <div className="space-y-1.5">
               <Label htmlFor={`leave-note-${leave.id}`}>
                 Note <span className="font-normal text-muted-foreground">(needed to reject, optional to approve)</span>
@@ -280,7 +280,7 @@ export function LeaveRequestSheet({
                 </Button>
               )}
             </div>
-            <div className="flex flex-wrap gap-2 border-t border-border/70 pt-3">
+            <div className="flex flex-wrap gap-2 pt-3">
               <Button variant="ghost" size="sm" onClick={onEdit} disabled={busy}>
                 <Pencil />
                 Edit dates or type

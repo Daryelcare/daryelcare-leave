@@ -554,7 +554,7 @@ export function LeaveManagementTable() {
   )
 
   const isMockData = branches.length > 0 && branches[0].id === "1" && branches[0].name === "London"
-  const filterSelect = "w-full sm:w-[170px]"
+  const filterSelect = "w-full sm:w-auto sm:min-w-[132px] sm:max-w-[200px]"
 
   return (
     // Room under the list while the bulk bar floats over the bottom
@@ -568,12 +568,13 @@ export function LeaveManagementTable() {
               ? "Every leave entry across your organisation."
               : "Leave for employees in your branches."
         }
+        actions={pageActions}
       />
 
       {/* Summary tiles: each is a shortcut to the list or people behind it */}
       <section
         aria-label="Leave at a glance"
-        className={cn("grid grid-cols-2 gap-3 lg:grid-cols-4", view === "calendar" && "max-lg:hidden")}
+        className={cn("tile-tray grid-cols-2 lg:grid-cols-4", view === "calendar" && "max-lg:hidden")}
       >
         <StatCard
           label="Pending approval"
@@ -619,7 +620,6 @@ export function LeaveManagementTable() {
         {view === "calendar" ? (
           <TeamCalendar
             onOpen={(id) => openRequest(id)}
-            actions={pageActions}
             typeFilter={selectedType}
             search={debouncedSearch}
           />
@@ -654,7 +654,7 @@ export function LeaveManagementTable() {
 
             <div className="surface overflow-hidden">
               {/* Filters and page actions */}
-              <div className="space-y-2.5 border-b border-border/70 p-3 sm:p-4">
+              <div className="space-y-2.5 p-3 sm:p-4">
                 <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center">
                   <div className="flex gap-2 sm:contents">
                     <div className="relative min-w-0 flex-1 sm:min-w-[220px] sm:max-w-xs sm:flex-1">
@@ -693,7 +693,7 @@ export function LeaveManagementTable() {
                     )}
                   >
                     <Select value={yearValue} onValueChange={setYear}>
-                      <SelectTrigger className={cn(filterSelect, "sm:w-[190px]")} aria-label="Leave year">
+                      <SelectTrigger className={filterSelect} aria-label="Leave year">
                         <SelectValue placeholder="Leave year" />
                       </SelectTrigger>
                       <SelectContent>
@@ -788,7 +788,6 @@ export function LeaveManagementTable() {
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2 sm:ml-auto">{pageActions}</div>
                 </div>
 
                 {datePreset === "custom" && (
@@ -829,7 +828,7 @@ export function LeaveManagementTable() {
               {/* A removable chip for each filter in use */}
               {filtersActive && (
                 <div
-                  className="flex flex-wrap items-center gap-2 border-b border-border/70 px-4 py-2.5 text-sm sm:px-5"
+                  className="flex flex-wrap items-center gap-2 px-4 py-2.5 text-sm sm:px-5"
                   aria-label="Filters in use"
                 >
                   {[
@@ -881,7 +880,7 @@ export function LeaveManagementTable() {
 
               {/* Which leave year is showing, and its figures */}
               <div
-                className="flex flex-col gap-1.5 border-b border-border/70 bg-muted/40 px-4 py-2.5 text-sm sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:px-5"
+                className="flex flex-col gap-1.5 px-4 py-2.5 text-sm sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:px-5"
                 aria-live="polite"
               >
                 {selectedYear ? (
@@ -939,8 +938,7 @@ export function LeaveManagementTable() {
                       <TableHead>Employee</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead>Dates</TableHead>
-                      <TableHead className="text-right">Days</TableHead>
-                      <TableHead className="hidden text-right lg:table-cell">Leave left now</TableHead>
+                      <TableHead className="hidden text-right lg:table-cell">Leave left</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="w-12">
                         <span className="sr-only">Actions</span>
@@ -951,7 +949,7 @@ export function LeaveManagementTable() {
                     {isLoading ? (
                       Array.from({ length: 6 }).map((_, i) => (
                         <TableRow key={i} className="hover:bg-transparent">
-                          <TableCell colSpan={8} className="py-3">
+                          <TableCell colSpan={7} className="py-3">
                             <div className="flex items-center gap-3">
                               <Skeleton className="h-9 w-9 rounded-full" />
                               <Skeleton className="h-4 w-1/5" />
@@ -1003,12 +1001,16 @@ export function LeaveManagementTable() {
                             </span>
                           </TableCell>
                           <TableCell className="whitespace-nowrap tabular">
-                            {formatDisplayRange(row.startDate, row.endDate)}
+                            <span className="font-semibold text-foreground">
+                              {formatDisplayRange(row.startDate, row.endDate)}
+                            </span>
+                            <span className="block text-xs text-muted-foreground">
+                              {plural(row.duration, "day")}
+                            </span>
                             {spansNote(row) && (
-                              <span className="block text-xs text-muted-foreground">{spansNote(row)}</span>
+                              <span className="block whitespace-normal text-xs text-muted-foreground">{spansNote(row)}</span>
                             )}
                           </TableCell>
-                          <TableCell className="text-right tabular">{row.duration}</TableCell>
                           <TableCell
                             className={cn(
                               "hidden text-right tabular lg:table-cell",
@@ -1026,7 +1028,7 @@ export function LeaveManagementTable() {
                       ))
                     ) : (
                       <TableRow className="hover:bg-transparent">
-                        <TableCell colSpan={8}>
+                        <TableCell colSpan={7}>
                           <EmptyState
                             icon={CalendarCheck}
                             title={emptyCopy.title}
@@ -1045,7 +1047,7 @@ export function LeaveManagementTable() {
                 {isLoading ? (
                   <ListSkeleton rows={5} />
                 ) : paged.items.length > 0 ? (
-                  <ul className="divide-y divide-border/70">
+                  <ul className="flex flex-col gap-1.5 p-2 sm:p-3 [&>li]:rounded-2xl [&>li]:bg-background [&>li>*]:rounded-2xl">
                     {paged.items.map((row) => (
                       <li
                         key={row.id}
@@ -1135,7 +1137,7 @@ export function LeaveManagementTable() {
             <div
               role="toolbar"
               aria-label="Selected leave"
-              className="flex max-w-full flex-wrap items-center justify-center gap-2 rounded-2xl border border-border/80 bg-card px-3 py-2.5 shadow-dialog"
+              className="flex max-w-full flex-wrap items-center justify-center gap-2 rounded-full bg-card px-3 py-2 shadow-dialog"
             >
               <span className="px-1 text-sm font-semibold" aria-live="polite">
                 {selectedRows.length} selected

@@ -4,13 +4,14 @@ import { cn } from "@/lib/utils"
 
 // Shared field styling, also used by Select and Textarea
 export const fieldClasses = [
-  "w-full rounded-lg border border-input bg-card px-3.5 text-[15px] text-foreground shadow-card sm:text-sm",
-  "transition-[border-color,box-shadow] duration-150 ease-smooth",
-  "placeholder:text-muted-foreground/80",
-  "hover:border-foreground/25",
-  "focus-visible:border-primary/60 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary/15",
-  "disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-60",
-  "aria-[invalid=true]:border-destructive/60 aria-[invalid=true]:ring-destructive/15",
+  // Borderless canvas-coloured field, 14px radius, accent focus ring
+  "w-full rounded-[14px] border border-transparent bg-background px-3.5 text-[15px] text-foreground sm:text-sm",
+  "transition-[background-color,box-shadow] duration-150 ease-smooth",
+  "placeholder:text-muted-foreground",
+  "hover:bg-secondary/70",
+  "focus-visible:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70",
+  "disabled:cursor-not-allowed disabled:bg-secondary disabled:opacity-60",
+  "aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-destructive/50",
 ].join(" ")
 
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(

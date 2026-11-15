@@ -409,7 +409,7 @@ export function TeamCalendar({
 
       {/* Days with too many people off: one short line per branch, details on request */}
       {busyBranches.length > 0 && (
-        <div className="mt-4 rounded-xl border border-warning/25 bg-warning-soft p-3 text-sm">
+        <div className="mt-4 rounded-2xl bg-warning-soft p-3 text-sm">
           <div className="flex flex-wrap items-start gap-x-3 gap-y-1">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
             <p className="min-w-0 flex-1">

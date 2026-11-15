@@ -191,7 +191,7 @@ export function EditLeaveModal({ leave, open, onOpenChange }: EditLeaveModalProp
           </div>
 
           {/* What will change */}
-          <div className="rounded-xl border border-border/80 bg-muted/40 p-3.5 text-sm">
+          <div className="rounded-2xl bg-background p-3.5 text-sm">
             {!datesValid ? (
               <p className="text-destructive">The end date can&apos;t be before the start date.</p>
             ) : (
@@ -214,7 +214,7 @@ export function EditLeaveModal({ leave, open, onOpenChange }: EditLeaveModalProp
           </div>
 
           {overlaps.length > 0 && (
-            <div className="flex gap-2.5 rounded-xl border border-warning/25 bg-warning-soft p-3 text-sm">
+            <div className="flex gap-2.5 rounded-2xl bg-warning-soft p-3 text-sm">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
               <span>
                 Overlaps with other leave for {leave.employee}:{" "}
@@ -224,7 +224,7 @@ export function EditLeaveModal({ leave, open, onOpenChange }: EditLeaveModalProp
           )}
 
           {crossesYear && (
-            <div className="flex gap-2.5 rounded-xl border border-destructive/25 bg-danger-soft p-3 text-sm">
+            <div className="flex gap-2.5 rounded-2xl bg-danger-soft p-3 text-sm">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
               <span>
                 Leave can&apos;t cross the end of the leave year ({toUkDate(crossesYear.end)}). Keep it on or before{" "}
