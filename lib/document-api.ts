@@ -5,7 +5,7 @@ import type { EmployeeDocument } from "./types"
 import { daysLeftFromExpiry, parseExpiryDate, withLiveDaysLeft } from "./document-status"
 import { toUkDate } from "./dates"
 import { isRtwBasis, rtwNextCheck, rtwProblem, type RtwBasis } from "./rtw"
-import { supabase } from "./supabase"
+import { supabase } from "./db"
 
 /** A documents row as the browser sees it, with days left worked out from today */
 export function toEmployeeDocument(stored: DocumentRow): EmployeeDocument {

@@ -1,7 +1,7 @@
 // Server side of the balance check: load current staff, the leave and the
 // active leave year, and (when asked) write the worked-out balances. Server only.
 
-import { supabase } from "./supabase"
+import { supabase } from "./db"
 import { fetchAllRows } from "./fetch-all"
 import { buildLeaveYears, type LeaveYear } from "./leave-years"
 import { fetchLeavePeriods } from "./leave-server"

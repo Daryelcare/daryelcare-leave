@@ -1,6 +1,6 @@
 // Server-side leave helpers shared by the leave request routes. Server code only.
 
-import { supabase } from "./supabase"
+import { supabase } from "./db"
 import type { StoredPeriod } from "./leave-years"
 import { crossesLeaveYearEnd } from "./leave-years"
 import { toUkDate } from "./dates"

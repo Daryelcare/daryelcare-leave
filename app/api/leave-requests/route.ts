@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 import { fetchAllRows } from "@/lib/fetch-all"
 import { allowedBranches, canAccessBranch, requireUser } from "@/lib/server-auth"
 import { leaveYearBoundaryError } from "@/lib/leave-server"

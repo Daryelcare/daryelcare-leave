@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 import { canAccessBranch, requireUser, type RequestUser } from "@/lib/server-auth"
 import { allowanceColumnExists } from "@/lib/column-probe"
 import { applyBalanceCheck } from "@/lib/balance-server"

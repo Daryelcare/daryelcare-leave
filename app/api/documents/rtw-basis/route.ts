@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 import { RTW_SETUP_MESSAGE, rtwColumns, rtwColumnsExist } from "@/lib/document-api"
 import { inBatches } from "@/lib/fetch-all"
 import { canAccessBranch, requireUser } from "@/lib/server-auth"

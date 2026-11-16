@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { allowanceColumnExists } from "@/lib/column-probe"
 import { STANDARD_ENTITLEMENT } from "@/lib/balances"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 import { allowedBranches, canAccessBranch, requireUser } from "@/lib/server-auth"
 
 // Map frontend column names to database column names

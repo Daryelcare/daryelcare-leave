@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import * as XLSX from "xlsx"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 import { requireAdmin } from "@/lib/server-auth"
 
 export async function POST(request: Request) {

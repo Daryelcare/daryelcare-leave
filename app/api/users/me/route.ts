@@ -1,6 +1,55 @@
 import { NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 import { requireUser } from "@/lib/server-auth"
+
+// GET /api/users/me: the signed-in person's profile (role and branches), for
+// the browser, which can't read the locked users table itself. Someone who can
+// sign in but has no profile yet gets a basic one (no admin rights, no
+// branches), as signing in always did.
+export async function GET(request: Request) {
+  try {
+    const header = request.headers.get("authorization") || ""
+    const token = header.startsWith("Bearer ") ? header.slice(7).trim() : ""
+    if (!token) return NextResponse.json({ error: "Not signed in" }, { status: 401 })
+    const { data: who, error: authError } = await supabase.auth.getUser(token)
+    const email = who?.user?.email
+    if (authError || !email) return NextResponse.json({ error: "Not signed in" }, { status: 401 })
+
+    const { data: found, error } = await supabase
+      .from("users")
+      .select("id, email, name, role, branches")
+      .eq("email", email)
+      .maybeSingle()
+    if (error) throw error
+    let profile = found
+    if (!profile) {
+      const { data: created, error: insertError } = await supabase
+        .from("users")
+        .insert({
+          id: who.user.id,
+          email,
+          name: (who.user.user_metadata?.name as string | undefined) || email.split("@")[0],
+          role: "normal",
+          branches: [],
+          created_at: new Date().toISOString(),
+        })
+        .select("id, email, name, role, branches")
+        .single()
+      if (insertError) throw insertError
+      profile = created
+    }
+    return NextResponse.json({
+      id: profile.id,
+      email: profile.email,
+      name: profile.name,
+      role: profile.role === "admin" ? "admin" : "normal",
+      branches: profile.branches || [],
+    })
+  } catch (error) {
+    console.error("Error loading own profile:", error)
+    return NextResponse.json({ error: "Couldn't load your account. Please try again." }, { status: 500 })
+  }
+}
 
 // PUT /api/users/me { name }: anyone can change their own display name.
 // Role and branches stay with administrators.

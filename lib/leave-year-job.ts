@@ -11,7 +11,7 @@
 //
 // Safe to run any number of times: a second run the same day changes nothing.
 
-import { supabase } from "./supabase"
+import { supabase } from "./db"
 import { hasServiceRoleKey, supabaseAdmin } from "./supabase-admin"
 import { applyBalanceCheck } from "./balance-server"
 import { fetchLeavePeriods } from "./leave-server"

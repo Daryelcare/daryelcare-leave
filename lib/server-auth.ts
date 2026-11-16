@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { supabase } from "./supabase"
+import { supabase } from "./db"
 import type { UserRole } from "./types"
 
 // Server-side check of who is calling an API route.
