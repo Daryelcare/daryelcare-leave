@@ -45,6 +45,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
+/** Their latest visit: opening the app or signing in. null = never, undefined = unknown */
+function lastVisit(user: User): string | null | undefined {
+  const times = [user.lastSeenAt, user.lastSignInAt]
+  if (times.every((t) => t === undefined)) return undefined
+  const known = times.filter((t): t is string => !!t)
+  if (known.length === 0) return null
+  return known.reduce((a, b) => (Date.parse(b) > Date.parse(a) ? b : a))
+}
+
 export function UserManagementTable() {
   const { toast } = useToast()
   const queryClient = useQueryClient()
@@ -305,7 +314,7 @@ export function UserManagementTable() {
                 <TableHead>User</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Branches</TableHead>
-                <TableHead className="hidden md:table-cell">Last sign-in</TableHead>
+                <TableHead className="hidden md:table-cell">Last visit</TableHead>
                 <TableHead className="hidden lg:table-cell">Added</TableHead>
                 <TableHead className="w-12">
                   <span className="sr-only">Actions</span>
@@ -345,13 +354,13 @@ export function UserManagementTable() {
                     <TableCell>{roleBadge(user)}</TableCell>
                     <TableCell>{branchList(user)}</TableCell>
                     <TableCell className="hidden whitespace-nowrap md:table-cell">
-                      {user.lastSignInAt ? (
+                      {lastVisit(user) ? (
                         <>
-                          <span className="block tabular">{formatLocalDateTime(user.lastSignInAt)}</span>
-                          <span className="block text-xs text-muted-foreground">{timeAgo(user.lastSignInAt)}</span>
+                          <span className="block tabular">{formatLocalDateTime(lastVisit(user))}</span>
+                          <span className="block text-xs text-muted-foreground">{timeAgo(lastVisit(user))}</span>
                         </>
                       ) : (
-                        <span className="text-muted-foreground">{user.lastSignInAt === null ? "Never" : "—"}</span>
+                        <span className="text-muted-foreground">{lastVisit(user) === null ? "Never" : "—"}</span>
                       )}
                     </TableCell>
                     <TableCell className="hidden whitespace-nowrap text-muted-foreground lg:table-cell">
@@ -400,15 +409,15 @@ export function UserManagementTable() {
                     {roleBadge(user)}
                     {user.role !== "admin" && branchList(user)}
                   </div>
-                  {user.lastSignInAt !== undefined && (
+                  {lastVisit(user) !== undefined && (
                     <p className="pl-12 text-xs text-muted-foreground">
-                      Last sign-in:{" "}
-                      {user.lastSignInAt ? (
+                      Last visit:{" "}
+                      {lastVisit(user) ? (
                         <>
                           <span className="font-semibold text-foreground tabular">
-                            {formatLocalDateTime(user.lastSignInAt)}
+                            {formatLocalDateTime(lastVisit(user))}
                           </span>{" "}
-                          ({timeAgo(user.lastSignInAt).toLowerCase()})
+                          ({timeAgo(lastVisit(user)).toLowerCase()})
                         </>
                       ) : (
                         "Never"

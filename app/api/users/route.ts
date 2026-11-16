@@ -33,6 +33,10 @@ export async function GET(request: Request) {
       ...(signIns
         ? { lastSignInAt: signIns.get(user.id) ?? signIns.get(String(user.email || "").toLowerCase()) ?? null }
         : {}),
+      // Every visit, once the "last visit" update has been run
+      ...("last_seen_at" in user
+        ? { lastSeenAt: (user as { last_seen_at?: string | null }).last_seen_at ?? null }
+        : {}),
       // Present once the permissions update has been run
       ...("permission_overrides" in user
         ? { permissionOverrides: cleanOverrides((user as { permission_overrides?: unknown }).permission_overrides) }

@@ -51,6 +51,8 @@ export interface User {
   createdAt?: string
   /** When they last signed in; null = never, undefined = unknown */
   lastSignInAt?: string | null
+  /** When they last opened the app; null = not since this was added */
+  lastSeenAt?: string | null
   /** What they may do (null until the server has said; everything for admins) */
   permissions?: PermissionSet | null
   /** Admin view of one person's exceptions to the manager settings */
