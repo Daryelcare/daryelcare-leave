@@ -30,8 +30,9 @@ export const supabaseAdmin = createClient<Database>(SUPABASE_URL, supabaseServic
 // users table normally uses the login account's id) and falls back to
 // searching by email, for older rows created with a different id.
 export async function findAuthUserId(userId: string, email: string): Promise<string | null> {
-  const byId = await supabaseAdmin.auth.admin.getUserById(userId)
-  if (!byId.error && byId.data?.user) return byId.data.user.id
+  // getUserById throws (rather than returning an error) when the id isn't a UUID
+  const byId = await supabaseAdmin.auth.admin.getUserById(userId).catch(() => null)
+  if (byId && !byId.error && byId.data?.user) return byId.data.user.id
 
   const target = email.toLowerCase()
   for (let page = 1; page <= 50; page++) {

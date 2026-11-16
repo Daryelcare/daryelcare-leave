@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/db"
 import { getRequestUser, requireUser } from "@/lib/server-auth"
+import { mustChangePassword } from "@/lib/password-change"
 
 // GET /api/users/me: the signed-in person's profile (role and branches), for
 // the browser, which can't read the locked users table itself. Someone who can
@@ -47,6 +48,8 @@ export async function GET(request: Request) {
       role: profile.role === "admin" ? "admin" : "normal",
       branches: profile.branches || [],
       permissions: me?.permissions ?? null,
+      // Choose a new password before using the app (one-time change, or a new / reset account)
+      mustChangePassword: await mustChangePassword(email),
     })
   } catch (error) {
     console.error("Error loading own profile:", error)

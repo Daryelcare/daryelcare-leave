@@ -53,6 +53,8 @@ export interface User {
   permissions?: PermissionSet | null
   /** Admin view of one person's exceptions to the manager settings */
   permissionOverrides?: PermissionOverrides
+  /** Must choose a new password before using the app */
+  mustChangePassword?: boolean
 }
 
 // A member of staff (row in the `employees` table)
