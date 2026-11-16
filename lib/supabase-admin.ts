@@ -44,3 +44,22 @@ export async function findAuthUserId(userId: string, email: string): Promise<str
   }
   return null
 }
+
+/**
+ * When each login account last signed in (with a password or link), keyed by
+ * account id and by lower-case email. Empty without the service-role key.
+ */
+export async function lastSignIns(): Promise<Map<string, string | null>> {
+  const out = new Map<string, string | null>()
+  if (!hasServiceRoleKey) return out
+  for (let page = 1; page <= 50; page++) {
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 200 })
+    if (error) throw error
+    for (const u of data.users) {
+      out.set(u.id, u.last_sign_in_at ?? null)
+      if (u.email) out.set(u.email.toLowerCase(), u.last_sign_in_at ?? null)
+    }
+    if (data.users.length < 200) break
+  }
+  return out
+}

@@ -118,3 +118,39 @@ export function formatLocalDate(value: Date | string | null | undefined): string
   if (Number.isNaN(d.getTime())) return typeof value === "string" ? value : "—"
   return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`
 }
+
+// "16/11/2026, 14:05" (UK time) for a timestamp, e.g. a last sign-in
+export function formatLocalDateTime(value: Date | string | null | undefined): string {
+  if (!value) return "—"
+  const d = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(d.getTime())) return "—"
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(d)
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? ""
+  return `${get("day")}/${get("month")}/${get("year")}, ${get("hour")}:${get("minute")}`
+}
+
+// "Just now", "5 minutes ago", "3 hours ago", "Yesterday", "12 days ago"
+export function timeAgo(value: Date | string | null | undefined, now = Date.now()): string {
+  if (!value) return ""
+  const t = (value instanceof Date ? value : new Date(value)).getTime()
+  if (Number.isNaN(t)) return ""
+  const mins = Math.max(0, Math.floor((now - t) / 60_000))
+  if (mins < 1) return "Just now"
+  if (mins < 60) return `${mins} minute${mins === 1 ? "" : "s"} ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`
+  const days = Math.floor(hours / 24)
+  if (days === 1) return "Yesterday"
+  if (days < 60) return `${days} days ago`
+  const months = Math.floor(days / 30)
+  if (months < 24) return `${months} months ago`
+  return `${Math.floor(days / 365)} years ago`
+}

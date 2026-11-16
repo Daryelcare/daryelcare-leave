@@ -49,6 +49,8 @@ export interface User {
   role: UserRole
   branches: string[]
   createdAt?: string
+  /** When they last signed in; null = never, undefined = unknown */
+  lastSignInAt?: string | null
   /** What they may do (null until the server has said; everything for admins) */
   permissions?: PermissionSet | null
   /** Admin view of one person's exceptions to the manager settings */

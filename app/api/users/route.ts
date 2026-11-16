@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/server-auth"
 import { cleanOverrides } from "@/lib/permissions"
 import { supabase } from "@/lib/db"
 import { signUpUserWithProfile } from "@/lib/user-accounts"
+import { lastSignIns } from "@/lib/supabase-admin"
 
 export async function GET(request: Request) {
   try {
@@ -15,6 +16,12 @@ export async function GET(request: Request) {
       throw error
     }
 
+    // Last sign-in comes from the login accounts; the list still loads if that fails
+    const signIns = await lastSignIns().catch((e) => {
+      console.error("Couldn't read last sign-ins:", e)
+      return null
+    })
+
     // Transform the data to match our frontend types
     const users = data.map((user) => ({
       id: user.id,
@@ -23,6 +30,9 @@ export async function GET(request: Request) {
       role: user.role,
       branches: user.branches,
       createdAt: user.created_at,
+      ...(signIns
+        ? { lastSignInAt: signIns.get(user.id) ?? signIns.get(String(user.email || "").toLowerCase()) ?? null }
+        : {}),
       // Present once the permissions update has been run
       ...("permission_overrides" in user
         ? { permissionOverrides: cleanOverrides((user as { permission_overrides?: unknown }).permission_overrides) }
