@@ -1,6 +1,6 @@
 "use client"
 
-import { formatLocalDate } from "@/lib/dates"
+import { formatLocalDate, formatLocalDateTime, timeAgo } from "@/lib/dates"
 import { useState } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
@@ -305,6 +305,7 @@ export function UserManagementTable() {
                 <TableHead>User</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Branches</TableHead>
+                <TableHead className="hidden md:table-cell">Last sign-in</TableHead>
                 <TableHead className="hidden lg:table-cell">Added</TableHead>
                 <TableHead className="w-12">
                   <span className="sr-only">Actions</span>
@@ -315,7 +316,7 @@ export function UserManagementTable() {
               {isLoading ? (
                 Array.from({ length: 3 }).map((_, index) => (
                   <TableRow key={index} className="hover:bg-transparent">
-                    <TableCell colSpan={5} className="py-3.5">
+                    <TableCell colSpan={6} className="py-3.5">
                       <div className="flex items-center gap-3">
                         <Skeleton className="h-9 w-9 rounded-full" />
                         <Skeleton className="h-4 w-1/4" />
@@ -343,6 +344,16 @@ export function UserManagementTable() {
                     </TableCell>
                     <TableCell>{roleBadge(user)}</TableCell>
                     <TableCell>{branchList(user)}</TableCell>
+                    <TableCell className="hidden whitespace-nowrap md:table-cell">
+                      {user.lastSignInAt ? (
+                        <>
+                          <span className="block tabular">{formatLocalDateTime(user.lastSignInAt)}</span>
+                          <span className="block text-xs text-muted-foreground">{timeAgo(user.lastSignInAt)}</span>
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground">{user.lastSignInAt === null ? "Never" : "—"}</span>
+                      )}
+                    </TableCell>
                     <TableCell className="hidden whitespace-nowrap text-muted-foreground lg:table-cell">
                       {formatJoined(user.createdAt)}
                     </TableCell>
@@ -351,7 +362,7 @@ export function UserManagementTable() {
                 ))
               ) : (
                 <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={5}>
+                  <TableCell colSpan={6}>
                     <EmptyState
                       icon={UserRound}
                       title="No users yet"
@@ -389,6 +400,21 @@ export function UserManagementTable() {
                     {roleBadge(user)}
                     {user.role !== "admin" && branchList(user)}
                   </div>
+                  {user.lastSignInAt !== undefined && (
+                    <p className="pl-12 text-xs text-muted-foreground">
+                      Last sign-in:{" "}
+                      {user.lastSignInAt ? (
+                        <>
+                          <span className="font-semibold text-foreground tabular">
+                            {formatLocalDateTime(user.lastSignInAt)}
+                          </span>{" "}
+                          ({timeAgo(user.lastSignInAt).toLowerCase()})
+                        </>
+                      ) : (
+                        "Never"
+                      )}
+                    </p>
+                  )}
                 </li>
               ))}
             </ul>
