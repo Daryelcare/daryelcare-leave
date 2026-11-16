@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/db"
 import { EXPIRY_FIELDS, RTW_SETUP_MESSAGE, expiryColumns, rtwColumns, rtwColumnsExist, toEmployeeDocument } from "@/lib/document-api"
-import { canAccessBranch, requireAdmin, requireUser, type RequestUser } from "@/lib/server-auth"
+import { canAccessBranch, requireUser, type RequestUser } from "@/lib/server-auth"
 import type { DocumentRow } from "@/lib/database.types"
 
 /** The record, or a response to send instead (missing, or another branch's) */
@@ -83,10 +83,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   }
 }
 
-// DELETE: admins only, as in CarerHR
+// DELETE: admins, and branch managers for people in their own branches
+// (loadRecord refuses anyone else's)
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await requireAdmin(request)
+    const auth = await requireUser(request)
     if (auth.response) return auth.response
     const { id } = await params
     const found = await loadRecord(id, auth.user)
