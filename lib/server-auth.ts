@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server"
 import { supabase } from "./db"
 import type { UserRole } from "./types"
+import { columnsExist } from "./column-probe"
+import { loadOrgPermissions } from "./permission-server"
+import { deniedMessage, effectivePermissions, type PermissionKey, type PermissionSet } from "./permissions"
 
 // Server-side check of who is calling an API route.
 //
@@ -15,6 +18,8 @@ export type RequestUser = {
   name: string | null
   role: UserRole
   branches: string[]
+  /** What they may do (everything for admins) */
+  permissions: PermissionSet
 }
 
 export async function getRequestUser(request: Request): Promise<RequestUser | null> {
@@ -26,19 +31,24 @@ export async function getRequestUser(request: Request): Promise<RequestUser | nu
   const email = data?.user?.email
   if (error || !email) return null
 
-  const { data: profile } = await supabase
-    .from("users")
-    .select("id, email, name, role, branches")
+  // Per-person permission exceptions, once the database update adding them has been run
+  const withOverrides = await columnsExist("users", ["permission_overrides"])
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: profile } = await (supabase.from("users") as any)
+    .select(`id, email, name, role, branches${withOverrides ? ", permission_overrides" : ""}`)
     .eq("email", email)
     .maybeSingle()
   if (!profile) return null
 
+  const role: UserRole = profile.role === "admin" ? "admin" : "normal"
+  const org = role === "admin" ? null : await loadOrgPermissions()
   return {
     id: profile.id,
     email: profile.email,
     name: profile.name,
-    role: profile.role === "admin" ? "admin" : "normal",
+    role,
     branches: profile.branches || [],
+    permissions: effectivePermissions(role, org?.saved, profile.permission_overrides),
   }
 }
 
@@ -66,6 +76,22 @@ export async function requireAdmin(request: Request): Promise<AuthResult> {
   if (auth.user.role !== "admin") {
     return { response: NextResponse.json({ error: "Only admins can do this." }, { status: 403 }) }
   }
+  return auth
+}
+
+/** Whether this person may do something (admins always may) */
+export const can = (user: RequestUser, key: PermissionKey) => user.role === "admin" || user.permissions[key] === true
+
+/** A 403 response saying an admin has turned this off */
+export const denied = (key: PermissionKey) => NextResponse.json({ error: deniedMessage(key) }, { status: 403 })
+
+// Use in a route as:
+//   const auth = await requirePermission(request, "leave_approve")
+//   if (auth.response) return auth.response
+export async function requirePermission(request: Request, key: PermissionKey): Promise<AuthResult> {
+  const auth = await requireUser(request)
+  if (auth.response) return auth
+  if (!can(auth.user, key)) return { response: denied(key) }
   return auth
 }
 

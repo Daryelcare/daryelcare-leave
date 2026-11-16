@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { LeaveReportsForm } from "@/components/leave-reports-form"
+import { PermissionGate } from "@/components/permission-gate"
 
 export const metadata: Metadata = {
   title: "Reports",
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 }
 
 export default function ReportsPage() {
-  return <LeaveReportsForm />
+  return (
+    <PermissionGate permission="reports" title="Reports">
+      <LeaveReportsForm />
+    </PermissionGate>
+  )
 }

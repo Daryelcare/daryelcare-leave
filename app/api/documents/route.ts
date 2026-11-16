@@ -3,13 +3,13 @@ import { supabase } from "@/lib/db"
 import { matchesDocumentStatus, withLiveDaysLeft } from "@/lib/document-status"
 import { EXPIRY_FIELDS, RTW_SETUP_MESSAGE, expiryColumns, rtwColumns, rtwColumnsExist, toEmployeeDocument } from "@/lib/document-api"
 import { safeSearch } from "@/lib/document-api"
-import { allowedBranches, canAccessBranch, requireUser } from "@/lib/server-auth"
+import { allowedBranches, canAccessBranch, requirePermission } from "@/lib/server-auth"
 import type { DocumentRow } from "@/lib/database.types"
 
 // GET: documents records, limited to the branches the user may see
 export async function GET(request: Request) {
   try {
-    const auth = await requireUser(request)
+    const auth = await requirePermission(request, "documents_view")
     if (auth.response) return auth.response
 
     const { searchParams } = new URL(request.url)
@@ -58,7 +58,7 @@ export async function GET(request: Request) {
 // changed; the employee's name and branch come from their employee record.
 export async function POST(request: Request) {
   try {
-    const auth = await requireUser(request)
+    const auth = await requirePermission(request, "documents_edit")
     if (auth.response) return auth.response
 
     const data = await request.json()

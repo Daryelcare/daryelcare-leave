@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { requireUser } from "@/lib/server-auth"
+import { requirePermission } from "@/lib/server-auth"
 import { importBranch } from "@/lib/import-scope"
 import * as XLSX from "xlsx"
 import { v4 as uuidv4 } from "uuid"
@@ -11,7 +11,7 @@ const ALL_COLUMNS = [...REQUIRED_COLUMNS, ...OPTIONAL_COLUMNS]
 
 export async function POST(request: Request) {
   try {
-    const auth = await requireUser(request)
+    const auth = await requirePermission(request, "employees_import")
     if (auth.response) return auth.response
     // Get form data with file
     const formData = await request.formData()

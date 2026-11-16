@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/db"
-import { canAccessBranch, requireUser, type RequestUser } from "@/lib/server-auth"
+import { canAccessBranch, requireUser, type RequestUser, requirePermission } from "@/lib/server-auth"
 import { allowanceColumnExists } from "@/lib/column-probe"
 import { applyBalanceCheck } from "@/lib/balance-server"
 import { STANDARD_ENTITLEMENT } from "@/lib/balances"
@@ -74,7 +74,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await requireUser(request)
+    const auth = await requirePermission(request, "employees_edit")
     if (auth.response) return auth.response
     const { id } = await params
     const denied = await branchCheck(id, auth.user)
@@ -144,7 +144,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await requireUser(request)
+    const auth = await requirePermission(request, "employees_delete")
     if (auth.response) return auth.response
     const { id } = await params
     const denied = await branchCheck(id, auth.user)

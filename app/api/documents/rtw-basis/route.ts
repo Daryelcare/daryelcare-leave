@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { supabase } from "@/lib/db"
 import { RTW_SETUP_MESSAGE, rtwColumns, rtwColumnsExist } from "@/lib/document-api"
 import { inBatches } from "@/lib/fetch-all"
-import { canAccessBranch, requireUser } from "@/lib/server-auth"
+import { canAccessBranch, requirePermission } from "@/lib/server-auth"
 import { isRtwBasis, rtwBasisLabel } from "@/lib/rtw"
 import type { EmployeeRow } from "@/lib/database.types"
 
@@ -11,7 +11,7 @@ const MAX_PEOPLE = 2000
 // GET: whether how right to work is held can be recorded yet (the one-off
 // database update has been run)
 export async function GET(request: Request) {
-  const auth = await requireUser(request)
+  const auth = await requirePermission(request, "documents_view")
   if (auth.response) return auth.response
   try {
     return NextResponse.json({ available: await rtwColumnsExist() })
@@ -29,7 +29,7 @@ export async function GET(request: Request) {
 // citizen" (status BRITISH); otherwise they're listed as skipped.
 export async function POST(request: Request) {
   try {
-    const auth = await requireUser(request)
+    const auth = await requirePermission(request, "documents_edit")
     if (auth.response) return auth.response
 
     const body = await request.json().catch(() => ({}))

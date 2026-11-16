@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { supabase } from "@/lib/db"
 import { shouldDeductFromBalance } from "@/lib/utils"
 import { inclusiveDays, parseDateToUtc, toUkDate } from "@/lib/dates"
-import { canAccessBranch, requireUser } from "@/lib/server-auth"
+import { canAccessBranch, requireUser, requirePermission } from "@/lib/server-auth"
 import { isMissingColumn, leaveYearBoundaryError } from "@/lib/leave-server"
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -105,7 +105,7 @@ const STATUSES = ["Approved", "Rejected", "Pending"] as const
 // are kept when the database has those columns.
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await requireUser(request)
+    const auth = await requirePermission(request, "leave_approve")
     if (auth.response) return auth.response
 
     const { id } = await params
@@ -183,7 +183,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 // 5 to 3 days gives 2 days back; changing it to Sick Leave gives all 5 back).
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await requireUser(request)
+    const auth = await requirePermission(request, "leave_edit")
     if (auth.response) return auth.response
 
     const { id } = await params
@@ -277,7 +277,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await requireUser(request)
+    const auth = await requirePermission(request, "leave_delete")
     if (auth.response) return auth.response
     const { id } = await params
 

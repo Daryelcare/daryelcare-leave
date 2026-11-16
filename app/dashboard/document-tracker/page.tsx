@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { Suspense } from "react"
 import { DocumentTrackerTable } from "@/components/document-tracker-table"
+import { PermissionGate } from "@/components/permission-gate"
 
 export const metadata: Metadata = {
   title: "Documents",
@@ -10,8 +11,10 @@ export const metadata: Metadata = {
 export default function DocumentTrackerPage() {
   // Filters are read from the address, which needs a Suspense boundary
   return (
-    <Suspense>
-      <DocumentTrackerTable />
-    </Suspense>
+    <PermissionGate permission="documents_view" title="Documents">
+      <Suspense>
+        <DocumentTrackerTable />
+      </Suspense>
+    </PermissionGate>
   )
 }

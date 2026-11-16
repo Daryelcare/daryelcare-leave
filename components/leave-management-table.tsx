@@ -66,7 +66,7 @@ import { OverEntitlementDialog } from "./over-entitlement-dialog"
 import { TablePagination } from "./table-pagination"
 import { TeamCalendar } from "./team-calendar"
 import { WhosOnLeaveDialog } from "./whos-on-leave-dialog"
-import { useApp } from "./app-provider"
+import { useApp, useCan } from "./app-provider"
 import { fetchWithAuth, handleApiError, authHeaders } from "@/lib/api-utils"
 import { cn } from "@/lib/utils"
 import { useBranches } from "@/hooks/use-branches"
@@ -117,6 +117,11 @@ export function LeaveManagementTable() {
   const { user } = useApp()
   const isAdmin = user?.role === "admin"
   const canManage = isAdmin || (user?.role === "normal" && !!user?.branches && user.branches.length > 0)
+  // What an admin allows branch managers to do here (admins can do everything)
+  const can = useCan()
+  const canAdd = canManage && can("leave_edit")
+  const canDecide = canManage && can("leave_approve")
+  const canRemove = canManage && can("leave_delete")
 
   // ------------------------------------------------------------ address state
   // View, leave year, status, dates and sort live in the address so a link
@@ -205,7 +210,9 @@ export function LeaveManagementTable() {
   })
   // Everyone's live balance (the same list the Employees page uses), for the
   // "Leave left" column and the over-entitlement tile
-  const { data: directory, isLoading: isLoadingEmployees } = useQuery<{ rows: EmployeeBalance[] }>({
+  const { data: directory, isLoading: isLoadingEmployees } = useQuery<{
+    rows: EmployeeBalance[]
+  }>({
     queryKey: ["employees", "directory"],
     queryFn: () => fetchWithAuth("/api/employees/directory"),
   })
@@ -281,7 +288,16 @@ export function LeaveManagementTable() {
   const showList = (patch: Record<string, string | null>) => {
     setEmployeeSearch("")
     setSelectedType("all")
-    setParams({ view: null, year: "all", status: null, dates: null, from: null, to: null, sort: null, ...patch })
+    setParams({
+      view: null,
+      year: "all",
+      status: null,
+      dates: null,
+      from: null,
+      to: null,
+      sort: null,
+      ...patch,
+    })
   }
 
   // ------------------------------------------------------------ selection
@@ -329,7 +345,7 @@ export function LeaveManagementTable() {
   useEffect(() => {
     if (!linkedRequest && !linkedRecord) return
     if (linkedRequest) openRequest(linkedRequest)
-    if (linkedRecord && canManage) setIsAddModalOpen(true)
+    if (linkedRecord && canAdd) setIsAddModalOpen(true)
     setParams({ request: null, record: null })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [linkedRequest, linkedRecord])
@@ -364,7 +380,10 @@ export function LeaveManagementTable() {
       const match = response.headers.get("Content-Disposition")?.match(/filename="(.+)"/)
       if (match?.[1]) filename = match[1]
       const url = URL.createObjectURL(await response.blob())
-      const a = Object.assign(document.createElement("a"), { href: url, download: filename })
+      const a = Object.assign(document.createElement("a"), {
+        href: url,
+        download: filename,
+      })
       document.body.appendChild(a)
       a.click()
       a.remove()
@@ -377,7 +396,11 @@ export function LeaveManagementTable() {
       })
     } catch (err) {
       console.error("Export error:", err)
-      toast({ title: "Export failed", description: "Please try again in a moment.", variant: "destructive" })
+      toast({
+        title: "Export failed",
+        description: "Please try again in a moment.",
+        variant: "destructive",
+      })
     } finally {
       setIsExporting(false)
       setExportFormat(null)
@@ -399,7 +422,14 @@ export function LeaveManagementTable() {
     setEmployeeSearch("")
     setSelectedBranch(!isAdmin && user?.branches && user.branches.length === 1 ? user.branches[0] : "all")
     setSelectedType("all")
-    setParams({ year: null, status: null, dates: null, from: null, to: null, sort: null })
+    setParams({
+      year: null,
+      status: null,
+      dates: null,
+      from: null,
+      to: null,
+      sort: null,
+    })
   }
 
   const typeColor = (type: string) => leaveTypeColour(type)
@@ -432,36 +462,40 @@ export function LeaveManagementTable() {
           <p className="px-2.5 py-1.5 text-xs text-muted-foreground">From a past leave year, so view only.</p>
         ) : (
           <>
-            {row.status !== "Approved" && (
+            {canDecide && row.status !== "Approved" && (
               <DropdownMenuItem onClick={() => decideRows([row], "Approved")}>
                 <Check />
                 Approve
               </DropdownMenuItem>
             )}
-            {row.status !== "Rejected" && (
+            {canDecide && row.status !== "Rejected" && (
               <DropdownMenuItem onClick={() => setRejectTargets([row])}>
                 <X />
                 Reject…
               </DropdownMenuItem>
             )}
-            {row.status !== "Pending" && (
+            {canDecide && row.status !== "Pending" && (
               <DropdownMenuItem onClick={() => decideRows([row], "Pending")}>
                 <RotateCcw />
                 Reset to pending
               </DropdownMenuItem>
             )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setLeaveToEdit(row)}>
-              <Pencil />
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-destructive focus:text-destructive [&_svg]:!text-destructive"
-              onClick={() => setDeleteTargets([row])}
-            >
-              <Trash2 />
-              Delete
-            </DropdownMenuItem>
+            {canDecide && (canAdd || canRemove) && <DropdownMenuSeparator />}
+            {canAdd && (
+              <DropdownMenuItem onClick={() => setLeaveToEdit(row)}>
+                <Pencil />
+                Edit
+              </DropdownMenuItem>
+            )}
+            {canRemove && (
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive [&_svg]:!text-destructive"
+                onClick={() => setDeleteTargets([row])}
+              >
+                <Trash2 />
+                Delete
+              </DropdownMenuItem>
+            )}
           </>
         )}
       </DropdownMenuContent>
@@ -504,7 +538,11 @@ export function LeaveManagementTable() {
               description: `Nothing was recorded between ${yearRange(selectedYear).replace(" – ", " and ")}.`,
               action: undefined,
             }
-          : { title: "No leave matches these filters", description: "Clear the filters.", action: undefined }
+          : {
+              title: "No leave matches these filters",
+              description: "Clear the filters.",
+              action: undefined,
+            }
 
   // ------------------------------------------------------------ page actions
   const pageActions = (
@@ -525,7 +563,7 @@ export function LeaveManagementTable() {
         <Users />
         <span className="max-sm:sr-only">Who&apos;s on leave</span>
       </Button>
-      {view === "list" && (
+      {view === "list" && can("export") && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" disabled={isExporting} aria-label="Export" title="Export">
@@ -547,7 +585,7 @@ export function LeaveManagementTable() {
           </DropdownMenuContent>
         </DropdownMenu>
       )}
-      {canManage && (
+      {canAdd && (
         <Button onClick={() => setIsAddModalOpen(true)} className="max-sm:flex-1">
           <Plus />
           Add leave
@@ -604,7 +642,13 @@ export function LeaveManagementTable() {
           value={counts.upcoming}
           detail="Starting in the next 30 days"
           loading={isLoadingAll}
-          onClick={() => showList({ status: "Approved", dates: "next30", sort: "start_soonest" })}
+          onClick={() =>
+            showList({
+              status: "Approved",
+              dates: "next30",
+              sort: "start_soonest",
+            })
+          }
           actionLabel="Show approved leave starting soon"
         />
         <StatCard
@@ -621,11 +665,7 @@ export function LeaveManagementTable() {
 
       <div key={view} className="page-enter space-y-6 sm:space-y-8">
         {view === "calendar" ? (
-          <TeamCalendar
-            onOpen={(id) => openRequest(id)}
-            typeFilter={selectedType}
-            search={debouncedSearch}
-          />
+          <TeamCalendar onOpen={(id) => openRequest(id)} typeFilter={selectedType} search={debouncedSearch} />
         ) : (
           <>
             {isMockData && (
@@ -791,7 +831,8 @@ export function LeaveManagementTable() {
                           className={cn(
                             fieldClasses,
                             "hidden h-10 w-auto items-center gap-2 whitespace-nowrap py-2 sm:inline-flex",
-                            (datePreset !== "any" || sort !== "upcoming") && "bg-primary-soft text-primary-text hover:bg-primary-soft",
+                            (datePreset !== "any" || sort !== "upcoming") &&
+                              "bg-primary-soft text-primary-text hover:bg-primary-soft",
                           )}
                           aria-label="More filters: dates and sort"
                         >
@@ -842,7 +883,6 @@ export function LeaveManagementTable() {
                       </Button>
                     )}
                   </div>
-
                 </div>
 
                 {datePreset === "custom" && (
@@ -857,7 +897,11 @@ export function LeaveManagementTable() {
                       <DatePicker
                         id="leave-from"
                         value={customFrom !== null ? utcToLocalDate(customFrom) : undefined}
-                        onChange={(d) => setParams({ from: d ? toIsoDate(localDateToUtc(d)) : null })}
+                        onChange={(d) =>
+                          setParams({
+                            from: d ? toIsoDate(localDateToUtc(d)) : null,
+                          })
+                        }
                       />
                     </div>
                     <div className="space-y-1">
@@ -868,7 +912,11 @@ export function LeaveManagementTable() {
                         id="leave-to"
                         value={customTo !== null ? utcToLocalDate(customTo) : undefined}
                         min={customFrom !== null ? utcToLocalDate(customFrom) : undefined}
-                        onChange={(d) => setParams({ to: d ? toIsoDate(localDateToUtc(d)) : null })}
+                        onChange={(d) =>
+                          setParams({
+                            to: d ? toIsoDate(localDateToUtc(d)) : null,
+                          })
+                        }
                       />
                     </div>
                     {!dateRange && (
@@ -887,14 +935,22 @@ export function LeaveManagementTable() {
                   aria-label="Filters in use"
                 >
                   {[
-                    employeeSearch && { key: "q", label: `“${employeeSearch}”`, clear: () => setEmployeeSearch("") },
+                    employeeSearch && {
+                      key: "q",
+                      label: `“${employeeSearch}”`,
+                      clear: () => setEmployeeSearch(""),
+                    },
                     isAdmin &&
                       selectedBranch !== "all" && {
                         key: "branch",
                         label: selectedBranch,
                         clear: () => setSelectedBranch("all"),
                       },
-                    selectedType !== "all" && { key: "type", label: selectedType, clear: () => setSelectedType("all") },
+                    selectedType !== "all" && {
+                      key: "type",
+                      label: selectedType,
+                      clear: () => setSelectedType("all"),
+                    },
                     status !== "all" && {
                       key: "status",
                       label: STATUS_FILTERS.find((x) => x.value === status)?.label ?? status,
@@ -911,7 +967,15 @@ export function LeaveManagementTable() {
                       clear: () => setParams({ year: null }),
                     },
                   ]
-                    .filter((c): c is { key: string; label: string; clear: () => void } => !!c)
+                    .filter(
+                      (
+                        c,
+                      ): c is {
+                        key: string
+                        label: string
+                        clear: () => void
+                      } => !!c,
+                    )
                     .map((c) => (
                       <span
                         key={c.key}
@@ -927,7 +991,10 @@ export function LeaveManagementTable() {
                         </button>
                       </span>
                     ))}
-                  <button onClick={resetFilters} className="ml-1 text-xs font-semibold text-primary-text hover:underline">
+                  <button
+                    onClick={resetFilters}
+                    className="ml-1 text-xs font-semibold text-primary-text hover:underline"
+                  >
                     Clear all
                   </button>
                 </div>
@@ -980,7 +1047,7 @@ export function LeaveManagementTable() {
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
-                      {canManage && (
+                      {(canDecide || canRemove) && (
                         <TableHead className="w-12">
                           <Checkbox
                             checked={allSelected}
@@ -1021,7 +1088,7 @@ export function LeaveManagementTable() {
                           data-state={selectedIds.has(row.id) ? "selected" : undefined}
                           onClick={() => openRequest(row.id)}
                         >
-                          {canManage && (
+                          {(canDecide || canRemove) && (
                             <TableCell onClick={(e) => e.stopPropagation()}>
                               <Checkbox
                                 checked={selectedIds.has(row.id)}
@@ -1059,11 +1126,11 @@ export function LeaveManagementTable() {
                             <span className="font-semibold text-foreground">
                               {formatDisplayRange(row.startDate, row.endDate)}
                             </span>
-                            <span className="block text-xs text-muted-foreground">
-                              {plural(row.duration, "day")}
-                            </span>
+                            <span className="block text-xs text-muted-foreground">{plural(row.duration, "day")}</span>
                             {spansNote(row) && (
-                              <span className="block whitespace-normal text-xs text-muted-foreground">{spansNote(row)}</span>
+                              <span className="block whitespace-normal text-xs text-muted-foreground">
+                                {spansNote(row)}
+                              </span>
                             )}
                           </TableCell>
                           <TableCell
@@ -1111,7 +1178,7 @@ export function LeaveManagementTable() {
                           selectedIds.has(row.id) && "bg-primary-soft/50",
                         )}
                       >
-                        {canManage && (
+                        {(canDecide || canRemove) && (
                           <span className="flex h-10 w-8 shrink-0 items-center justify-center">
                             <Checkbox
                               checked={selectedIds.has(row.id)}
@@ -1184,7 +1251,7 @@ export function LeaveManagementTable() {
       {/* Bulk actions for the ticked rows */}
       {/* Rendered into <body>: the page's entry animation leaves a transform on
           the page, which would pin a "fixed" bar to the page instead of the screen */}
-      {canManage &&
+      {(canDecide || canRemove) &&
         view === "list" &&
         selectedRows.length > 0 &&
         createPortal(
@@ -1197,32 +1264,38 @@ export function LeaveManagementTable() {
               <span className="px-1 text-sm font-semibold" aria-live="polite">
                 {selectedRows.length} selected
               </span>
-              <Button size="sm" onClick={() => decideRows(selectedRows, "Approved")}>
-                <Check />
-                Approve
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="text-destructive hover:text-destructive"
-                onClick={() => setRejectTargets(selectedRows)}
-              >
-                <X />
-                Reject
-              </Button>
-              <Button size="sm" variant="secondary" onClick={() => decideRows(selectedRows, "Pending")}>
-                <RotateCcw />
-                Reset to pending
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="text-destructive hover:text-destructive"
-                onClick={() => setDeleteTargets(selectedRows)}
-              >
-                <Trash2 />
-                Delete
-              </Button>
+              {canDecide && (
+                <>
+                  <Button size="sm" onClick={() => decideRows(selectedRows, "Approved")}>
+                    <Check />
+                    Approve
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setRejectTargets(selectedRows)}
+                  >
+                    <X />
+                    Reject
+                  </Button>
+                  <Button size="sm" variant="secondary" onClick={() => decideRows(selectedRows, "Pending")}>
+                    <RotateCcw />
+                    Reset to pending
+                  </Button>
+                </>
+              )}
+              {canRemove && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => setDeleteTargets(selectedRows)}
+                >
+                  <Trash2 />
+                  Delete
+                </Button>
+              )}
               <Button
                 size="icon"
                 variant="ghost"
@@ -1242,6 +1315,7 @@ export function LeaveManagementTable() {
         open={!!openId && !!openLeave}
         onOpenChange={(o) => !o && setOpenId(null)}
         readOnly={!!openLeave && isReadOnly(openLeave)}
+        allowed={{ decide: canDecide, edit: canAdd, remove: canRemove }}
         busy={!!openLeave && busyIds.has(openLeave.id)}
         focusReject={focusReject}
         typeColor={typeColor}

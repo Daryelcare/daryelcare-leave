@@ -39,6 +39,7 @@ import { AddLeaveModal } from "./add-leave-modal"
 import { AddDocumentModal } from "./add-document-modal"
 import { EditEmployeeModal } from "./edit-employee-modal"
 import { EditDocumentModal } from "./edit-document-modal"
+import { useCan } from "./app-provider"
 import { DeleteConfirmationDialog } from "./delete-confirmation-dialog"
 import { DocumentDateDialog } from "./document-tracker-dialogs"
 import { LeaveCell, LeaveLeft, RtwChip } from "./employee-directory"
@@ -66,9 +67,14 @@ export function EmployeeProfile({ id, onClose }: { id: string; onClose: () => vo
     queryKey: ["leaveRequests", "employee", id],
     queryFn: () => fetchWithAuth(`/api/leave-requests?employeeId=${encodeURIComponent(id)}`),
   })
+  // What an admin allows here (admins can do everything)
+  const can = useCan()
+  const seeDocs = can("documents_view")
+  const mayEditDocs = can("documents_edit")
   const docsQuery = useQuery<EmployeeDocument[]>({
     queryKey: ["documents", "employee", id],
     queryFn: () => fetchWithAuth(`/api/documents?employeeId=${encodeURIComponent(id)}`),
+    enabled: seeDocs,
   })
   const { data: periods = [] } = useQuery<StoredPeriod[]>({
     queryKey: ["leavePeriods"],
@@ -79,7 +85,12 @@ export function EmployeeProfile({ id, onClose }: { id: string; onClose: () => vo
   const leaves = useMemo(() => leaveQuery.data ?? [], [leaveQuery.data])
   const record = docsQuery.data?.[0] ?? null
   const doc: TrackerDocument | null = record
-    ? { ...record, recordId: record.id, employeeCode: employee?.employeeCode ?? null, noRecord: false }
+    ? {
+        ...record,
+        recordId: record.id,
+        employeeCode: employee?.employeeCode ?? null,
+        noRecord: false,
+      }
     : null
 
   const today = todayUtc()
@@ -98,7 +109,11 @@ export function EmployeeProfile({ id, onClose }: { id: string; onClose: () => vo
     b.startDate.split("/").reverse().join("") > a.startDate.split("/").reverse().join("") ? 1 : -1,
   )
   const rtw = doc
-    ? { state: rtwState(doc), date: doc.rightToWorkExpiry, days: doc.rightToWorkDaysLeft }
+    ? {
+        state: rtwState(doc),
+        date: doc.rightToWorkExpiry,
+        days: doc.rightToWorkDaysLeft,
+      }
     : { state: "missing" as const, date: null, days: null }
   const missing = employee
     ? missingDetails({
@@ -114,7 +129,10 @@ export function EmployeeProfile({ id, onClose }: { id: string; onClose: () => vo
   const [addDocs, setAddDocs] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [editDocs, setEditDocs] = useState<DocKind | null>(null)
-  const [cell, setCell] = useState<{ doc: TrackerDocument; kind: DocKind } | null>(null)
+  const [cell, setCell] = useState<{
+    doc: TrackerDocument
+    kind: DocKind
+  } | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [busy, setBusy] = useState(false)
 
@@ -128,7 +146,10 @@ export function EmployeeProfile({ id, onClose }: { id: string; onClose: () => vo
     try {
       await fetchWithAuth("/api/employees/bulk", {
         method: "POST",
-        body: JSON.stringify({ ids: [id], action: leaver ? "leaver" : "current" }),
+        body: JSON.stringify({
+          ids: [id],
+          action: leaver ? "leaver" : "current",
+        }),
       })
       toast({
         title: leaver ? `${employee?.name} marked as left` : `${employee?.name} is current staff again`,
@@ -137,7 +158,11 @@ export function EmployeeProfile({ id, onClose }: { id: string; onClose: () => vo
       refresh()
     } catch (err) {
       console.error("Couldn't change status:", err)
-      toast({ title: "Couldn't update", description: handleApiError(err), variant: "destructive" })
+      toast({
+        title: "Couldn't update",
+        description: handleApiError(err),
+        variant: "destructive",
+      })
     } finally {
       setBusy(false)
     }
@@ -151,7 +176,11 @@ export function EmployeeProfile({ id, onClose }: { id: string; onClose: () => vo
       onClose()
     } catch (err) {
       console.error("Couldn't delete:", err)
-      toast({ title: "Couldn't delete", description: handleApiError(err), variant: "destructive" })
+      toast({
+        title: "Couldn't delete",
+        description: handleApiError(err),
+        variant: "destructive",
+      })
     }
   }
 
@@ -200,17 +229,19 @@ export function EmployeeProfile({ id, onClose }: { id: string; onClose: () => vo
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            {!leaver && (
+            {!leaver && can("leave_edit") && (
               <Button onClick={() => setAddLeave(true)}>
                 <CalendarPlus />
                 Add leave
               </Button>
             )}
-            <Button variant="outline" onClick={() => setEditOpen(true)}>
-              <Pencil />
-              Edit details
-            </Button>
-            {leaver ? (
+            {can("employees_edit") && (
+              <Button variant="outline" onClick={() => setEditOpen(true)}>
+                <Pencil />
+                Edit details
+              </Button>
+            )}
+            {!can("employees_edit") ? null : leaver ? (
               <Button variant="outline" onClick={() => setLeaver(false)} disabled={busy}>
                 {busy ? <Loader2 className="animate-spin" /> : <RotateCcw />}
                 Back to current
@@ -245,13 +276,15 @@ export function EmployeeProfile({ id, onClose }: { id: string; onClose: () => vo
           value={<LeaveCell e={{ awayNow, nextLeave }} wrap />}
           loading={leaveQuery.isLoading}
         />
-        <StatCard
-          label="Right to work"
-          icon={ShieldCheck}
-          value={<RtwChip rtw={rtw} />}
-          detail={rtw.state === "due" && rtw.date ? `Expires ${formatDisplayDate(rtw.date)}` : undefined}
-          loading={docsQuery.isLoading}
-        />
+        {seeDocs && (
+          <StatCard
+            label="Right to work"
+            icon={ShieldCheck}
+            value={<RtwChip rtw={rtw} />}
+            detail={rtw.state === "due" && rtw.date ? `Expires ${formatDisplayDate(rtw.date)}` : undefined}
+            loading={docsQuery.isLoading}
+          />
+        )}
       </section>
 
       <Tabs value={tab} onValueChange={setTab}>
@@ -263,7 +296,7 @@ export function EmployeeProfile({ id, onClose }: { id: string; onClose: () => vo
               <span className="ml-1.5 text-xs text-muted-foreground tabular">{leaves.length}</span>
             ) : null}
           </TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
+          {seeDocs && <TabsTrigger value="documents">Documents</TabsTrigger>}
         </TabsList>
 
         {/* Overview */}
@@ -320,16 +353,18 @@ export function EmployeeProfile({ id, onClose }: { id: string; onClose: () => vo
               </Field>
             </dl>
           </div>
-          <div className="flex justify-end">
-            <Button
-              variant="ghost"
-              className="text-destructive hover:text-destructive"
-              onClick={() => setConfirmDelete(true)}
-            >
-              <Trash2 />
-              Delete employee
-            </Button>
-          </div>
+          {can("employees_delete") && (
+            <div className="flex justify-end">
+              <Button
+                variant="ghost"
+                className="text-destructive hover:text-destructive"
+                onClick={() => setConfirmDelete(true)}
+              >
+                <Trash2 />
+                Delete employee
+              </Button>
+            </div>
+          )}
         </TabsContent>
 
         {/* Leave */}
@@ -342,7 +377,10 @@ export function EmployeeProfile({ id, onClose }: { id: string; onClose: () => vo
                 aria-label="Which leave"
               >
                 {[
-                  { all: false, label: currentYear ? currentYear.label : "This year" },
+                  {
+                    all: false,
+                    label: currentYear ? currentYear.label : "This year",
+                  },
                   { all: true, label: "All years" },
                 ].map((o) => (
                   <button
@@ -360,7 +398,7 @@ export function EmployeeProfile({ id, onClose }: { id: string; onClose: () => vo
                   </button>
                 ))}
               </div>
-              {!leaver && (
+              {!leaver && can("leave_edit") && (
                 <Button size="sm" onClick={() => setAddLeave(true)}>
                   <CalendarPlus />
                   Add leave
@@ -423,10 +461,12 @@ export function EmployeeProfile({ id, onClose }: { id: string; onClose: () => vo
                 title="No documents on file"
                 description="Record their right to work, passport, BRP or other documents and when they expire."
                 action={
-                  <Button onClick={() => setAddDocs(true)}>
-                    <FilePlus2 />
-                    Add documents
-                  </Button>
+                  mayEditDocs ? (
+                    <Button onClick={() => setAddDocs(true)}>
+                      <FilePlus2 />
+                      Add documents
+                    </Button>
+                  ) : undefined
                 }
               />
             </div>
@@ -438,10 +478,12 @@ export function EmployeeProfile({ id, onClose }: { id: string; onClose: () => vo
                   {doc.country ? ` · ${doc.country}` : ""}
                   {doc.isSponsored ? " · Sponsored" : ""}
                 </p>
-                <Button size="sm" variant="outline" onClick={() => setEditDocs("rightToWork")}>
-                  <Pencil />
-                  Edit documents
-                </Button>
+                {mayEditDocs && (
+                  <Button size="sm" variant="outline" onClick={() => setEditDocs("rightToWork")}>
+                    <Pencil />
+                    Edit documents
+                  </Button>
+                )}
               </div>
               <ul className="flex flex-col gap-1.5 p-2 sm:p-3 [&>li]:rounded-2xl [&>li]:bg-background [&>li>*]:rounded-2xl">
                 {DOC_KINDS.map((k) => {
@@ -450,9 +492,12 @@ export function EmployeeProfile({ id, onClose }: { id: string; onClose: () => vo
                   return (
                     <li key={k.id}>
                       <button
+                        disabled={!mayEditDocs}
                         onClick={() =>
                           // A recorded right to work basis is edited in full, not just its date
-                          k.id === "rightToWork" && doc.rtwBasis ? setEditDocs("rightToWork") : setCell({ doc, kind: k.id })
+                          k.id === "rightToWork" && doc.rtwBasis
+                            ? setEditDocs("rightToWork")
+                            : setCell({ doc, kind: k.id })
                         }
                         className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-muted/50 sm:px-5"
                       >

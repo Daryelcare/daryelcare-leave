@@ -1,3 +1,4 @@
+import { BUILT_IN_DEFAULTS, type PermissionKey, type PermissionSet } from "./permissions"
 import {
   BarChart3,
   Building2,
@@ -12,7 +13,7 @@ import {
   Settings,
   ShieldCheck,
   UserRound,
-  Users, Stethoscope } from "lucide-react"
+  Users, Stethoscope, Lock } from "lucide-react"
 
 // One place that defines the app's navigation, used by the top bar, the
 // mobile tab bar and the page titles in the header.
@@ -22,6 +23,8 @@ export type NavItem = {
   href: string
   icon: LucideIcon
   adminOnly?: boolean
+  /** Shown to branch managers only when an admin allows this */
+  permission?: PermissionKey
   /** Shorter label for the phone tab bar */
   short?: string
 }
@@ -40,8 +43,8 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { title: "Employees", short: "People", href: "/dashboard/employees", icon: Users },
       { title: "Leave", short: "Leave", href: "/dashboard/leave-management", icon: CalendarDays },
-      { title: "Documents", href: "/dashboard/document-tracker", icon: FileText },
-      { title: "Reports", href: "/dashboard/reports", icon: BarChart3, adminOnly: true },
+      { title: "Documents", href: "/dashboard/document-tracker", icon: FileText, permission: "documents_view" },
+      { title: "Reports", href: "/dashboard/reports", icon: BarChart3, permission: "reports" },
     ],
   },
   {
@@ -65,8 +68,10 @@ export const TAB_BAR: { title: string; href: string; icon: LucideIcon; isActive:
   { title: "People", href: "/dashboard/employees", icon: Users, isActive: (p) => p.startsWith("/dashboard/employees") },
 ]
 
-export function visibleGroups(isAdmin: boolean): NavGroup[] {
-  return NAV_GROUPS.map((group) => ({ ...group, items: group.items.filter((item) => isAdmin || !item.adminOnly) })).filter(
+export function visibleGroups(isAdmin: boolean, permissions?: PermissionSet | null): NavGroup[] {
+  const allowed = (item: NavItem) =>
+    isAdmin || (!item.adminOnly && (!item.permission || (permissions ?? BUILT_IN_DEFAULTS)[item.permission]))
+  return NAV_GROUPS.map((group) => ({ ...group, items: group.items.filter(allowed) })).filter(
     (group) => group.items.length > 0,
   )
 }
@@ -116,6 +121,14 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     title: "Leave periods",
     description: "Each leave year runs between two dates. The next one starts by itself, and balances are kept up to date every night.",
     icon: CalendarCheck2,
+    group: "Organisation",
+    adminOnly: true,
+  },
+  {
+    id: "permissions",
+    title: "Permissions",
+    description: "What branch managers may do. Turn any of it off for everyone, or for one person in Users & access.",
+    icon: Lock,
     group: "Organisation",
     adminOnly: true,
   },

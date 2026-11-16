@@ -80,7 +80,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </button>
 
       <nav aria-label="Main" className="flex flex-col gap-4">
-        {visibleGroups(isAdmin).map((group) => (
+        {visibleGroups(isAdmin, user?.permissions).map((group) => (
           <div key={group.label}>
             <p className="px-2.5 pb-1.5 text-[11px] font-bold uppercase tracking-[0.06em] text-muted-foreground">
               {group.label}

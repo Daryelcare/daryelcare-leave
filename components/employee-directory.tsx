@@ -79,7 +79,7 @@ import { ImportEmployeesModal } from "./import-employees-modal"
 import { DeleteConfirmationDialog } from "./delete-confirmation-dialog"
 import { ExportButton } from "./export-button"
 import { TablePagination } from "./table-pagination"
-import { useApp } from "./app-provider"
+import { useApp, useCan } from "./app-provider"
 import { Avatar, EmptyState, ErrorState, ListSkeleton, PageHeader, StatCard, plural } from "./page-kit"
 
 const NO_ROWS: DirectoryEmployee[] = []
@@ -215,7 +215,9 @@ export function EmployeeDirectory() {
   }, [search])
   useEffect(() => setSearch(q), [q])
 
-  const { data, isLoading, isError, error, refetch } = useQuery<{ rows: DirectoryEmployee[] }>({
+  const { data, isLoading, isError, error, refetch } = useQuery<{
+    rows: DirectoryEmployee[]
+  }>({
     queryKey: ["employees", "directory"],
     queryFn: () => fetchWithAuth("/api/employees/directory"),
     retry: 1,
@@ -247,6 +249,10 @@ export function EmployeeDirectory() {
   const paged = paginate(visible, page, pageSize)
 
   // Dialogs
+  // What an admin allows here (admins can do everything)
+  const can = useCan()
+  const canEdit = can("employees_edit")
+  const canDelete = can("employees_delete")
   const [addOpen, setAddOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
@@ -282,7 +288,11 @@ export function EmployeeDirectory() {
       refresh()
     } catch (err) {
       console.error("Bulk update failed:", err)
-      toast({ title: "Couldn't update those people", description: handleApiError(err), variant: "destructive" })
+      toast({
+        title: "Couldn't update those people",
+        description: handleApiError(err),
+        variant: "destructive",
+      })
     } finally {
       setBusy(false)
     }
@@ -292,18 +302,27 @@ export function EmployeeDirectory() {
     const targets = deleteTargets
     setDeleteTargets([])
     try {
-      if (targets.length === 1) await fetchWithAuth(`/api/employees/${targets[0].id}`, { method: "DELETE" })
+      if (targets.length === 1)
+        await fetchWithAuth(`/api/employees/${targets[0].id}`, {
+          method: "DELETE",
+        })
       else
         await fetchWithAuth("/api/employees/batch-delete", {
           method: "POST",
           body: JSON.stringify({ ids: targets.map((t) => t.id) }),
         })
-      toast({ title: targets.length === 1 ? "Employee deleted" : `${targets.length} employees deleted` })
+      toast({
+        title: targets.length === 1 ? "Employee deleted" : `${targets.length} employees deleted`,
+      })
       setSelected(new Set())
       refresh()
     } catch (err) {
       console.error("Delete failed:", err)
-      toast({ title: "Couldn't delete", description: handleApiError(err), variant: "destructive" })
+      toast({
+        title: "Couldn't delete",
+        description: handleApiError(err),
+        variant: "destructive",
+      })
     }
   }
 
@@ -341,7 +360,11 @@ export function EmployeeDirectory() {
       label: status === "leavers" ? "Leavers" : "Current and leavers",
       clear: () => setParam({ status: null }),
     },
-    branch !== "all" && { key: "branch", label: branch, clear: () => setParam({ branch: null }) },
+    branch !== "all" && {
+      key: "branch",
+      label: branch,
+      clear: () => setParam({ branch: null }),
+    },
     q !== "" && {
       key: "q",
       label: `“${q}”`,
@@ -371,12 +394,14 @@ export function EmployeeDirectory() {
             Open profile
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setEditId(e.id)}>
-          <Pencil />
-          Edit details
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        {isLeaver(e) ? (
+        {canEdit && (
+          <DropdownMenuItem onClick={() => setEditId(e.id)}>
+            <Pencil />
+            Edit details
+          </DropdownMenuItem>
+        )}
+        {(canEdit || canDelete) && <DropdownMenuSeparator />}
+        {!canEdit ? null : isLeaver(e) ? (
           <DropdownMenuItem onClick={() => bulk([e.id], "current")}>
             <RotateCcw />
             Back to current staff
@@ -387,13 +412,15 @@ export function EmployeeDirectory() {
             Mark as left
           </DropdownMenuItem>
         )}
-        <DropdownMenuItem
-          className="text-destructive focus:text-destructive [&_svg]:!text-destructive"
-          onClick={() => setDeleteTargets([e])}
-        >
-          <Trash2 />
-          Delete
-        </DropdownMenuItem>
+        {canDelete && (
+          <DropdownMenuItem
+            className="text-destructive focus:text-destructive [&_svg]:!text-destructive"
+            onClick={() => setDeleteTargets([e])}
+          >
+            <Trash2 />
+            Delete
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )
@@ -465,22 +492,28 @@ export function EmployeeDirectory() {
         }
         actions={
           <>
-            <Button variant="outline" onClick={() => setImportOpen(true)}>
-              <Upload />
-              Import
-            </Button>
-            <ExportButton
-              endpoint="employees"
-              filters={{ branch, search: q, exportAll: "true" }}
-              sortColumn="name"
-              sortOrder="asc"
-              size="default"
-            />
-            <Button onClick={() => setAddOpen(true)}>
-              <Plus />
-              <span className="sm:hidden">Add</span>
-              <span className="hidden sm:inline">Add employee</span>
-            </Button>
+            {can("employees_import") && (
+              <Button variant="outline" onClick={() => setImportOpen(true)}>
+                <Upload />
+                Import
+              </Button>
+            )}
+            {can("export") && (
+              <ExportButton
+                endpoint="employees"
+                filters={{ branch, search: q, exportAll: "true" }}
+                sortColumn="name"
+                sortOrder="asc"
+                size="default"
+              />
+            )}
+            {canEdit && (
+              <Button onClick={() => setAddOpen(true)}>
+                <Plus />
+                <span className="sm:hidden">Add</span>
+                <span className="hidden sm:inline">Add employee</span>
+              </Button>
+            )}
           </>
         }
       />
@@ -608,10 +641,7 @@ export function EmployeeDirectory() {
         </div>
 
         {/* What's showing */}
-        <div
-          className="flex min-h-12 flex-wrap items-center gap-2 px-4 py-2.5 text-sm sm:px-5"
-          aria-live="polite"
-        >
+        <div className="flex min-h-12 flex-wrap items-center gap-2 px-4 py-2.5 text-sm sm:px-5" aria-live="polite">
           <span className="mr-1 text-muted-foreground">
             {isLoading ? (
               "Loading…"
@@ -833,7 +863,7 @@ export function EmployeeDirectory() {
               <span className="px-1 text-sm font-semibold" aria-live="polite">
                 {selected.size} selected
               </span>
-              {selectedRows.some((e) => !isLeaver(e)) ? (
+              {!canEdit ? null : selectedRows.some((e) => !isLeaver(e)) ? (
                 <Button
                   size="sm"
                   variant="outline"
@@ -854,28 +884,32 @@ export function EmployeeDirectory() {
                   Back to current
                 </Button>
               )}
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={busy}
-                onClick={() => {
-                  setMoveTo("")
-                  setMoveOpen(true)
-                }}
-              >
-                <ArrowRightLeft />
-                Move branch
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="text-destructive hover:text-destructive"
-                disabled={busy}
-                onClick={() => setDeleteTargets(selectedRows)}
-              >
-                <Trash2 />
-                Delete
-              </Button>
+              {canEdit && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => {
+                    setMoveTo("")
+                    setMoveOpen(true)
+                  }}
+                >
+                  <ArrowRightLeft />
+                  Move branch
+                </Button>
+              )}
+              {canDelete && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-destructive hover:text-destructive"
+                  disabled={busy}
+                  onClick={() => setDeleteTargets(selectedRows)}
+                >
+                  <Trash2 />
+                  Delete
+                </Button>
+              )}
               <Button
                 size="icon"
                 variant="ghost"

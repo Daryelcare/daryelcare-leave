@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/db"
-import { canAccessBranch, requireUser } from "@/lib/server-auth"
+import { canAccessBranch, requirePermission } from "@/lib/server-auth"
 
 const MAX = 500
 
@@ -9,7 +9,7 @@ const MAX = 500
 // Every person, and the new branch, must be in the user's branches.
 export async function POST(request: Request) {
   try {
-    const auth = await requireUser(request)
+    const auth = await requirePermission(request, "employees_edit")
     if (auth.response) return auth.response
     const { ids, action, branch } = await request.json()
 

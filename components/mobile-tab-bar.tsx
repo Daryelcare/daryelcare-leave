@@ -67,7 +67,7 @@ export function MobileTabBar() {
           <SheetTitle className="px-2 text-lg">All pages</SheetTitle>
           <SheetDescription className="sr-only">Every page in DaryelCare, grouped</SheetDescription>
           <div className="mt-3 space-y-4">
-            {visibleGroups(user?.role === "admin").map((group) => (
+            {visibleGroups(user?.role === "admin", user?.permissions).map((group) => (
               <div key={group.label}>
                 <p className="eyebrow px-2 pb-1.5">{group.label}</p>
                 <ul className="space-y-0.5">
