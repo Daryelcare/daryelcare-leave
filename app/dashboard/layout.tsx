@@ -4,6 +4,7 @@ import Image from "next/image"
 import type React from "react"
 import { TopNav } from "@/components/top-nav"
 import { SidebarContent } from "@/components/app-sidebar"
+import { ChooseNewPassword } from "@/components/choose-new-password"
 import { QuickSearch } from "@/components/quick-search"
 import { MobileTabBar } from "@/components/mobile-tab-bar"
 import { Toaster } from "@/components/ui/toaster"
@@ -69,6 +70,7 @@ function AuthCheck({ children }: { children: React.ReactNode }) {
             role: currentUser.role,
             branches: currentUser.branches || [],
             permissions: currentUser.permissions ?? null,
+            mustChangePassword: currentUser.mustChangePassword === true,
           })
         } else {
           setUser(null)
@@ -120,6 +122,9 @@ function AuthCheck({ children }: { children: React.ReactNode }) {
       </div>
     )
   }
+
+  // A one-time password change (or a new / reset account): nothing else until it's done
+  if (user.mustChangePassword) return <ChooseNewPassword />
 
   return <>{children}</>
 }

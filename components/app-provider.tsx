@@ -14,6 +14,7 @@ type User = {
   branches?: string[]
   avatar?: string
   permissions?: PermissionSet | null
+  mustChangePassword?: boolean
 }
 
 /**

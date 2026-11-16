@@ -30,7 +30,7 @@ import { LeaveTypeManagementTable } from "./leave-type-management-table"
 const passwordFormSchema = z
   .object({
     currentPassword: z.string().min(1, { message: "Current password is required" }),
-    newPassword: z.string().min(10, { message: "Password must be at least 10 characters" }),
+    newPassword: z.string().min(6, { message: "Password must be at least 6 characters" }),
     confirmPassword: z.string().min(8, { message: "Confirm password is required" }),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
@@ -200,8 +200,8 @@ export function SettingsForm() {
               <div className="space-y-1">
                 <h3 className="text-[15px] font-bold">Appearance</h3>
                 <p className="text-sm text-muted-foreground">
-                  Dark uses true black, which is easier on the eyes at night and saves battery on OLED screens.
-                  Saved on this device.
+                  Dark uses true black, which is easier on the eyes at night and saves battery on OLED screens. Saved on
+                  this device.
                 </p>
               </div>
               <ThemeSwitch className="self-start sm:self-auto" />
@@ -213,7 +213,7 @@ export function SettingsForm() {
           <div className="space-y-4">
             <SectionHeader
               title={current.title}
-              description="Use at least 8 characters. You'll stay signed in on this device."
+              description="Use at least 6 characters. You'll stay signed in on this device."
             />
             <div className="surface max-w-xl overflow-hidden">
               <Form {...passwordForm}>
@@ -287,10 +287,7 @@ export function SettingsForm() {
                 key={group}
                 role="group"
                 aria-label={group}
-                className={cn(
-                  "flex shrink-0 gap-[3px] rounded-full bg-card p-1 shadow-soft",
-                  gi > 0 && "ml-2.5",
-                )}
+                className={cn("flex shrink-0 gap-[3px] rounded-full bg-card p-1 shadow-soft", gi > 0 && "ml-2.5")}
               >
                 <div className="contents">
                   {items.map((section) => {
@@ -309,9 +306,7 @@ export function SettingsForm() {
                         className={cn(
                           "flex h-8 shrink-0 items-center whitespace-nowrap rounded-full px-4 text-[13px] font-bold transition-colors duration-150",
                           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70",
-                          active
-                            ? "bg-primary text-primary-foreground"
-                            : "text-muted-foreground hover:text-foreground",
+                          active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
                         )}
                       >
                         {section.title}

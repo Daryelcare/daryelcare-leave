@@ -1,6 +1,7 @@
 import { supabase as db } from "./db"
 import { supabase as publicClient } from "./supabase"
 import type { User } from "./types"
+import { passwordFlagExists } from "./password-change"
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
 
@@ -75,7 +76,9 @@ export async function signUpUserWithProfile(
       created_at: new Date().toISOString(),
     }
 
-    const { error: insertError } = await db.from("users").insert([profile])
+    // The admin set this password: the person chooses their own at first sign-in
+    const withFlag = (await passwordFlagExists()) ? { ...profile, must_change_password: true } : profile
+    const { error: insertError } = await db.from("users").insert([withFlag as typeof profile])
 
     if (insertError) {
       console.error("Insert into users table failed:", insertError.message)

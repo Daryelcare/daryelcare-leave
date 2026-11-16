@@ -17,6 +17,7 @@ async function fetchOwnProfile(token: string | undefined): Promise<User | null> 
     role: p.role,
     branches: p.branches || [],
     permissions: p.permissions ?? null,
+    mustChangePassword: p.mustChangePassword === true,
   }
 }
 

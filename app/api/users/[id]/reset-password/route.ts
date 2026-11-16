@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { supabase } from "@/lib/db"
 import { findAuthUserId, hasServiceRoleKey, SERVICE_KEY_MISSING_MESSAGE, supabaseAdmin } from "@/lib/supabase-admin"
 import { requireAdmin } from "@/lib/server-auth"
+import { setMustChangePassword } from "@/lib/password-change"
 
 // Admin sets a new password for another user's login account.
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -20,7 +21,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: "Password must be at least 10 characters" }, { status: 400 })
     }
 
-    const { data: target, error: userError } = await supabase.from("users").select("id, email").eq("id", id).maybeSingle()
+    const { data: target, error: userError } = await supabase
+      .from("users")
+      .select("id, email")
+      .eq("id", id)
+      .maybeSingle()
     if (userError || !target) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
@@ -35,6 +40,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: `Failed to reset password: ${error.message}` }, { status: 500 })
     }
 
+    // They choose their own at next sign-in, so the admin never keeps it
+    await setMustChangePassword({ id: target.id }, true)
     console.log(`${auth.user.email} reset the password for ${target.email}`)
     return NextResponse.json({ success: true })
   } catch (error) {
