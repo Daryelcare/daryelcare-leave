@@ -31,7 +31,7 @@ const passwordFormSchema = z
   .object({
     currentPassword: z.string().min(1, { message: "Current password is required" }),
     newPassword: z.string().min(6, { message: "Password must be at least 6 characters" }),
-    confirmPassword: z.string().min(8, { message: "Confirm password is required" }),
+    confirmPassword: z.string().min(1, { message: "Type the new password again" }),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: "Passwords do not match",
