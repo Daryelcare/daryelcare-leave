@@ -92,7 +92,7 @@ import { ImportDocumentsModal } from "./import-documents-modal"
 import { DocumentDateDialog, RenewDocumentsDialog, useRefreshDocuments } from "./document-tracker-dialogs"
 import { EmployeePanel } from "./employee-profile"
 import { TablePagination } from "./table-pagination"
-import { useApp } from "./app-provider"
+import { useApp, useCan } from "./app-provider"
 import { Avatar, EmptyState, ErrorState, ListSkeleton, PageHeader, StatCard, plural } from "./page-kit"
 
 type Group = "all" | "regular" | "sponsored"
@@ -119,10 +119,30 @@ const TONE: Record<Urgency, { bar: string; text: string; soft: string; stripe: s
     soft: "bg-destructive-soft",
     stripe: "before:bg-destructive/60",
   },
-  d30: { bar: "bg-warning", text: "text-warning", soft: "bg-warning-soft", stripe: "before:bg-warning" },
-  d90: { bar: "bg-primary", text: "text-primary-text", soft: "bg-primary-soft", stripe: "before:bg-primary" },
-  valid: { bar: "bg-success", text: "text-success", soft: "bg-success-soft", stripe: "before:bg-transparent" },
-  none: { bar: "bg-border", text: "text-muted-foreground", soft: "bg-muted", stripe: "before:bg-transparent" },
+  d30: {
+    bar: "bg-warning",
+    text: "text-warning",
+    soft: "bg-warning-soft",
+    stripe: "before:bg-warning",
+  },
+  d90: {
+    bar: "bg-primary",
+    text: "text-primary-text",
+    soft: "bg-primary-soft",
+    stripe: "before:bg-primary",
+  },
+  valid: {
+    bar: "bg-success",
+    text: "text-success",
+    soft: "bg-success-soft",
+    stripe: "before:bg-transparent",
+  },
+  none: {
+    bar: "bg-border",
+    text: "text-muted-foreground",
+    soft: "bg-muted",
+    stripe: "before:bg-transparent",
+  },
 }
 // Table rows can't carry a pseudo-element (it becomes an extra cell), so the
 // stripe is an inset shadow on the first cell
@@ -211,12 +231,25 @@ export function DocumentTrackerTable() {
 
   // Dialogs
   const [addFor, setAddFor] = useState<{ employeeId?: string } | null>(null)
-  const [editing, setEditing] = useState<{ doc: TrackerDocument; tab: DocKind } | null>(null)
-  const [cellTarget, setCellTargetRaw] = useState<{ doc: TrackerDocument; kind: DocKind } | null>(null)
+  const [editing, setEditing] = useState<{
+    doc: TrackerDocument
+    tab: DocKind
+  } | null>(null)
+  // What an admin allows here (admins can do everything)
+  const can = useCan()
+  const canEdit = can("documents_edit")
+  const canDelete = can("documents_delete")
+  const [cellTarget, setCellTargetRaw] = useState<{
+    doc: TrackerDocument
+    kind: DocKind
+  } | null>(null)
   // Right to work with a recorded basis is worked out from it, so it opens the
   // full editor (how it's held, date checked) instead of the quick date box
   const setCellTarget = (t: { doc: TrackerDocument; kind: DocKind } | null) => {
-    if (t && t.kind === "rightToWork" && t.doc.rtwBasis && !t.doc.noRecord) setEditing({ doc: t.doc, tab: "rightToWork" })
+    // View only: dates can't be changed
+    if (t && !canEdit) return
+    if (t && t.kind === "rightToWork" && t.doc.rtwBasis && !t.doc.noRecord)
+      setEditing({ doc: t.doc, tab: "rightToWork" })
     else setCellTargetRaw(t)
   }
   const [deleteTargets, setDeleteTargets] = useState<TrackerDocument[]>([])
@@ -228,7 +261,10 @@ export function DocumentTrackerTable() {
   const [pageSize, setPageSize] = useState<PageSize>(50)
 
   // Every current employee in the chosen branch, with their documents record
-  const { data, isLoading, isError, error, refetch } = useQuery<{ rows: TrackerDocument[]; rtwTracking?: boolean }>({
+  const { data, isLoading, isError, error, refetch } = useQuery<{
+    rows: TrackerDocument[]
+    rtwTracking?: boolean
+  }>({
     queryKey: ["documents-tracker", branch],
     queryFn: () => fetchWithAuth(`/api/documents/tracker?branch=${encodeURIComponent(branch)}`),
     retry: 1,
@@ -236,7 +272,10 @@ export function DocumentTrackerTable() {
   const rows = data?.rows ?? NO_ROWS
   // Recording how right to work is held needs a one-off database update
   const rtwTracking = !!data?.rtwTracking
-  const [rtwBulk, setRtwBulk] = useState<{ people: TrackerDocument[]; basis: RtwBasis | null } | null>(null)
+  const [rtwBulk, setRtwBulk] = useState<{
+    people: TrackerDocument[]
+    basis: RtwBasis | null
+  } | null>(null)
   // Staff marked British whose right to work basis isn't recorded yet
   const britishToSet = rtwTracking
     ? rows.filter((d) => !d.noRecord && !d.rtwBasis && (d.status || "").toUpperCase() === "BRITISH")
@@ -285,7 +324,12 @@ export function DocumentTrackerTable() {
   const upcoming = useMemo(
     () =>
       scoped
-        .flatMap((d) => entriesFor(d, comingUpAll ? "all" : focusKind).map((e) => ({ ...e, record: d })))
+        .flatMap((d) =>
+          entriesFor(d, comingUpAll ? "all" : focusKind).map((e) => ({
+            ...e,
+            record: d,
+          })),
+        )
         .filter((e) => e.days !== null && e.days <= 90)
         .sort((a, b) => (a.days as number) - (b.days as number)),
     [scoped, focusKind, comingUpAll],
@@ -358,14 +402,22 @@ export function DocumentTrackerTable() {
 
   // Save a CSV of exactly what's on screen (or just the ticked rows)
   const downloadCsv = (list: TrackerDocument[], name: string) => {
-    const blob = new Blob(["﻿" + documentsCsv(list)], { type: "text/csv;charset=utf-8" })
+    const blob = new Blob(["﻿" + documentsCsv(list)], {
+      type: "text/csv;charset=utf-8",
+    })
     const url = URL.createObjectURL(blob)
-    const a = Object.assign(document.createElement("a"), { href: url, download: name })
+    const a = Object.assign(document.createElement("a"), {
+      href: url,
+      download: name,
+    })
     document.body.appendChild(a)
     a.click()
     a.remove()
     URL.revokeObjectURL(url)
-    toast({ title: "Export ready", description: `${plural(list.length, "employee")} saved to ${name}.` })
+    toast({
+      title: "Export ready",
+      description: `${plural(list.length, "employee")} saved to ${name}.`,
+    })
   }
   const viewName = () => {
     const f = EXPIRY_FILTERS.find((x) => x.id === expiry)
@@ -400,7 +452,10 @@ export function DocumentTrackerTable() {
       const match = response.headers.get("Content-Disposition")?.match(/filename="(.+)"/)
       if (match?.[1]) filename = match[1]
       const url = URL.createObjectURL(await response.blob())
-      const a = Object.assign(document.createElement("a"), { href: url, download: filename })
+      const a = Object.assign(document.createElement("a"), {
+        href: url,
+        download: filename,
+      })
       document.body.appendChild(a)
       a.click()
       a.remove()
@@ -411,7 +466,11 @@ export function DocumentTrackerTable() {
       })
     } catch (err) {
       console.error("Export error:", err)
-      toast({ title: "Export failed", description: "Please try again in a moment.", variant: "destructive" })
+      toast({
+        title: "Export failed",
+        description: "Please try again in a moment.",
+        variant: "destructive",
+      })
     } finally {
       setIsExporting(false)
     }
@@ -526,10 +585,12 @@ export function DocumentTrackerTable() {
       <Badge variant="warning" dot className="px-2 text-[11px] leading-[18px]">
         No documents on file
       </Badge>
-      <Button size="sm" variant="outline" className="h-8" onClick={() => setAddFor({ employeeId: doc.employeeId })}>
-        <Plus />
-        Add documents
-      </Button>
+      {canEdit && (
+        <Button size="sm" variant="outline" className="h-8" onClick={() => setAddFor({ employeeId: doc.employeeId })}>
+          <Plus />
+          Add documents
+        </Button>
+      )}
     </span>
   )
 
@@ -548,7 +609,7 @@ export function DocumentTrackerTable() {
             Open profile
           </Link>
         </DropdownMenuItem>
-        {doc.noRecord ? (
+        {!canEdit ? null : doc.noRecord ? (
           <DropdownMenuItem onClick={() => setAddFor({ employeeId: doc.employeeId })}>
             <Plus />
             Add documents
@@ -559,7 +620,7 @@ export function DocumentTrackerTable() {
             Edit documents
           </DropdownMenuItem>
         )}
-        {!doc.noRecord && (
+        {canDelete && !doc.noRecord && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -623,7 +684,11 @@ export function DocumentTrackerTable() {
       label: kind === "all" ? "All document types" : DOC_KINDS.find((k) => k.id === kind)!.label,
       clear: () => setParam({ type: null }),
     },
-    branch !== "all" && { key: "branch", label: branch, clear: () => setParam({ branch: null }) },
+    branch !== "all" && {
+      key: "branch",
+      label: branch,
+      clear: () => setParam({ branch: null }),
+    },
     group !== "all" && {
       key: "group",
       label: group === "sponsored" ? "Sponsored only" : "Not sponsored",
@@ -667,42 +732,48 @@ export function DocumentTrackerTable() {
   // Page actions sit in the filter row, not the page header
   const pageActions = (
     <>
-      <Button variant="outline" onClick={() => setIsImportModalOpen(true)}>
-        <Upload />
-        Import
-      </Button>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" disabled={isLoading || isExporting || rows.length === 0}>
-            {isExporting ? <Loader2 className="animate-spin" /> : <Download />}
-            {isExporting ? "Exporting…" : "Export"}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-64">
-          <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground">
-            This view · {plural(visible.length, "employee")}
-          </DropdownMenuLabel>
-          <DropdownMenuItem disabled={visible.length === 0} onClick={() => downloadCsv(visible, viewName())}>
-            <FileText />
-            CSV of this view
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground">Full register</DropdownMenuLabel>
-          <DropdownMenuItem onClick={() => exportRegister("csv")}>
-            <FileText />
-            CSV file
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => exportRegister("excel")}>
-            <FileSpreadsheet />
-            Excel workbook
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-      <Button onClick={() => setAddFor({})}>
-        <Plus />
-        <span className="sm:hidden">Add</span>
-        <span className="hidden sm:inline">Add document</span>
-      </Button>
+      {can("documents_import") && (
+        <Button variant="outline" onClick={() => setIsImportModalOpen(true)}>
+          <Upload />
+          Import
+        </Button>
+      )}
+      {can("export") && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" disabled={isLoading || isExporting || rows.length === 0}>
+              {isExporting ? <Loader2 className="animate-spin" /> : <Download />}
+              {isExporting ? "Exporting…" : "Export"}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-64">
+            <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground">
+              This view · {plural(visible.length, "employee")}
+            </DropdownMenuLabel>
+            <DropdownMenuItem disabled={visible.length === 0} onClick={() => downloadCsv(visible, viewName())}>
+              <FileText />
+              CSV of this view
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground">Full register</DropdownMenuLabel>
+            <DropdownMenuItem onClick={() => exportRegister("csv")}>
+              <FileText />
+              CSV file
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => exportRegister("excel")}>
+              <FileSpreadsheet />
+              Excel workbook
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+      {canEdit && (
+        <Button onClick={() => setAddFor({})}>
+          <Plus />
+          <span className="sm:hidden">Add</span>
+          <span className="hidden sm:inline">Add document</span>
+        </Button>
+      )}
     </>
   )
 
@@ -780,7 +851,7 @@ export function DocumentTrackerTable() {
         />
       </section>
 
-      {britishToSet.length > 0 && (
+      {canEdit && britishToSet.length > 0 && (
         <div className="surface flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <div className="flex gap-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
@@ -791,7 +862,8 @@ export function DocumentTrackerTable() {
                 {plural(britishToSet.length, "person is", "people are")} marked British without a right to work basis
               </p>
               <p className="text-sm text-muted-foreground">
-                British and Irish citizens only need one check. Review the list, then confirm to stop them being flagged.
+                British and Irish citizens only need one check. Review the list, then confirm to stop them being
+                flagged.
               </p>
             </div>
           </div>
@@ -847,7 +919,12 @@ export function DocumentTrackerTable() {
               variant="ghost"
               size="icon"
               aria-label="See all due within 90 days"
-              onClick={() => setParam({ expiry: "within90", type: comingUpAll ? "all" : focusKind })}
+              onClick={() =>
+                setParam({
+                  expiry: "within90",
+                  type: comingUpAll ? "all" : focusKind,
+                })
+              }
               className="h-8 w-8 shrink-0"
             >
               <ChevronRight />
@@ -937,7 +1014,10 @@ export function DocumentTrackerTable() {
                     {f.id === "within7" || f.id === "within30" || f.id === "within90" ? (
                       <span>
                         <span
-                          className={cn("hidden sm:inline", active ? "text-primary-foreground/80" : "text-muted-foreground")}
+                          className={cn(
+                            "hidden sm:inline",
+                            active ? "text-primary-foreground/80" : "text-muted-foreground",
+                          )}
                         >
                           Within{" "}
                         </span>
@@ -1238,13 +1318,15 @@ export function DocumentTrackerTable() {
                               No recheck needed
                             </Badge>
                           </button>
-                        ) : focusMissing && (
-                          <button
-                            onClick={() => setCellTarget({ doc, kind: focusKind })}
-                            className="-my-2 self-start py-2 text-left text-xs font-medium text-muted-foreground underline-offset-2 hover:underline"
-                          >
-                            {focusLabel}: no expiry recorded · Add
-                          </button>
+                        ) : (
+                          focusMissing && (
+                            <button
+                              onClick={() => setCellTarget({ doc, kind: focusKind })}
+                              className="-my-2 self-start py-2 text-left text-xs font-medium text-muted-foreground underline-offset-2 hover:underline"
+                            >
+                              {focusLabel}: no expiry recorded · Add
+                            </button>
+                          )
                         )}
                         {items.length > 0 && (
                           <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -1338,30 +1420,36 @@ export function DocumentTrackerTable() {
               <span className="px-1 text-sm font-semibold" aria-live="polite">
                 {selected.size} selected
               </span>
-              <Button size="sm" onClick={() => setRenewOpen(true)}>
-                <CalendarCheck />
-                Mark renewed
-              </Button>
-              {rtwTracking && (
+              {canEdit && (
+                <Button size="sm" onClick={() => setRenewOpen(true)}>
+                  <CalendarCheck />
+                  Mark renewed
+                </Button>
+              )}
+              {canEdit && rtwTracking && (
                 <Button size="sm" variant="outline" onClick={() => setRtwBulk({ people: selectedRows, basis: null })}>
                   <ShieldCheck />
                   Set right to work
                 </Button>
               )}
-              <Button size="sm" variant="outline" onClick={() => downloadCsv(selectedRows, "documents-selected.csv")}>
-                <Download />
-                Export
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="text-destructive hover:text-destructive"
-                disabled={!selectedRows.some((d) => d.recordId)}
-                onClick={() => setDeleteTargets(selectedRows.filter((d) => d.recordId))}
-              >
-                <Trash2 />
-                Delete
-              </Button>
+              {can("export") && (
+                <Button size="sm" variant="outline" onClick={() => downloadCsv(selectedRows, "documents-selected.csv")}>
+                  <Download />
+                  Export
+                </Button>
+              )}
+              {canDelete && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-destructive hover:text-destructive"
+                  disabled={!selectedRows.some((d) => d.recordId)}
+                  onClick={() => setDeleteTargets(selectedRows.filter((d) => d.recordId))}
+                >
+                  <Trash2 />
+                  Delete
+                </Button>
+              )}
               <Button
                 size="icon"
                 variant="ghost"

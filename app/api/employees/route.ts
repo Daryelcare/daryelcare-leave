@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { allowanceColumnExists } from "@/lib/column-probe"
 import { STANDARD_ENTITLEMENT } from "@/lib/balances"
 import { supabase } from "@/lib/db"
-import { allowedBranches, canAccessBranch, requireUser } from "@/lib/server-auth"
+import { allowedBranches, canAccessBranch, requireUser, requirePermission } from "@/lib/server-auth"
 
 // Map frontend column names to database column names
 const columnMapping: Record<string, string> = {
@@ -119,7 +119,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const auth = await requireUser(request)
+    const auth = await requirePermission(request, "employees_edit")
     if (auth.response) return auth.response
     const data = await request.json()
 

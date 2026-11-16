@@ -42,6 +42,7 @@ export function LeaveRequestSheet({
   onDecide,
   onEdit,
   onDelete,
+  allowed = { decide: true, edit: true, remove: true },
 }: {
   leave: LeaveRequest | null
   open: boolean
@@ -55,6 +56,8 @@ export function LeaveRequestSheet({
   onDecide: (status: Decision, note: string) => Promise<boolean>
   onEdit: () => void
   onDelete: () => void
+  /** What this person may do here (an admin can turn each off for managers) */
+  allowed?: { decide: boolean; edit: boolean; remove: boolean }
 }) {
   const [note, setNote] = useState("")
   const [noteError, setNoteError] = useState(false)
@@ -64,7 +67,10 @@ export function LeaveRequestSheet({
   }, [leave?.id, open])
 
   // The employee's current balance (balances only exist for the current year)
-  const { data: employee } = useQuery<{ daysTaken: number; daysRemaining: number }>({
+  const { data: employee } = useQuery<{
+    daysTaken: number
+    daysRemaining: number
+  }>({
     queryKey: ["employee", leave?.employeeId],
     queryFn: () => fetchWithAuth(`/api/employees/${leave!.employeeId}`),
     enabled: open && !!leave && !readOnly,
@@ -73,7 +79,9 @@ export function LeaveRequestSheet({
   // Everyone else off on any of the same days (approved or still pending)
   const from = leave ? toIsoDate(parseDateToUtc(leave.startDate) ?? 0) : ""
   const to = leave ? toIsoDate(parseDateToUtc(leave.endDate) ?? 0) : ""
-  const { data: overlapData, isLoading: overlapLoading } = useQuery<{ leaves: CalendarEntry[] }>({
+  const { data: overlapData, isLoading: overlapLoading } = useQuery<{
+    leaves: CalendarEntry[]
+  }>({
     queryKey: ["leave-calendar", "overlap", from, to],
     queryFn: () => fetchWithAuth(`/api/leave-calendar?from=${from}&to=${to}&branch=all`),
     enabled: open && !!leave && !!from && !!to,
@@ -134,7 +142,10 @@ export function LeaveRequestSheet({
           {!readOnly && usesBalance && employee && (
             <div className="grid grid-cols-3 gap-2">
               {[
-                { label: "Entitlement", value: employee.daysTaken + employee.daysRemaining },
+                {
+                  label: "Entitlement",
+                  value: employee.daysTaken + employee.daysRemaining,
+                },
                 { label: "Used", value: employee.daysTaken },
                 { label: "Remaining", value: employee.daysRemaining },
               ].map((b) => (
@@ -228,74 +239,87 @@ export function LeaveRequestSheet({
         </div>
 
         {/* Decision */}
-        {!readOnly && (
+        {!readOnly && (allowed.decide || allowed.edit || allowed.remove) && (
           <div className="space-y-3 p-5 sm:p-6">
-            <div className="space-y-1.5">
-              <Label htmlFor={`leave-note-${leave.id}`}>
-                Note <span className="font-normal text-muted-foreground">(needed to reject, optional to approve)</span>
-              </Label>
-              <Textarea
-                id={`leave-note-${leave.id}`}
-                value={note}
-                autoFocus={focusReject}
-                onChange={(e) => {
-                  setNote(e.target.value)
-                  if (e.target.value.trim()) setNoteError(false)
-                }}
-                rows={2}
-                aria-invalid={noteError}
-                placeholder={status === "Pending" ? "Add a note for the record" : "Why are you changing this decision?"}
-              />
-              {noteError && (
-                <p className="text-xs font-medium text-destructive">Give a reason for rejecting this leave.</p>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {status !== "Approved" && (
-                <Button onClick={() => submit("Approved")} disabled={busy} className="flex-1 sm:flex-none">
-                  {busy ? <Loader2 className="animate-spin" /> : <Check />}
-                  Approve
-                </Button>
-              )}
-              {status !== "Rejected" && (
-                <Button
-                  variant="outline"
-                  onClick={() => submit("Rejected")}
-                  disabled={busy}
-                  className="flex-1 text-destructive hover:text-destructive sm:flex-none"
-                >
-                  <X />
-                  Reject
-                </Button>
-              )}
-              {status !== "Pending" && (
-                <Button
-                  variant="outline"
-                  onClick={() => submit("Pending")}
-                  disabled={busy}
-                  className="flex-1 sm:flex-none"
-                >
-                  <RotateCcw />
-                  Reset to pending
-                </Button>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-2 pt-3">
-              <Button variant="ghost" size="sm" onClick={onEdit} disabled={busy}>
-                <Pencil />
-                Edit dates or type
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onDelete}
-                disabled={busy}
-                className="text-destructive hover:text-destructive"
-              >
-                <Trash2 />
-                Delete
-              </Button>
-            </div>
+            {allowed.decide && (
+              <>
+                <div className="space-y-1.5">
+                  <Label htmlFor={`leave-note-${leave.id}`}>
+                    Note{" "}
+                    <span className="font-normal text-muted-foreground">(needed to reject, optional to approve)</span>
+                  </Label>
+                  <Textarea
+                    id={`leave-note-${leave.id}`}
+                    value={note}
+                    autoFocus={focusReject}
+                    onChange={(e) => {
+                      setNote(e.target.value)
+                      if (e.target.value.trim()) setNoteError(false)
+                    }}
+                    rows={2}
+                    aria-invalid={noteError}
+                    placeholder={
+                      status === "Pending" ? "Add a note for the record" : "Why are you changing this decision?"
+                    }
+                  />
+                  {noteError && (
+                    <p className="text-xs font-medium text-destructive">Give a reason for rejecting this leave.</p>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {status !== "Approved" && (
+                    <Button onClick={() => submit("Approved")} disabled={busy} className="flex-1 sm:flex-none">
+                      {busy ? <Loader2 className="animate-spin" /> : <Check />}
+                      Approve
+                    </Button>
+                  )}
+                  {status !== "Rejected" && (
+                    <Button
+                      variant="outline"
+                      onClick={() => submit("Rejected")}
+                      disabled={busy}
+                      className="flex-1 text-destructive hover:text-destructive sm:flex-none"
+                    >
+                      <X />
+                      Reject
+                    </Button>
+                  )}
+                  {status !== "Pending" && (
+                    <Button
+                      variant="outline"
+                      onClick={() => submit("Pending")}
+                      disabled={busy}
+                      className="flex-1 sm:flex-none"
+                    >
+                      <RotateCcw />
+                      Reset to pending
+                    </Button>
+                  )}
+                </div>
+              </>
+            )}
+            {(allowed.edit || allowed.remove) && (
+              <div className="flex flex-wrap gap-2 pt-3">
+                {allowed.edit && (
+                  <Button variant="ghost" size="sm" onClick={onEdit} disabled={busy}>
+                    <Pencil />
+                    Edit dates or type
+                  </Button>
+                )}
+                {allowed.remove && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onDelete}
+                    disabled={busy}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 />
+                    Delete
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         )}
       </SheetContent>

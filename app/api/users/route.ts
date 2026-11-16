@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/server-auth"
+import { cleanOverrides } from "@/lib/permissions"
 import { supabase } from "@/lib/db"
 import { signUpUserWithProfile } from "@/lib/user-accounts"
 
@@ -22,6 +23,10 @@ export async function GET(request: Request) {
       role: user.role,
       branches: user.branches,
       createdAt: user.created_at,
+      // Present once the permissions update has been run
+      ...("permission_overrides" in user
+        ? { permissionOverrides: cleanOverrides((user as { permission_overrides?: unknown }).permission_overrides) }
+        : {}),
     }))
 
     return NextResponse.json(users)

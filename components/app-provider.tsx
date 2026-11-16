@@ -4,6 +4,7 @@ import type React from "react"
 
 import { createContext, useContext, useState, useEffect } from "react"
 import type { UserRole } from "@/lib/types"
+import { BUILT_IN_DEFAULTS, type PermissionKey, type PermissionSet } from "@/lib/permissions"
 
 type User = {
   id: string
@@ -12,6 +13,23 @@ type User = {
   role: UserRole
   branches?: string[]
   avatar?: string
+  permissions?: PermissionSet | null
+}
+
+/**
+ * Whether the signed-in person may do something. Admins always may; for branch
+ * managers it's what an admin has allowed. Used to hide what's turned off; the
+ * server checks it again on every request.
+ */
+export function canDo(user: { role?: string; permissions?: PermissionSet | null } | null, key: PermissionKey) {
+  if (!user) return false
+  if (user.role === "admin") return true
+  return (user.permissions ?? BUILT_IN_DEFAULTS)[key] === true
+}
+
+export function useCan() {
+  const { user } = useApp()
+  return (key: PermissionKey) => canDo(user, key)
 }
 
 type AppContextType = {

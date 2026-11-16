@@ -68,6 +68,7 @@ function AuthCheck({ children }: { children: React.ReactNode }) {
             email: currentUser.email,
             role: currentUser.role,
             branches: currentUser.branches || [],
+            permissions: currentUser.permissions ?? null,
           })
         } else {
           setUser(null)

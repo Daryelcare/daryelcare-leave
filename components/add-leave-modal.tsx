@@ -26,7 +26,7 @@ import { useLeaveTypes } from "@/hooks/use-leave-types"
 import { cn, shouldDeductFromBalance } from "@/lib/utils"
 import { useQuery } from "@tanstack/react-query"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { useApp } from "./app-provider"
+import { canDo, useApp } from "./app-provider"
 import type { Employee } from "@/lib/types"
 import { EmployeePicker } from "./employee-picker"
 import { type StoredPeriod, crossesLeaveYearEnd } from "@/lib/leave-years"
@@ -37,9 +37,9 @@ const formSchema = z.object({
   employeeId: z.string().min(1, { message: "Employee is required" }),
   type: z.string().min(1, { message: "Leave type is required" }),
   startDate: z.date({ error: "Start date is required" }),
-  endDate: z
-    .date({ error: "End date is required" })
-    .refine((date) => date instanceof Date && !isNaN(date.getTime()), { message: "End date is required" }),
+  endDate: z.date({ error: "End date is required" }).refine((date) => date instanceof Date && !isNaN(date.getTime()), {
+    message: "End date is required",
+  }),
   reason: z.string().optional(),
 })
 
@@ -71,7 +71,9 @@ export function AddLeaveModal({ open, onOpenChange, initialEmployeeId }: AddLeav
   } | null>(null)
 
   // Recorded leave is approved straight away unless saved as pending (as in CarerHR)
-  const [saveAs, setSaveAs] = useState<"Approved" | "Pending">("Approved")
+  // Without permission to approve, new leave is saved as pending for someone who has it
+  const mayApprove = canDo(user, "leave_approve")
+  const [saveAs, setSaveAs] = useState<"Approved" | "Pending">(mayApprove ? "Approved" : "Pending")
 
   // Leave can't cross the end of a leave year: book each year's part separately
   const { data: periods = [] } = useQuery<StoredPeriod[]>({
@@ -379,7 +381,7 @@ export function AddLeaveModal({ open, onOpenChange, initialEmployeeId }: AddLeav
             ? "It's waiting for a decision on the Leave page."
             : `${selectedEmployee.name}'s leave is approved.`,
       })
-      setSaveAs("Approved")
+      setSaveAs(mayApprove ? "Approved" : "Pending")
 
       // Reset form
       form.reset()
@@ -568,8 +570,14 @@ export function AddLeaveModal({ open, onOpenChange, initialEmployeeId }: AddLeav
               <div className="overflow-hidden rounded-2xl bg-background text-sm">
                 <div className="grid grid-cols-3 divide-x divide-border/70">
                   {[
-                    { label: "Duration", value: startDate && endDate ? duration : "—" },
-                    { label: "Available", value: selectedEmployee.availableDays },
+                    {
+                      label: "Duration",
+                      value: startDate && endDate ? duration : "—",
+                    },
+                    {
+                      label: "Available",
+                      value: selectedEmployee.availableDays,
+                    },
                     {
                       label: "After this",
                       value: startDate && endDate && duration > 0 ? selectedEmployee.availableDays - duration : "—",
@@ -631,42 +639,44 @@ export function AddLeaveModal({ open, onOpenChange, initialEmployeeId }: AddLeav
               </Alert>
             )}
 
-            <div className="space-y-1.5">
-              <p className="text-sm font-medium">Status</p>
-              <div
-                role="radiogroup"
-                aria-label="Save as"
-                className="grid grid-cols-2 gap-[3px] rounded-full bg-background p-1"
-              >
-                {(
-                  [
-                    { value: "Approved", label: "Approve now" },
-                    { value: "Pending", label: "Save as pending" },
-                  ] as const
-                ).map((o) => (
-                  <button
-                    key={o.value}
-                    type="button"
-                    role="radio"
-                    aria-checked={saveAs === o.value}
-                    onClick={() => setSaveAs(o.value)}
-                    className={cn(
-                      "h-9 rounded-full text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70",
-                      saveAs === o.value
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    {o.label}
-                  </button>
-                ))}
+            {mayApprove && (
+              <div className="space-y-1.5">
+                <p className="text-sm font-medium">Status</p>
+                <div
+                  role="radiogroup"
+                  aria-label="Save as"
+                  className="grid grid-cols-2 gap-[3px] rounded-full bg-background p-1"
+                >
+                  {(
+                    [
+                      { value: "Approved", label: "Approve now" },
+                      { value: "Pending", label: "Save as pending" },
+                    ] as const
+                  ).map((o) => (
+                    <button
+                      key={o.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={saveAs === o.value}
+                      onClick={() => setSaveAs(o.value)}
+                      className={cn(
+                        "h-9 rounded-full text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70",
+                        saveAs === o.value
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {saveAs === "Approved"
+                    ? "Approved leave uses the balance straight away (Annual Leave and Working Holiday)."
+                    : "Pending leave waits for a decision and only uses the balance once approved."}
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                {saveAs === "Approved"
-                  ? "Approved leave uses the balance straight away (Annual Leave and Working Holiday)."
-                  : "Pending leave waits for a decision and only uses the balance once approved."}
-              </p>
-            </div>
+            )}
 
             <FormField
               control={form.control}

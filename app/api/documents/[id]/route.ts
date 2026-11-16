@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/db"
 import { EXPIRY_FIELDS, RTW_SETUP_MESSAGE, expiryColumns, rtwColumns, rtwColumnsExist, toEmployeeDocument } from "@/lib/document-api"
-import { canAccessBranch, requireUser, type RequestUser } from "@/lib/server-auth"
+import { canAccessBranch, type RequestUser, requirePermission } from "@/lib/server-auth"
 import type { DocumentRow } from "@/lib/database.types"
 
 /** The record, or a response to send instead (missing, or another branch's) */
@@ -19,7 +19,7 @@ async function loadRecord(id: string, user: RequestUser) {
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await requireUser(request)
+    const auth = await requirePermission(request, "documents_view")
     if (auth.response) return auth.response
     const { id } = await params
     const found = await loadRecord(id, auth.user)
@@ -35,7 +35,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 // sent as null or "" is cleared ("no expiry").
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await requireUser(request)
+    const auth = await requirePermission(request, "documents_edit")
     if (auth.response) return auth.response
     const { id } = await params
     const data = await request.json()
@@ -87,7 +87,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 // (loadRecord refuses anyone else's)
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await requireUser(request)
+    const auth = await requirePermission(request, "documents_delete")
     if (auth.response) return auth.response
     const { id } = await params
     const found = await loadRecord(id, auth.user)

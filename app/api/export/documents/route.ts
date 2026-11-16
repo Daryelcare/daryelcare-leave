@@ -4,13 +4,14 @@ import { supabase } from "@/lib/db"
 import { matchesDocumentStatus, withLiveDaysLeft } from "@/lib/document-status"
 import * as XLSX from "xlsx"
 import type { EmployeeDocument } from "@/lib/types"
-import { allowedBranches, canAccessBranch, requireUser } from "@/lib/server-auth"
+import { allowedBranches, can, canAccessBranch, denied, requirePermission } from "@/lib/server-auth"
 import { safeSearch } from "@/lib/document-api"
 
 export async function POST(request: Request) {
   try {
-    const auth = await requireUser(request)
+    const auth = await requirePermission(request, "export")
     if (auth.response) return auth.response
+    if (!can(auth.user, "documents_view")) return denied("documents_view")
     const formData = await request.formData()
     const format = formData.get("format") as string
     const branch = formData.get("branch") as string

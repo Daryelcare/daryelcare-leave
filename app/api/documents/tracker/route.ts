@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { supabase } from "@/lib/db"
 import { fetchAllRows } from "@/lib/fetch-all"
 import { rtwColumnsExist, toEmployeeDocument } from "@/lib/document-api"
-import { allowedBranches, canAccessBranch, requireUser } from "@/lib/server-auth"
+import { allowedBranches, canAccessBranch, requirePermission } from "@/lib/server-auth"
 import type { DocumentRow, EmployeeRow } from "@/lib/database.types"
 import type { TrackerDocument } from "@/lib/types"
 
@@ -13,7 +13,7 @@ type Person = Pick<EmployeeRow, "id" | "name" | "employee_code" | "branch" | "st
 // employee's current name and branch are shown, and decide who may see them.
 export async function GET(request: Request) {
   try {
-    const auth = await requireUser(request)
+    const auth = await requirePermission(request, "documents_view")
     if (auth.response) return auth.response
 
     const branch = new URL(request.url).searchParams.get("branch") || "all"

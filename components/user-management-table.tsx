@@ -10,6 +10,7 @@ import {
   AlertCircle,
   Building2,
   KeyRound,
+  Lock,
   MoreHorizontal,
   ShieldCheck,
   Trash2,
@@ -24,6 +25,7 @@ import { useApp } from "./app-provider"
 import { AddUserModal } from "./add-user-modal"
 import { EditBranchesModal } from "./edit-branches-modal"
 import { ResetPasswordModal } from "./reset-password-modal"
+import { UserPermissionsDialog } from "./user-permissions-dialog"
 import type { User } from "@/lib/types"
 import {
   Dialog,
@@ -54,6 +56,7 @@ export function UserManagementTable() {
   const [isResetPasswordModalOpen, setIsResetPasswordModalOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [permissionsFor, setPermissionsFor] = useState<User | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [showFallbackOption, setShowFallbackOption] = useState(false)
 
@@ -180,11 +183,18 @@ export function UserManagementTable() {
 
   const formatJoined = (value?: string) => formatLocalDate(value)
 
-  const roleBadge = (role: string) =>
-    role === "admin" ? (
+  const roleBadge = (user: User) =>
+    user.role === "admin" ? (
       <Badge variant="default">Administrator</Badge>
     ) : (
-      <Badge variant="secondary">Branch manager</Badge>
+      <span className="inline-flex flex-wrap items-center gap-1.5">
+        <Badge variant="secondary">Branch manager</Badge>
+        {user.permissionOverrides && Object.keys(user.permissionOverrides).length > 0 && (
+          <Badge variant="outline" title="Has exceptions to the branch manager permissions">
+            Custom permissions
+          </Badge>
+        )}
+      </span>
     )
 
   const branchList = (user: User) =>
@@ -214,10 +224,16 @@ export function UserManagementTable() {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           {user.role === "normal" && (
-            <DropdownMenuItem onClick={() => handleEditBranches(user)}>
-              <Building2 />
-              Edit branches
-            </DropdownMenuItem>
+            <>
+              <DropdownMenuItem onClick={() => handleEditBranches(user)}>
+                <Building2 />
+                Edit branches
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setPermissionsFor(user)}>
+                <Lock />
+                Permissions
+              </DropdownMenuItem>
+            </>
           )}
           <DropdownMenuItem onClick={() => handleResetPassword(user)}>
             <KeyRound />
@@ -325,7 +341,7 @@ export function UserManagementTable() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>{roleBadge(user.role)}</TableCell>
+                    <TableCell>{roleBadge(user)}</TableCell>
                     <TableCell>{branchList(user)}</TableCell>
                     <TableCell className="hidden whitespace-nowrap text-muted-foreground lg:table-cell">
                       {formatJoined(user.createdAt)}
@@ -370,7 +386,7 @@ export function UserManagementTable() {
                     {rowActions(user)}
                   </div>
                   <div className="flex flex-wrap items-center gap-2 pl-12">
-                    {roleBadge(user.role)}
+                    {roleBadge(user)}
                     {user.role !== "admin" && branchList(user)}
                   </div>
                 </li>
@@ -393,6 +409,12 @@ export function UserManagementTable() {
           onOpenChange={setIsEditBranchesModalOpen}
         />
       )}
+
+      <UserPermissionsDialog
+        user={permissionsFor}
+        open={!!permissionsFor}
+        onOpenChange={(o) => !o && setPermissionsFor(null)}
+      />
 
       {/* Reset Password Modal */}
       {selectedUser && (

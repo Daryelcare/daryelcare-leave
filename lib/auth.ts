@@ -10,7 +10,14 @@ async function fetchOwnProfile(token: string | undefined): Promise<User | null> 
   const res = await fetch("/api/users/me", { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" })
   if (!res.ok) return null
   const p = await res.json()
-  return { id: p.id, email: p.email, name: p.name || undefined, role: p.role, branches: p.branches || [] }
+  return {
+    id: p.id,
+    email: p.email,
+    name: p.name || undefined,
+    role: p.role,
+    branches: p.branches || [],
+    permissions: p.permissions ?? null,
+  }
 }
 
 // Sign in function that works with both Supabase Auth and custom users table

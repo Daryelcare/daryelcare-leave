@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server"
 import * as XLSX from "xlsx"
 import { supabase } from "@/lib/db"
-import { allowedBranches, requireUser } from "@/lib/server-auth"
+import { allowedBranches, requirePermission } from "@/lib/server-auth"
 
 export async function POST(request: Request) {
   try {
     // Importing changes many employees' records at once, so it's for admins
     // Admins and branch managers; managers only match employees in their branches
-    const auth = await requireUser(request)
+    const auth = await requirePermission(request, "documents_import")
     if (auth.response) return auth.response
     // Get form data with file
     const formData = await request.formData()

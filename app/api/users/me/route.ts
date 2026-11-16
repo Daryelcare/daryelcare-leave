@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/db"
-import { requireUser } from "@/lib/server-auth"
+import { getRequestUser, requireUser } from "@/lib/server-auth"
 
 // GET /api/users/me: the signed-in person's profile (role and branches), for
 // the browser, which can't read the locked users table itself. Someone who can
@@ -38,12 +38,15 @@ export async function GET(request: Request) {
       if (insertError) throw insertError
       profile = created
     }
+    // What they may do, for hiding what's turned off (the server enforces it anyway)
+    const me = await getRequestUser(request)
     return NextResponse.json({
       id: profile.id,
       email: profile.email,
       name: profile.name,
       role: profile.role === "admin" ? "admin" : "normal",
       branches: profile.branches || [],
+      permissions: me?.permissions ?? null,
     })
   } catch (error) {
     console.error("Error loading own profile:", error)

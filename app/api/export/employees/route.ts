@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server"
-import { allowedBranches, canAccessBranch, requireUser } from "@/lib/server-auth"
+import { allowedBranches, canAccessBranch, requirePermission } from "@/lib/server-auth"
 import { exportEmployees } from "@/app/actions/export-actions"
 
 export async function POST(request: Request) {
   try {
-    const auth = await requireUser(request)
+    const auth = await requirePermission(request, "export")
     if (auth.response) return auth.response
     const formData = await request.formData()
     // Only the branches this user may see; never trust a limit sent by the browser

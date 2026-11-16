@@ -15,6 +15,7 @@ import { BranchManagementTable } from "./branch-management-table"
 import { LeavePeriodManager } from "./leave-period-manager"
 import { DataHealth } from "./data-health"
 import { ThemeSwitch } from "./theme-switch"
+import { PermissionsSettings } from "./permissions-settings"
 import { AccountName } from "./account-name"
 import { Avatar, Field, PageHeader, SectionHeader } from "./page-kit"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -254,6 +255,8 @@ export function SettingsForm() {
         return <LeaveTypeManagementTable />
       case "leave-periods":
         return <LeavePeriodManager />
+      case "permissions":
+        return <PermissionsSettings title={current.title} description={current.description} />
       case "data-health":
         return <DataHealth />
       default:

@@ -1,4 +1,5 @@
 import type { RtwBasis } from "./rtw"
+import type { PermissionOverrides, PermissionSet } from "./permissions"
 export interface Branch {
   id: string
   name: string
@@ -48,6 +49,10 @@ export interface User {
   role: UserRole
   branches: string[]
   createdAt?: string
+  /** What they may do (null until the server has said; everything for admins) */
+  permissions?: PermissionSet | null
+  /** Admin view of one person's exceptions to the manager settings */
+  permissionOverrides?: PermissionOverrides
 }
 
 // A member of staff (row in the `employees` table)

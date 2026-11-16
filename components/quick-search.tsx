@@ -87,7 +87,7 @@ export function QuickSearch() {
   })
 
   const staticItems = useMemo<Item[]>(() => {
-    const pages: Item[] = visibleGroups(isAdmin).flatMap((g) =>
+    const pages: Item[] = visibleGroups(isAdmin, user?.permissions).flatMap((g) =>
       g.items.map((item) => ({
         id: `page:${item.href}`,
         group: "Pages" as const,
@@ -116,7 +116,7 @@ export function QuickSearch() {
       haystack: `${s.title} settings ${s.description}`.toLowerCase(),
     }))
     return [...pages, ...settings]
-  }, [isAdmin])
+  }, [isAdmin, user?.permissions])
 
   const people = useMemo<Item[]>(
     () =>

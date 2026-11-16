@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/db"
 import { EXPIRY_FIELDS, RTW_SETUP_MESSAGE, expiryColumns, rtwColumns, rtwColumnsExist, toEmployeeDocument } from "@/lib/document-api"
-import { canAccessBranch, requireUser } from "@/lib/server-auth"
+import { canAccessBranch, requirePermission } from "@/lib/server-auth"
 import type { DocumentRow } from "@/lib/database.types"
 
 // POST: save an employee's whole documents record (Add document). Dates not
 // sent are cleared; the name and branch come from the employee record.
 export async function POST(request: Request) {
   try {
-    const auth = await requireUser(request)
+    const auth = await requirePermission(request, "documents_edit")
     if (auth.response) return auth.response
 
     const data = await request.json()

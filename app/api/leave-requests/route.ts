@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/db"
 import { fetchAllRows } from "@/lib/fetch-all"
-import { allowedBranches, canAccessBranch, requireUser } from "@/lib/server-auth"
+import { allowedBranches, canAccessBranch, requireUser, requirePermission, can } from "@/lib/server-auth"
 import { leaveYearBoundaryError } from "@/lib/leave-server"
 import { parseDateToUtc } from "@/lib/dates"
 
@@ -212,7 +212,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const auth = await requireUser(request)
+    const auth = await requirePermission(request, "leave_edit")
     if (auth.response) return auth.response
 
     const data = await request.json()
@@ -235,7 +235,8 @@ export async function POST(request: Request) {
     }
 
     // Recorded leave is approved straight away unless saved as pending
-    const status = data.status === "Pending" ? "Pending" : "Approved"
+    // Without permission to approve, new leave waits for someone who has it
+    const status = data.status === "Pending" || !can(auth.user, "leave_approve") ? "Pending" : "Approved"
     const startTime = parseDateToUtc(data.startDate)
     const endTime = parseDateToUtc(data.endDate)
     if (startTime === null || endTime === null || endTime < startTime) {
