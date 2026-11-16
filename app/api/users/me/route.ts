@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { supabase } from "@/lib/db"
 import { getRequestUser, requireUser } from "@/lib/server-auth"
 import { mustChangePassword } from "@/lib/password-change"
+import { recordVisit } from "@/lib/last-seen"
 
 // GET /api/users/me: the signed-in person's profile (role and branches), for
 // the browser, which can't read the locked users table itself. Someone who can
@@ -39,6 +40,8 @@ export async function GET(request: Request) {
       if (insertError) throw insertError
       profile = created
     }
+    // Opening the app counts as a visit ("Last visit" on Users & access)
+    await recordVisit(email)
     // What they may do, for hiding what's turned off (the server enforces it anyway)
     const me = await getRequestUser(request)
     return NextResponse.json({

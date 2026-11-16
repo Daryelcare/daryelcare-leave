@@ -13,6 +13,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { Suspense, useEffect, useState } from "react"
 import { getCurrentUser } from "@/lib/auth"
 import { supabase } from "@/lib/supabase"
+import { fetchWithAuth } from "@/lib/api-utils"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -101,6 +102,26 @@ function AuthCheck({ children }: { children: React.ReactNode }) {
       subscription.subscription.unsubscribe()
     }
   }, [router, setUser])
+
+  // Coming back to the app (tab or phone brought back) counts as a visit, so
+  // "Last visit" on Users & access stays exact. Opening it is recorded by the
+  // profile load; at most one ping every 5 minutes after that.
+  const signedIn = !!user
+  useEffect(() => {
+    if (!signedIn) return
+    let last = Date.now()
+    const ping = () => {
+      if (document.visibilityState !== "visible" || Date.now() - last < 5 * 60_000) return
+      last = Date.now()
+      fetchWithAuth("/api/users/me/seen", { method: "POST" }).catch((e) => console.error("Couldn't record a visit:", e))
+    }
+    document.addEventListener("visibilitychange", ping)
+    window.addEventListener("focus", ping)
+    return () => {
+      document.removeEventListener("visibilitychange", ping)
+      window.removeEventListener("focus", ping)
+    }
+  }, [signedIn])
 
   // While checking, show the page straight away if we have a saved user,
   // otherwise a spinner
