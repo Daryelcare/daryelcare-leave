@@ -1,6 +1,6 @@
 import { isRtwBasis } from "@/lib/rtw"
 import { NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 import { matchesDocumentStatus, withLiveDaysLeft } from "@/lib/document-status"
 import * as XLSX from "xlsx"
 import type { EmployeeDocument } from "@/lib/types"

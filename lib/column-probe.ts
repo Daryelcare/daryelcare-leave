@@ -2,7 +2,7 @@
 // switch on by themselves once the SQL has been run. A "yes" is remembered;
 // a "no" is checked again after a minute. Server only.
 
-import { supabase } from "./supabase"
+import { supabase } from "./db"
 
 const known = new Map<string, { ok: boolean; at: number }>()
 

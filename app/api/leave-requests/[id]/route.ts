@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 import { shouldDeductFromBalance } from "@/lib/utils"
 import { inclusiveDays, parseDateToUtc, toUkDate } from "@/lib/dates"
 import { canAccessBranch, requireUser } from "@/lib/server-auth"

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/server-auth"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 import * as XLSX from "xlsx"
 import { v4 as uuidv4 } from "uuid"
 

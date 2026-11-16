@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/server-auth"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {

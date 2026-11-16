@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 import { requireUser, allowedBranches } from "@/lib/server-auth"
 import { addDays, startOfWeek, toIsoDate, todayUtc } from "@/lib/dates"
 import { getLeaveBetween, resolveBranchFilter } from "@/lib/leave-data"

@@ -1,7 +1,7 @@
 // Server-side helpers for reading leave, shared by the dashboard and the
 // team calendar. Server code only.
 
-import { supabase } from "./supabase"
+import { supabase } from "./db"
 import { parseDateToUtc, toIsoDate } from "./dates"
 import type { LeaveRequestRow } from "./database.types"
 

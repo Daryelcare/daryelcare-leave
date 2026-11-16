@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 import { canAccessBranch, requireUser } from "@/lib/server-auth"
 
 export async function POST(request: Request) {

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 import { fetchAllRows } from "@/lib/fetch-all"
 import { rtwColumnsExist, toEmployeeDocument } from "@/lib/document-api"
 import { allowedBranches, canAccessBranch, requireUser } from "@/lib/server-auth"

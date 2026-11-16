@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/server-auth"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 import { requireAdmin, requireUser } from "@/lib/server-auth"
 import { applyBalanceCheck } from "@/lib/balance-server"
 import { buildLeaveYears } from "@/lib/leave-years"

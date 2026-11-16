@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/server-auth"
-import { supabase } from "@/lib/supabase"
-import { signUpUserWithProfile } from "@/lib/auth"
+import { supabase } from "@/lib/db"
+import { signUpUserWithProfile } from "@/lib/user-accounts"
 
 export async function GET(request: Request) {
   try {
