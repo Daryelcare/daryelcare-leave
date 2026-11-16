@@ -559,7 +559,7 @@ export function DocumentTrackerTable() {
             Edit documents
           </DropdownMenuItem>
         )}
-        {isAdmin && !doc.noRecord && (
+        {!doc.noRecord && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -1352,18 +1352,16 @@ export function DocumentTrackerTable() {
                 <Download />
                 Export
               </Button>
-              {isAdmin && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-destructive hover:text-destructive"
-                  disabled={!selectedRows.some((d) => d.recordId)}
-                  onClick={() => setDeleteTargets(selectedRows.filter((d) => d.recordId))}
-                >
-                  <Trash2 />
-                  Delete
-                </Button>
-              )}
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-destructive hover:text-destructive"
+                disabled={!selectedRows.some((d) => d.recordId)}
+                onClick={() => setDeleteTargets(selectedRows.filter((d) => d.recordId))}
+              >
+                <Trash2 />
+                Delete
+              </Button>
               <Button
                 size="icon"
                 variant="ghost"

@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server"
 import * as XLSX from "xlsx"
 import { supabase } from "@/lib/db"
-import { requireAdmin } from "@/lib/server-auth"
+import { allowedBranches, requireUser } from "@/lib/server-auth"
 
 export async function POST(request: Request) {
   try {
     // Importing changes many employees' records at once, so it's for admins
-    const auth = await requireAdmin(request)
+    // Admins and branch managers; managers only match employees in their branches
+    const auth = await requireUser(request)
     if (auth.response) return auth.response
     // Get form data with file
     const formData = await request.formData()
@@ -37,13 +38,16 @@ export async function POST(request: Request) {
     }
 
     // Get all employees for matching
-    const { data: employees, error: employeesError } = await supabase
+    const scope = allowedBranches(auth.user)
+    const { data: allEmployees, error: employeesError } = await supabase
       .from("employees")
       .select("id, name, employee_code, branch")
 
     if (employeesError) {
       throw new Error(`Error fetching employees: ${employeesError.message}`)
     }
+    // A branch manager only matches people in their own branches
+    const employees = (allEmployees ?? []).filter((e) => scope === null || scope.includes(e.branch))
 
     // Process rows for preview (limit to first 100 rows for performance)
     const previewRows = rows.slice(0, 100).map((row) => {

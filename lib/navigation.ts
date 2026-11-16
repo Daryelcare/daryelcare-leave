@@ -40,7 +40,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { title: "Employees", short: "People", href: "/dashboard/employees", icon: Users },
       { title: "Leave", short: "Leave", href: "/dashboard/leave-management", icon: CalendarDays },
-      { title: "Documents", href: "/dashboard/document-tracker", icon: FileText, adminOnly: true },
+      { title: "Documents", href: "/dashboard/document-tracker", icon: FileText },
       { title: "Reports", href: "/dashboard/reports", icon: BarChart3, adminOnly: true },
     ],
   },

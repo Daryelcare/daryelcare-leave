@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
-import { requireAdmin } from "@/lib/server-auth"
+import { requireUser } from "@/lib/server-auth"
+import { importBranch } from "@/lib/import-scope"
+import { inBatches } from "@/lib/fetch-all"
 import { supabase } from "@/lib/db"
 import * as XLSX from "xlsx"
 import { v4 as uuidv4 } from "uuid"
@@ -11,7 +13,8 @@ const ALL_COLUMNS = [...REQUIRED_COLUMNS, ...OPTIONAL_COLUMNS]
 
 export async function POST(request: Request) {
   try {
-    const auth = await requireAdmin(request)
+    // Admins and branch managers; managers only into their own branches
+    const auth = await requireUser(request)
     if (auth.response) return auth.response
     // Get form data with file
     const formData = await request.formData()
@@ -72,7 +75,12 @@ export async function POST(request: Request) {
         return // Skip this row
       }
 
-      // Validate branch if provided
+      // Validate branch if provided, and that this person may import into it
+      const scoped = importBranch(auth.user, row["Branch"])
+      if ("error" in scoped) {
+        errors.push({ row: rowNumber, message: scoped.error })
+        return
+      }
       if (row["Branch"] && !validBranches.includes(row["Branch"])) {
         errors.push({
           row: rowNumber,
@@ -114,13 +122,36 @@ export async function POST(request: Request) {
         name: row["Full Name"],
         employee_code: employeeCode,
         job_title: row["Job Title"] || "Unspecified", // Default job title
-        branch: row["Branch"] || "Unassigned", // Default branch
+        branch: scoped.branch,
+        _row: rowNumber,
         days_taken: row["Days Taken"] !== "" ? Number(row["Days Taken"]) : 0,
         days_remaining: row["Days Remaining"] !== "" ? Number(row["Days Remaining"]) : 28,
         hours: row["Hours"] !== "" ? Number(row["Hours"]) : null, // Add hours field
         status: "active",
       })
     })
+
+    // A manager can't change someone in another branch by reusing their
+    // employee code (the import updates rows with a matching code)
+    if (auth.user.role !== "admin" && validRows.length > 0) {
+      const codes = validRows.map((r) => r.employee_code as string)
+      const elsewhere = new Map<string, string>()
+      await inBatches(codes, async (batch) => {
+        const { data, error } = await supabase.from("employees").select("employee_code, branch").in("employee_code", batch)
+        if (error) throw error
+        for (const e of data ?? []) {
+          if (!(auth.user.branches || []).includes(e.branch)) elsewhere.set(e.employee_code, e.branch)
+        }
+      })
+      for (let i = validRows.length - 1; i >= 0; i--) {
+        const r = validRows[i]
+        if (elsewhere.has(r.employee_code)) {
+          errors.push({ row: r._row, message: `Employee code ${r.employee_code} belongs to someone in another branch` })
+          validRows.splice(i, 1)
+        }
+      }
+    }
+    for (const r of validRows) delete r._row
 
     // If no valid rows, return error
     if (validRows.length === 0) {

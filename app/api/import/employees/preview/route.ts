@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
-import { requireAdmin } from "@/lib/server-auth"
+import { requireUser } from "@/lib/server-auth"
+import { importBranch } from "@/lib/import-scope"
 import * as XLSX from "xlsx"
 import { v4 as uuidv4 } from "uuid"
 
@@ -10,7 +11,7 @@ const ALL_COLUMNS = [...REQUIRED_COLUMNS, ...OPTIONAL_COLUMNS]
 
 export async function POST(request: Request) {
   try {
-    const auth = await requireAdmin(request)
+    const auth = await requireUser(request)
     if (auth.response) return auth.response
     // Get form data with file
     const formData = await request.formData()
@@ -61,7 +62,11 @@ export async function POST(request: Request) {
           name: row["Full Name"],
           employeeCode: employeeCode,
           jobTitle: row["Job Title"] || "Unspecified", // Default job title
-          branch: row["Branch"] || "Unassigned", // Default branch
+          // Where it would go; for a manager, a branch that isn't theirs is shown as a problem
+          branch: (() => {
+            const scoped = importBranch(auth.user, row["Branch"])
+            return "error" in scoped ? `⚠ ${scoped.error}` : scoped.branch
+          })(),
           daysTaken: row["Days Taken"] !== "" ? Number(row["Days Taken"]) : 0,
           daysRemaining: row["Days Remaining"] !== "" ? Number(row["Days Remaining"]) : 28,
           hours: row["Hours"] !== "" ? Number(row["Hours"]) : undefined, // Add hours field
