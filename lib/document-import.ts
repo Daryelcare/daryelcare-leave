@@ -428,8 +428,11 @@ export async function planImport(
       ["sponsored", "is_sponsored", "Sponsored"],
       ["twentyHours", "is_20_hours", "20 hours"],
     ] as const) {
-      const v = parseYesNo(c[field])
+      // Blank means no (when the column is in the file)
+      const parsed = parseYesNo(c[field])
+      const v = parsed === null && fields.has(field) ? false : parsed
       if (v === "invalid") plan.problems.push(`${label} should be yes or no`)
+      else if (v !== null && !doc) cols[column] = v
       else if (v !== null && v !== (doc?.[column] ?? false)) {
         cols[column] = v
         plan.otherChanges.push(`${label}: ${v ? "yes" : "no"}`)
