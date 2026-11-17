@@ -3,7 +3,7 @@
 import type React from "react"
 import { useMemo, useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
-import { AlertCircle, ArrowLeft, CheckCircle, Download, FileSpreadsheet, Loader2, Upload, X } from "lucide-react"
+import { AlertCircle, ArrowLeft, CheckCircle, ChevronRight, FileSpreadsheet, Loader2, Upload, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
 import { authHeaders, handleApiError } from "@/lib/api-utils"
 import { cn } from "@/lib/utils"
+import { TemplateDownload } from "./template-download"
 
 interface ImportDocumentsModalProps {
   open: boolean
@@ -229,7 +230,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
 
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? onOpenChange(true) : close())}>
-      <DialogContent className={cn("max-h-[92dvh] overflow-y-auto", plan ? "sm:max-w-5xl" : "sm:max-w-3xl")}>
+      <DialogContent className={cn("max-h-[92dvh] overflow-y-auto", plan ? "sm:max-w-5xl" : "sm:max-w-xl")}>
         <DialogHeader>
           <DialogTitle>
             {result ? "Import finished" : plan ? "Check the changes" : "Import right to work checks"}
@@ -239,7 +240,7 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
               ? "Here's what was saved."
               : plan
                 ? `Nothing has been saved yet. This is what importing ${file?.name} will do, person by person.`
-                : "Update many people's right to work checks at once from a spreadsheet. You'll see every change before anything is saved."}
+                : "Update many people's right to work checks at once from a spreadsheet."}
           </DialogDescription>
         </DialogHeader>
 
@@ -371,131 +372,102 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
             </ul>
           </div>
         ) : (
-          <div className="space-y-5">
-            <Step n={1} title="Download the template">
-              <p className="text-sm text-muted-foreground">
-                The Excel template has drop-downs for Check Type, Status and the yes/no columns, sample rows showing
-                each type of check, and a &ldquo;How to fill it in&rdquo; tab.
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button onClick={() => downloadTemplate("excel")} disabled={busy === "template"} className="gap-2">
-                  {busy === "template" ? <Loader2 className="animate-spin" /> : <Download className="h-4 w-4" />}
-                  Excel template (recommended)
-                </Button>
-                <Button variant="outline" onClick={() => downloadTemplate("csv")} disabled={busy === "template"}>
-                  CSV template
-                </Button>
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-background px-4 py-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold">Start from the template</p>
+                <p className="text-xs text-muted-foreground">One row per person, matched by Employee Code.</p>
               </div>
-            </Step>
-
-            <Step n={2} title="Fill in one row per person">
-              <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-                <li>
-                  People are matched by <strong className="text-foreground">Employee Code</strong>, exactly as it is in
-                  the app. Name and Branch are only there to help you.
-                </li>
-                <li>
-                  Pick the <strong className="text-foreground">Check Type</strong>; it decides which dates you need:
-                </li>
-              </ul>
-              <div className="mt-2 overflow-x-auto">
-                <table className="w-full min-w-[520px] border-separate border-spacing-y-1 text-left text-[13px]">
-                  <thead>
-                    <tr className="text-xs text-muted-foreground">
-                      <th className="px-3 py-1 font-semibold">Check Type</th>
-                      <th className="px-3 py-1 font-semibold">Fill in</th>
-                      <th className="px-3 py-1 font-semibold">Next check</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {CHECK_TYPES.map((t) => (
-                      <tr key={t.type}>
-                        <td className="rounded-l-2xl bg-background px-3 py-2">
-                          <span className="block font-semibold">{t.type}</span>
-                          <span className="block text-xs text-muted-foreground">{t.examples}</span>
-                        </td>
-                        <td className="bg-background px-3 py-2">{t.enter}</td>
-                        <td className="rounded-r-2xl bg-background px-3 py-2">{t.due}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-                <li>Dates are dd/mm/yyyy, for example 17/11/2026.</li>
-                <li>
-                  Leaving Check Type, Date Checked and Right to Work Expiry{" "}
-                  <strong className="text-foreground">all empty clears</strong> that person&apos;s current check. Delete
-                  the row instead to leave them as they are.
-                </li>
-                <li>
-                  is_sponsored and is_20_hrs: yes or no; an{" "}
-                  <strong className="text-foreground">empty cell counts as no</strong>. Status and Country are optional:
-                  an empty cell keeps what&apos;s saved. Passport and BRP details aren&apos;t changed by this template.
-                </li>
-                <li>Delete the sample rows before importing.</li>
-              </ul>
-            </Step>
-
-            <Step n={3} title="Upload it and check the changes">
-              <div
-                className={cn(
-                  "rounded-2xl border-2 border-dashed p-6 text-center transition-colors",
-                  dragActive ? "border-primary bg-primary-soft/60" : "border-border hover:border-foreground/20",
-                )}
-                onDragEnter={onDrag}
-                onDragOver={onDrag}
-                onDragLeave={onDrag}
-                onDrop={(e) => {
-                  onDrag(e)
-                  setDragActive(false)
-                  pick(e.dataTransfer.files)
-                }}
-              >
-                <input
-                  ref={inputRef}
-                  type="file"
-                  accept=".csv,.xls,.xlsx"
-                  className="hidden"
-                  onChange={(e) => pick(e.target.files)}
-                  aria-label="Choose a file"
-                />
-                {file ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <FileSpreadsheet className="h-5 w-5 text-muted-foreground" />
-                    <span className="font-medium">{file.name}</span>
-                    <span className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(0)} KB</span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 rounded-full"
-                      onClick={() => setFile(null)}
-                      aria-label="Remove file"
+              <TemplateDownload onDownload={downloadTemplate} busy={busy === "template"} />
+            </div>
+            <div
+              className={cn(
+                "rounded-2xl border-2 border-dashed p-6 text-center transition-colors",
+                dragActive ? "border-primary bg-primary-soft/60" : "border-border hover:border-foreground/20",
+              )}
+              onDragEnter={onDrag}
+              onDragOver={onDrag}
+              onDragLeave={onDrag}
+              onDrop={(e) => {
+                onDrag(e)
+                setDragActive(false)
+                pick(e.dataTransfer.files)
+              }}
+            >
+              <input
+                ref={inputRef}
+                type="file"
+                accept=".csv,.xls,.xlsx"
+                className="hidden"
+                onChange={(e) => pick(e.target.files)}
+                aria-label="Choose a file"
+              />
+              {file ? (
+                <div className="flex items-center justify-center gap-2">
+                  <FileSpreadsheet className="h-5 w-5 text-muted-foreground" />
+                  <span className="font-medium">{file.name}</span>
+                  <span className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(0)} KB</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 rounded-full"
+                    onClick={() => setFile(null)}
+                    aria-label="Remove file"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-1.5">
+                  <Upload className="h-5 w-5 text-muted-foreground" />
+                  <p className="text-sm font-medium">
+                    Drag the filled-in template here, or{" "}
+                    <button
+                      type="button"
+                      className="text-primary-text hover:underline focus:outline-none"
+                      onClick={() => inputRef.current?.click()}
                     >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center gap-1.5">
-                    <Upload className="h-5 w-5 text-muted-foreground" />
-                    <p className="text-sm font-medium">
-                      Drag the filled-in template here, or{" "}
-                      <button
-                        type="button"
-                        className="text-primary-text hover:underline focus:outline-none"
-                        onClick={() => inputRef.current?.click()}
-                      >
-                        choose a file
-                      </button>
-                    </p>
-                    <p className="text-xs text-muted-foreground">Excel or CSV, up to 5MB</p>
-                  </div>
-                )}
+                      choose a file
+                    </button>
+                  </p>
+                  <p className="text-xs text-muted-foreground">Excel or CSV, up to 5MB</p>
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Nothing is saved until you&apos;ve checked the changes and pressed Import.
+            </p>
+
+            <details className="group rounded-2xl bg-background px-4 py-3 text-sm">
+              <summary className="cursor-pointer list-none font-semibold outline-none focus-visible:ring-2 focus-visible:ring-primary/70 [&::-webkit-details-marker]:hidden">
+                <span className="inline-flex items-center gap-1.5">
+                  <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-90" />
+                  How to fill it in
+                </span>
+              </summary>
+              <div className="mt-3 space-y-3 text-muted-foreground">
+                <p>
+                  Pick a <strong className="text-foreground">Check Type</strong>; it decides which dates you need. Dates
+                  are dd/mm/yyyy.
+                </p>
+                <ul className="flex flex-col gap-1.5">
+                  {CHECK_TYPES.map((t) => (
+                    <li key={t.type} className="rounded-xl bg-card px-3 py-2">
+                      <span className="block font-semibold text-foreground">{t.type}</span>
+                      <span className="block text-xs">
+                        {t.examples} · fill in {t.enter} · next check: {t.due.toLowerCase()}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <ul className="list-disc space-y-1 pl-5">
+                  <li>All three right to work cells empty clears that person&apos;s current check.</li>
+                  <li>is_sponsored and is_20_hrs: yes or no; empty counts as no.</li>
+                  <li>Status and Country are optional; empty keeps what&apos;s saved.</li>
+                  <li>Delete the sample rows before importing.</li>
+                </ul>
               </div>
-              <p className="mt-2 text-xs text-muted-foreground">
-                Nothing is saved until you&apos;ve checked the changes and pressed Import.
-              </p>
-            </Step>
+            </details>
           </div>
         )}
 
@@ -528,20 +500,6 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
-}
-
-function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
-  return (
-    <section className="flex gap-3" aria-label={`Step ${n}: ${title}`}>
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-bold text-secondary-foreground">
-        {n}
-      </span>
-      <div className="min-w-0 flex-1">
-        <h3 className="mb-1 text-[15px] font-bold leading-7">{title}</h3>
-        {children}
-      </div>
-    </section>
   )
 }
 
