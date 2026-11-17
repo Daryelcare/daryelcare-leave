@@ -429,8 +429,9 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
                   the row instead to leave them as they are.
                 </li>
                 <li>
-                  Status, Country, is_sponsored and is_20_hrs are optional: an empty cell keeps what&apos;s saved.
-                  Passport and BRP details aren&apos;t changed by this template.
+                  is_sponsored and is_20_hrs: yes or no; an{" "}
+                  <strong className="text-foreground">empty cell counts as no</strong>. Status and Country are optional:
+                  an empty cell keeps what&apos;s saved. Passport and BRP details aren&apos;t changed by this template.
                 </li>
                 <li>Delete the sample rows before importing.</li>
               </ul>
