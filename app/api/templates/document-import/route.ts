@@ -171,7 +171,8 @@ export async function GET(request: Request) {
   try {
     const auth = await requireUser(request)
     if (auth.response) return auth.response
-    const csv = new URL(request.url).searchParams.get("format") === "csv"
+    // CSV unless Excel is asked for
+    const csv = new URL(request.url).searchParams.get("format") !== "excel"
     const body = csv ? csvTemplate() : excelTemplate()
     return new NextResponse(new Uint8Array(body), {
       headers: {

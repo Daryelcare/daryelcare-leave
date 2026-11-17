@@ -15,10 +15,10 @@ import {
 } from "@/components/ui/dialog"
 import { useToast } from "@/components/ui/use-toast"
 import { handleApiError, authHeaders } from "@/lib/api-utils"
-import { Download, Upload, FileSpreadsheet, FileText, X, AlertCircle, CheckCircle, ArrowLeft } from "lucide-react"
+import { Upload, FileSpreadsheet, X, AlertCircle, CheckCircle, ArrowLeft } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { TemplateDownload } from "./template-download"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
 interface ImportEmployeesModalProps {
@@ -405,32 +405,13 @@ export function ImportEmployeesModal({ open, onOpenChange }: ImportEmployeesModa
           <div className="space-y-4">
             {/* Template download buttons */}
             <div className="flex justify-end">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Download className="h-4 w-4" />
-                    Download template
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => handleDownloadTemplate("csv")}>
-                    <FileText />
-                    CSV Template
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleDownloadTemplate("excel")}>
-                    <FileSpreadsheet />
-                    Excel Template
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <TemplateDownload onDownload={handleDownloadTemplate} />
             </div>
 
             {/* File upload area */}
             <div
               className={`rounded-xl border-2 border-dashed p-8 text-center transition-colors duration-200 ${
-                dragActive
-                  ? "border-primary bg-primary-soft/60"
-                  : "border-border hover:border-foreground/20"
+                dragActive ? "border-primary bg-primary-soft/60" : "border-border hover:border-foreground/20"
               }`}
               onDragEnter={handleDrag}
               onDragOver={handleDrag}
