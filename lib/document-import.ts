@@ -478,6 +478,10 @@ export async function planImport(
       plan.action = "create"
       // A new record needs a status: British/Irish citizens are BRITISH, anyone else NON-EU until told otherwise
       if (!cols.status) cols.status = cols.rtw_basis === "british_irish" ? "BRITISH" : "NON-EU"
+      // ...and the fields every record has (as the bulk "British or Irish" action fills them)
+      if (cols.country === undefined) cols.country = cols.rtw_basis === "british_irish" ? "United Kingdom" : ""
+      if (cols.is_sponsored === undefined) cols.is_sponsored = false
+      if (cols.is_20_hours === undefined) cols.is_20_hours = false
     } else if (plan.rtwAfter === null && plan.otherChanges.length === 0) {
       plan.action = "clear"
     }
@@ -499,12 +503,23 @@ export const publicPlan = (plan: ImportPlan) => ({
 export const rtwSummary = (s: RtwSnapshot | null | undefined) =>
   !s ? null : { ...s, label: s.basis ? rtwBasisLabel(s.basis) : null }
 
+/** Why a row couldn't be saved, in plain words (the details go to the server log) */
+function saveProblem(error: unknown): string {
+  const e = error as { code?: string; message?: string } | null
+  const column = e?.message?.match(/column "([a-z_]+)"/)?.[1]?.replace(/_/g, " ")
+  if (e?.code === "23502") return `a required field is missing${column ? ` (${column})` : ""}`
+  if (e?.code === "23505") return "a record for this person already exists"
+  if (e?.code === "23514") return `a value isn't allowed${column ? ` (${column})` : ""}`
+  return "couldn't be saved"
+}
+
 /** Applies a plan: rows with problems or nothing to do are left alone */
 export async function applyImport(plan: ImportPlan) {
   let updated = 0
   let created = 0
   let cleared = 0
   let failed = 0
+  const failures: { row: number; message: string }[] = []
   for (const p of plan.rows) {
     if (p.action === "error" || p.action === "skip") continue
     try {
@@ -526,7 +541,8 @@ export async function applyImport(plan: ImportPlan) {
     } catch (error) {
       console.error(`Couldn't import row ${p.row} (${p.code}):`, error)
       failed++
+      failures.push({ row: p.row, message: `${p.name || p.code}: ${saveProblem(error)}` })
     }
   }
-  return { updated, created, cleared, failed, skipped: plan.counts.skip, invalid: plan.counts.error }
+  return { updated, created, cleared, failed, failures, skipped: plan.counts.skip, invalid: plan.counts.error }
 }

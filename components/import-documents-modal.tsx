@@ -46,6 +46,7 @@ type Result = {
   created: number
   cleared: number
   failed: number
+  failures?: { row: number; message: string }[]
   invalid: number
   errors?: { row: number; message: string }[]
 }
@@ -543,7 +544,19 @@ function ResultView({ result }: { result: Result }) {
       </div>
       {result.failed > 0 && (
         <div className="rounded-2xl bg-destructive-soft px-4 py-3 text-sm text-destructive">
-          {result.failed} row{result.failed === 1 ? "" : "s"} couldn&apos;t be saved. Try importing the file again.
+          <p className="font-semibold">
+            {result.failed} row{result.failed === 1 ? "" : "s"} couldn&apos;t be saved. Nothing else was affected.
+          </p>
+          {result.failures && result.failures.length > 0 && (
+            <ul className="mt-1 max-h-40 space-y-0.5 overflow-y-auto">
+              {result.failures.slice(0, 50).map((f) => (
+                <li key={f.row}>
+                  Row {f.row}: {f.message}
+                </li>
+              ))}
+              {result.failures.length > 50 && <li>and {result.failures.length - 50} more</li>}
+            </ul>
+          )}
         </div>
       )}
       {result.errors && result.errors.length > 0 && (
