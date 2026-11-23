@@ -57,25 +57,22 @@ const BASIS_LABEL: Record<Basis, string> = {
   pending_application: "Pending application",
 }
 
-const CHECK_TYPES: { type: string; examples: string; enter: string; due: string }[] = [
-  { type: BASIS_LABEL.british_irish, examples: "British or Irish passport", enter: "Date Checked", due: "Never" },
+const CHECK_TYPES: { type: string; examples: string; enter: string }[] = [
+  { type: BASIS_LABEL.british_irish, examples: "British or Irish passport", enter: "No date needed. Never due again." },
   {
     type: BASIS_LABEL.indefinite,
     examples: "Indefinite leave to remain, EU settled status",
-    enter: "Date Checked",
-    due: "Never",
+    enter: "No date needed. Never due again.",
   },
   {
     type: BASIS_LABEL.time_limited,
     examples: "Visa, pre-settled status, eVisa or BRP with an end date",
-    enter: "Date Checked and Right to Work Expiry",
-    due: "On the expiry date",
+    enter: "Right to Work Expiry: when their permission ends.",
   },
   {
     type: BASIS_LABEL.pending_application,
     examples: "Employer Checking Service result",
-    enter: "Date Checked",
-    due: "6 months after the check",
+    enter: "Right to Work Expiry: the date to check again by (6 months after the check).",
   },
 ]
 
@@ -447,21 +444,21 @@ export function ImportDocumentsModal({ open, onOpenChange }: ImportDocumentsModa
               </summary>
               <div className="mt-3 space-y-3 text-muted-foreground">
                 <p>
-                  Pick a <strong className="text-foreground">Check Type</strong>; it decides which dates you need. Dates
-                  are dd/mm/yyyy.
+                  Pick a <strong className="text-foreground">Check Type</strong>; it decides whether you need a date.
+                  Dates are dd/mm/yyyy (17-Nov-26 also works).
                 </p>
                 <ul className="flex flex-col gap-1.5">
                   {CHECK_TYPES.map((t) => (
                     <li key={t.type} className="rounded-xl bg-card px-3 py-2">
                       <span className="block font-semibold text-foreground">{t.type}</span>
                       <span className="block text-xs">
-                        {t.examples} · fill in {t.enter} · next check: {t.due.toLowerCase()}
+                        {t.examples}. {t.enter}
                       </span>
                     </li>
                   ))}
                 </ul>
                 <ul className="list-disc space-y-1 pl-5">
-                  <li>All three right to work cells empty clears that person&apos;s current check.</li>
+                  <li>Check Type and Right to Work Expiry both empty clears that person&apos;s current check.</li>
                   <li>is_sponsored and is_20_hrs: yes or no; empty counts as no.</li>
                   <li>Status and Country are optional; empty keeps what&apos;s saved.</li>
                   <li>Delete the sample rows before importing.</li>

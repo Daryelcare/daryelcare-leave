@@ -9,9 +9,12 @@
 //   work columns and all three are blank for someone, their right to work is
 //   cleared, so they show as needing a check (the whole list is being redone).
 // - Check Type decides which dates are needed (lib/rtw.ts):
-//   British or Irish citizen / Permanent permission: Date Checked, never due again;
-//   Time-limited permission: Date Checked and Right to Work Expiry, due on that date;
-//   Pending application: Date Checked, due again 6 months later.
+//   British or Irish citizen / Permanent permission: nothing else, never due again;
+//   Time-limited permission: Right to Work Expiry, due on that date;
+//   Pending application: Right to Work Expiry = the date to check again by
+//   (6 months after the check). Date Checked is optional: when it's in the
+//   file it's saved, and a pending application with only a check date is due
+//   6 months after it.
 
 import * as XLSX from "xlsx"
 import { supabase } from "./db"
@@ -66,7 +69,6 @@ export const TEMPLATE_COLUMNS: ImportField[] = [
   "code",
   "branch",
   "checkType",
-  "dateChecked",
   "rtwExpiry",
   "status",
   "country",
@@ -140,9 +142,32 @@ export function parseCheckType(value: unknown): RtwBasis | null | "invalid" {
 
 // ---------------------------------------------------------------- cells
 
+const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
+
+/** "22-Jan-31", "22 Jan 2031", "22/January/2031": what Excel often saves. Two-digit years are 20xx. */
+function parseMonthNameDate(text: string): number | null {
+  const m = text.match(/^(\d{1,2})[\s/.-]+([a-z]{3,9})\.?[\s/.,-]+(\d{2}|\d{4})$/i)
+  if (!m) return null
+  const month = MONTHS.indexOf(m[2].slice(0, 3).toLowerCase())
+  if (
+    month < 0 ||
+    (m[2].length > 3 &&
+      !"january february march april may june july august september october november december sept"
+        .split(" ")
+        .includes(m[2].toLowerCase()))
+  )
+    return null
+  const year = m[3].length === 2 ? 2000 + Number(m[3]) : Number(m[3])
+  const day = Number(m[1])
+  const time = Date.UTC(year, month, day)
+  const d = new Date(time)
+  return d.getUTCMonth() === month && d.getUTCDate() === day ? time : null
+}
+
 /**
- * A date cell: Excel date (serial number), dd/mm/yyyy (or d/m/yyyy, dd-mm-yyyy)
- * or yyyy-mm-dd. Never read as US month/day. "N/A" means none.
+ * A date cell: Excel date (serial number), dd/mm/yyyy (or d/m/yyyy, dd-mm-yyyy),
+ * yyyy-mm-dd, or with the month as a word (22-Jan-31). Never read as US
+ * month/day. "N/A" means none.
  */
 export function parseDateCell(value: unknown): { date: string | null } | { error: true } {
   if (value === null || value === undefined) return { date: null }
@@ -153,7 +178,7 @@ export function parseDateCell(value: unknown): { date: string | null } | { error
   }
   const text = String(value).trim()
   if (!text || /^n\/?a$/i.test(text)) return { date: null }
-  const time = parseDateToUtc(text)
+  const time = parseDateToUtc(text) ?? parseMonthNameDate(text)
   return time === null ? { error: true } : { date: toUkDate(time) }
 }
 
@@ -363,21 +388,23 @@ export async function planImport(
           }
         } else {
           if (!rtwTracking) plan.problems.push(RTW_SETUP_MESSAGE)
-          if (!checkedOn) plan.problems.push("Enter the Date Checked")
           if (type === "time_limited" && !expiryOn)
             plan.problems.push("Enter the Right to Work Expiry (when their permission ends)")
+          if (type === "pending_application" && !expiryOn && !checkedOn)
+            plan.problems.push("Enter the date to check again by in Right to Work Expiry (6 months after the check)")
           if (expiryOn && isOneOff(type))
             plan.notes.push(`Right to Work Expiry not needed for ${CHECK_TYPE_LABELS[type]}, so it's ignored`)
-          if (expiryOn && type === "pending_application")
-            plan.notes.push("Right to Work Expiry ignored: the next check is 6 months after the check")
-          const next = rtwNextCheck(type, checkedOn, expiryOn)
-          plan.rtwAfter = { basis: type, checkedOn, expiry: next }
+          // Pending: the date typed in, or 6 months after the check date
+          const next = type === "pending_application" && expiryOn ? expiryOn : rtwNextCheck(type, checkedOn, expiryOn)
+          // Without a Date Checked column, the saved check date is kept
+          const keptChecked = fields.has("dateChecked") ? checkedOn : (before?.checkedOn ?? null)
+          plan.rtwAfter = { basis: type, checkedOn: keptChecked, expiry: next }
           Object.assign(cols, {
             rtw_basis: type,
-            rtw_checked_on: checkedOn,
             right_to_work_expiry: next,
             right_to_work_days_left: next ? daysLeftFromExpiry(next) : null,
           })
+          if (fields.has("dateChecked")) cols.rtw_checked_on = checkedOn
         }
       }
     }
