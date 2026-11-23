@@ -1,6 +1,7 @@
 // Expiry rules for the Documents page. Pure functions, so they're easy to test.
 import type { EmployeeDocument } from "./types"
 import { parseDateToUtc } from "./dates"
+import { isOneOff } from "./rtw"
 
 export type DocKind = "passport" | "rightToWork" | "brp" | "other"
 export type DocEntry = { kind: DocKind; label: string; date: string; days: number | null }
@@ -34,7 +35,7 @@ export function entriesFor(doc: EmployeeDocument, kind: DocKind | "all" = "all")
  * inside them (so "30 days" includes the 7-day ones); expired documents are
  * their own filter. Valid means every dated document has more than 90 days.
  */
-export type ExpiryFilter = "all" | "expired" | "within7" | "within30" | "within90" | "valid" | "none"
+export type ExpiryFilter = "all" | "expired" | "within7" | "within30" | "within90" | "valid" | "nocheck" | "none"
 
 export const EXPIRY_FILTERS: { id: ExpiryFilter; label: string; long: string }[] = [
   { id: "all", label: "All", long: "All employees" },
@@ -43,7 +44,12 @@ export const EXPIRY_FILTERS: { id: ExpiryFilter; label: string; long: string }[]
   { id: "within30", label: "30 days", long: "Expiring within 30 days" },
   { id: "within90", label: "90 days", long: "Expiring within 90 days" },
   { id: "valid", label: "Valid", long: "Valid for 90+ days" },
-  { id: "none", label: "No dates", long: "No expiry dates recorded" },
+  {
+    id: "nocheck",
+    label: "No check needed",
+    long: "British or Irish citizens and permanent permission: checked once, never due again",
+  },
+  { id: "none", label: "No dates", long: "No expiry dates recorded, and not British, Irish or permanent" },
 ]
 
 const inWindow = (d: number | null, max: number) => d !== null && d > 0 && d <= max
@@ -70,7 +76,11 @@ export function entryMatches(filter: ExpiryFilter, days: number | null): boolean
 export function recordMatches(doc: EmployeeDocument, filter: ExpiryFilter, kind: DocKind | "all" = "all"): boolean {
   const entries = entriesFor(doc, kind)
   if (filter === "all") return true
-  if (filter === "none") return entries.length === 0
+  // British/Irish and permanent permission need no right to work date, so
+  // they aren't "No dates" (missing) but "No check needed"
+  const neverDue = isOneOff(doc.rtwBasis) && (kind === "all" || kind === "rightToWork")
+  if (filter === "nocheck") return neverDue && entries.length === 0
+  if (filter === "none") return entries.length === 0 && !neverDue
   if (filter === "valid") return entries.length > 0 && entries.every((e) => e.days === null || e.days > 90)
   return entries.some((e) => entryMatches(filter, e.days))
 }

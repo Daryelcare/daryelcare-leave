@@ -161,6 +161,7 @@ const FILTER_TONE: Record<ExpiryFilter, Urgency | null> = {
   within30: "d30",
   within90: "d90",
   valid: "valid",
+  nocheck: "valid",
   none: "none",
 }
 const badgeVariant = (u: Urgency) =>
@@ -518,7 +519,7 @@ export function DocumentTrackerTable() {
     }
     const u = urgencyOf(entry.days)
     // Fade documents outside the chosen expiry window, and types not in focus
-    const outside = expiry !== "all" && expiry !== "none" && !entryMatches(expiry, entry.days)
+    const outside = expiry !== "all" && expiry !== "none" && expiry !== "nocheck" && !entryMatches(expiry, entry.days)
     return (
       <button
         onClick={edit}
@@ -993,7 +994,9 @@ export function DocumentTrackerTable() {
         <div className=" px-3 pt-3 sm:px-4 sm:pt-4">
           <div className="-mx-3 overflow-x-auto px-3 pb-3 [scrollbar-width:none] sm:-mx-4 sm:px-4 sm:pb-4 [&::-webkit-scrollbar]:hidden">
             <div role="group" aria-label="Filter by expiry" className="flex w-max gap-1.5 sm:gap-2">
-              {EXPIRY_FILTERS.filter((f) => f.id !== "none" || counts.none > 0 || expiry === "none").map((f) => {
+              {EXPIRY_FILTERS.filter(
+                (f) => (f.id !== "none" && f.id !== "nocheck") || counts[f.id] > 0 || expiry === f.id,
+              ).map((f) => {
                 const active = expiry === f.id
                 const tone = FILTER_TONE[f.id]
                 return (
@@ -1031,7 +1034,7 @@ export function DocumentTrackerTable() {
                         "min-w-[22px] rounded-full px-1.5 text-center text-xs font-semibold tabular leading-5",
                         active
                           ? "bg-white/20 text-primary-foreground"
-                          : tone && counts[f.id] > 0 && f.id !== "valid" && f.id !== "none"
+                          : tone && counts[f.id] > 0 && f.id !== "valid" && f.id !== "nocheck" && f.id !== "none"
                             ? cn(TONE[tone].soft, TONE[tone].text)
                             : "bg-muted text-muted-foreground",
                       )}
@@ -1332,7 +1335,11 @@ export function DocumentTrackerTable() {
                           <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                             {items.map((item) => {
                               const u = urgencyOf(item.days)
-                              const outside = expiry !== "all" && expiry !== "none" && !entryMatches(expiry, item.days)
+                              const outside =
+                                expiry !== "all" &&
+                                expiry !== "none" &&
+                                expiry !== "nocheck" &&
+                                !entryMatches(expiry, item.days)
                               const focus = item.kind === focusKind && !isQuiet(item.kind)
                               return (
                                 <button
